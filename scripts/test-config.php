@@ -60,4 +60,9 @@ $check(
     'modo debug ativado'
 );
 
+$check(
+    date_default_timezone_get() === 'America/Sao_Paulo',
+    'timezone da aplicação configurado'
+);
+
 echo 'OK: ' . $checks . ' verificações.' . PHP_EOL;

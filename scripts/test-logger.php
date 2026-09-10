@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+use Moves\Boot\Environment;
 use Moves\Core\Logger;
 
 /**
@@ -14,6 +15,8 @@ use Moves\Core\Logger;
  *
  * @author Djalma Martins
  */
+
+Environment::load(dirname(__DIR__));
 
 Logger::info(
     'Teste do Logger do Moves.',
