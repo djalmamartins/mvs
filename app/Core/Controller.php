@@ -23,7 +23,17 @@ abstract class Controller
         protected Router $router
     ) {
         $this->view = new Engine(
-            dirname(__DIR__, 2) . '/resources/views'
+            Theme::path()
+        );
+
+        $this->view->share(
+            'theme',
+            Theme::active()
+        );
+
+        $this->view->registerFunction(
+            'asset',
+            static fn (string $path): string => Theme::asset($path)
         );
     }
 }

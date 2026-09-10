@@ -31,6 +31,8 @@ final class Application
 
         Routes::register($router);
 
-        $router->dispatch();
+        if (!$router->dispatch()) {
+            echo 'Router error: ' . $router->error() . PHP_EOL;
+        }
     }
 }

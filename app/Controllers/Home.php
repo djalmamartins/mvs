@@ -18,7 +18,7 @@ final class Home extends Controller
 {
     public function index(): void
     {
-        echo $this->view->render('home', [
+        echo $this->view->render('pages/home', [
             'title' => 'Moves',
             'description' => 'Moves application platform',
         ]);
