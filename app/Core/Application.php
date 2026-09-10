@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Source\Core;
+namespace Moves\Core;
 
 final class Application
 {
