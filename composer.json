@@ -25,7 +25,10 @@
   "autoload": {
     "psr-4": {
       "Moves\\": "app/"
-    }
+    },
+    "files": [
+      "app/Support/Helpers.php"
+    ]
   },
   "config": {
     "sort-packages": true
