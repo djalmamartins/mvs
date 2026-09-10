@@ -29,15 +29,21 @@ final class Routes
         );
 
         $router->get(
-            '/form-test',
-            'FormTest:index',
-            'form.test'
+            '/login',
+            'AuthController:login',
+            'login'
         );
 
         $router->post(
-            '/form-test',
-            'FormTest:store',
-            'form.test.store'
+            '/login',
+            'AuthController:authenticate',
+            'login.authenticate'
+        );
+
+        $router->post(
+            '/logout',
+            'AuthController:logout',
+            'logout'
         );
     }
 }
