@@ -7,26 +7,11 @@
  *
  * @author Djalma Martins
  */
+
+$this->layout('layouts/default', [
+    'title' => $title,
+]);
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0"
-    >
-
-    <title><?= $this->e($title) ?></title>
-
-    <link
-            rel="stylesheet"
-            href="<?= $this->e($this->asset('css/app.css')) ?>"
-    >
-</head>
-
-<body>
 
 <main>
     <h1><?= $this->e($title) ?></h1>
@@ -37,6 +22,3 @@
         Tema: <?= $this->e($theme) ?>
     </small>
 </main>
-
-</body>
-</html>
