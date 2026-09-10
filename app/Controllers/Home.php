@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Controllers;
 
-use MovesCode\Router\Router;
+use Moves\Core\Controller;
 
 /**
  * Moves | Home Controller
@@ -14,15 +14,13 @@ use MovesCode\Router\Router;
  * @author Djalma Martins
  * @package Moves\Controllers
  */
-final class Home
+final class Home extends Controller
 {
-    public function __construct(
-        private Router $router
-    ) {
-    }
-
     public function index(): void
     {
-        echo 'Moves';
+        echo $this->view->render('home', [
+            'title' => 'Moves',
+            'description' => 'Moves application platform',
+        ]);
     }
 }
