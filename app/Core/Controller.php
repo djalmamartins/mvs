@@ -35,5 +35,10 @@ abstract class Controller
             'asset',
             static fn (string $path): string => Theme::asset($path)
         );
+
+        $this->view->registerFunction(
+            'csrf',
+            static fn (): string => Csrf::field()
+        );
     }
 }
