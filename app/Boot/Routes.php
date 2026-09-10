@@ -27,5 +27,17 @@ final class Routes
             'Home:index',
             'home'
         );
+
+        $router->get(
+            '/form-test',
+            'FormTest:index',
+            'form.test'
+        );
+
+        $router->post(
+            '/form-test',
+            'FormTest:store',
+            'form.test.store'
+        );
     }
 }
