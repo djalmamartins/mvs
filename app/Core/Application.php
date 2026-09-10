@@ -41,6 +41,7 @@ final class Application
                 $controller->show($error);
             }
         } catch (Throwable $exception) {
+            Logger::exception($exception);
             $controller = new ErrorController($router);
 
             $controller->show(
