@@ -15,7 +15,7 @@ namespace Moves\Core;
 final class Response
 {
     /**
-     * Redireciona a requisição para uma nova URL.
+     * Redireciona a requisição para uma URL.
      */
     public static function redirect(
         string $url,
@@ -31,10 +31,10 @@ final class Response
     }
 
     /**
-     * Redireciona para uma URL relativa à aplicação.
+     * Redireciona para um caminho relativo à aplicação.
      */
     public static function to(
-        string $path,
+        string $path = '/',
         int $status = 302
     ): never {
         $baseUrl = rtrim(
@@ -46,6 +46,18 @@ final class Response
 
         self::redirect(
             $baseUrl . $path,
+            $status
+        );
+    }
+
+    /**
+     * Redireciona para a página inicial da aplicação.
+     */
+    public static function home(
+        int $status = 302
+    ): never {
+        self::to(
+            '/',
             $status
         );
     }
