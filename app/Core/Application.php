@@ -8,6 +8,7 @@ use Moves\Boot\Connection as DatabaseConnection;
 use Moves\Boot\Routes;
 use MovesCode\Model\Connection as ModelConnection;
 use MovesCode\Router\Router;
+use Moves\Controllers\ErrorController;
 
 /**
  * Moves | Application
@@ -32,7 +33,10 @@ final class Application
         Routes::register($router);
 
         if (!$router->dispatch()) {
-            echo 'Router error: ' . $router->error() . PHP_EOL;
+            $error = (int) ($router->error() ?? 500);
+
+            $controller = new ErrorController($router);
+            $controller->show($error);
         }
     }
 }
