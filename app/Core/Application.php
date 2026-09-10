@@ -6,9 +6,10 @@ namespace Moves\Core;
 
 use Moves\Boot\Connection as DatabaseConnection;
 use Moves\Boot\Routes;
+use Moves\Controllers\ErrorController;
 use MovesCode\Model\Connection as ModelConnection;
 use MovesCode\Router\Router;
-use Moves\Controllers\ErrorController;
+use Throwable;
 
 /**
  * Moves | Application
@@ -22,21 +23,30 @@ final class Application
 {
     public function run(): void
     {
-        $pdo = DatabaseConnection::getInstance();
-
-        ModelConnection::configure($pdo);
-
         $router = new Router(
             (string) Config::get('APP_URL')
         );
 
-        Routes::register($router);
+        try {
+            $pdo = DatabaseConnection::getInstance();
 
-        if (!$router->dispatch()) {
-            $error = (int) ($router->error() ?? 500);
+            ModelConnection::configure($pdo);
 
+            Routes::register($router);
+
+            if (!$router->dispatch()) {
+                $error = (int) ($router->error() ?? 500);
+
+                $controller = new ErrorController($router);
+                $controller->show($error);
+            }
+        } catch (Throwable $exception) {
             $controller = new ErrorController($router);
-            $controller->show($error);
+
+            $controller->show(
+                500,
+                $exception
+            );
         }
     }
 }

@@ -31,7 +31,26 @@ $this->layout('layouts/default', [
             Ocorreu um erro inesperado durante o processamento da solicitação.
         <?php endif; ?>
     </p>
+    <?php if (($debug ?? false) && isset($exception)): ?>
+        <div class="error-debug">
+            <h2>Detalhes do erro</h2>
 
+            <p>
+                <strong>Mensagem:</strong>
+                <?= $this->e($exception->getMessage()) ?>
+            </p>
+
+            <p>
+                <strong>Arquivo:</strong>
+                <?= $this->e($exception->getFile()) ?>
+            </p>
+
+            <p>
+                <strong>Linha:</strong>
+                <?= (int) $exception->getLine() ?>
+            </p>
+        </div>
+    <?php endif; ?>
     <p>
         <a href="/">Voltar para o início</a>
     </p>
