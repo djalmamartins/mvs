@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Moves\Boot;
 
-use Moves\Controllers\Home;
 use MovesCode\Router\Router;
 
 /**
@@ -23,6 +22,10 @@ final class Routes
             ->namespace('Moves\\Controllers')
             ->group('');
 
-        $router->get('/', 'Home:index', 'home');
+        $router->get(
+            '/',
+            'Home:index',
+            'home'
+        );
     }
 }
