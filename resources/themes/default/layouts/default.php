@@ -14,19 +14,23 @@
     <meta charset="UTF-8">
 
     <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
     >
 
     <title><?= $this->e($title ?? 'Moves') ?></title>
 
     <link
-        rel="stylesheet"
-        href="<?= $this->e($this->asset('css/app.css')) ?>"
+            rel="stylesheet"
+            href="<?= $this->e($this->asset('css/app.css')) ?>"
     >
 </head>
 
 <body>
+
+<?php $this->insert('components/header', [
+    'title' => $title ?? 'Moves',
+]); ?>
 
 <?= $this->section('content') ?>
 
