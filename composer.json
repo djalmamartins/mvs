@@ -13,13 +13,14 @@
   ],
   "require": {
     "php": "^8.5",
-    "ext-pdo": "*",
     "ext-intl": "*",
-    "movescode/router": "*",
-    "movescode/view": "*",
+    "ext-pdo": "*",
     "movescode/model": "*",
     "movescode/pager": "*",
-    "movescode/storage": "*"
+    "movescode/router": "*",
+    "movescode/storage": "*",
+    "movescode/view": "*",
+    "vlucas/phpdotenv": "^5.7"
   },
   "autoload": {
     "psr-4": {

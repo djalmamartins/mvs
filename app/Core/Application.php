@@ -8,6 +8,6 @@ final class Application
 {
     public function run(): void
     {
-        echo 'Moves';
+        echo Config::get('APP_NAME', 'Moves');
     }
 }
