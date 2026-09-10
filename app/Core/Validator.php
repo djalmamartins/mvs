@@ -54,7 +54,10 @@ final class Validator
         if (
             $value !== null
             && $value !== ''
-            && filter_var($value, FILTER_VALIDATE_EMAIL) === false
+            && filter_var(
+                $value,
+                FILTER_VALIDATE_EMAIL
+            ) === false
         ) {
             $this->errors[$field] = $message
                 ?? 'Informe um endereço de e-mail válido.';
@@ -112,7 +115,7 @@ final class Validator
     }
 
     /**
-     * Verifica se os dados são válidos.
+     * Verifica se todos os dados passaram na validação.
      */
     public function passes(): bool
     {
