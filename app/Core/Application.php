@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Moves\Core;
 
 use Moves\Boot\Connection as DatabaseConnection;
+use Moves\Boot\Routes;
 use MovesCode\Model\Connection as ModelConnection;
+use MovesCode\Router\Router;
 
 /**
  * Moves | Application
@@ -23,6 +25,12 @@ final class Application
 
         ModelConnection::configure($pdo);
 
-        echo 'Moves';
+        $router = new Router(
+            (string) Config::get('APP_URL')
+        );
+
+        Routes::register($router);
+
+        $router->dispatch();
     }
 }
