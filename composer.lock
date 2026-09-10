@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eb95f005bcfc7d7d3a64abbc8d9be287",
+    "content-hash": "9d1ecc408059a307f2fb158d58beadcd",
     "packages": [
         {
             "name": "graham-campbell/result-type",
@@ -67,6 +67,49 @@
                 }
             ],
             "time": "2026-08-24T09:06:52+00:00"
+        },
+        {
+            "name": "movescode/middleware",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/middleware.git",
+                "reference": "3df9d60e72fa6ceb8c292a5929b58b5565ecf10d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/middleware/zipball/3df9d60e72fa6ceb8c292a5929b58b5565ecf10d",
+                "reference": "3df9d60e72fa6ceb8c292a5929b58b5565ecf10d",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\Middleware\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins"
+                }
+            ],
+            "description": "A lightweight and flexible middleware pipeline for PHP applications.",
+            "support": {
+                "issues": "https://github.com/djalmamartins/middleware/issues",
+                "source": "https://github.com/djalmamartins/middleware/tree/0.1.0"
+            },
+            "time": "2026-09-10T14:18:11+00:00"
         },
         {
             "name": "movescode/model",
@@ -167,20 +210,25 @@
         },
         {
             "name": "movescode/router",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/djalmamartins/router.git",
-                "reference": "db258a9403a3863b8f4e25cc59464028f7afcea5"
+                "reference": "36c5572ef26bf638b215c2e8b05f3aa75d8cb084"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/djalmamartins/router/zipball/db258a9403a3863b8f4e25cc59464028f7afcea5",
-                "reference": "db258a9403a3863b8f4e25cc59464028f7afcea5",
+                "url": "https://api.github.com/repos/djalmamartins/router/zipball/36c5572ef26bf638b215c2e8b05f3aa75d8cb084",
+                "reference": "36c5572ef26bf638b215c2e8b05f3aa75d8cb084",
                 "shasum": ""
             },
             "require": {
+                "movescode/middleware": "^0.1",
                 "php": "^8.2"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2.1",
+                "phpunit/phpunit": "^11.5"
             },
             "type": "library",
             "autoload": {
@@ -213,9 +261,9 @@
             ],
             "support": {
                 "issues": "https://github.com/djalmamartins/router/issues",
-                "source": "https://github.com/djalmamartins/router/tree/1.1.0"
+                "source": "https://github.com/djalmamartins/router/tree/1.2.0"
             },
-            "time": "2026-08-23T00:35:31+00:00"
+            "time": "2026-09-10T14:51:42+00:00"
         },
         {
             "name": "movescode/storage",

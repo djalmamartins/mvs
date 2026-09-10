@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Boot;
 
 use MovesCode\Router\Router;
+use Moves\Middleware\AuthMiddleware;
 
 /**
  * Moves | Routes
@@ -25,7 +26,8 @@ final class Routes
         $router->get(
             '/',
             'Home:index',
-            'home'
+            'home',
+            AuthMiddleware::class
         );
 
         $router->get(

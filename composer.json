@@ -15,11 +15,12 @@
     "php": "^8.2",
     "ext-intl": "*",
     "ext-pdo": "*",
-    "movescode/model": "*",
-    "movescode/pager": "*",
-    "movescode/router": "*",
-    "movescode/storage": "*",
-    "movescode/view": "*",
+    "movescode/middleware": "^0.1",
+    "movescode/model": "^1.0",
+    "movescode/pager": "^1.0",
+    "movescode/router": "^1.2",
+    "movescode/storage": "^1.0",
+    "movescode/view": "^1.0",
     "vlucas/phpdotenv": "^5.7"
   },
   "autoload": {
