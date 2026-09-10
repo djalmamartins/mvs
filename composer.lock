@@ -1,0 +1,274 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "e208c959fcdde44e3d97a2a188feffa6",
+    "packages": [
+        {
+            "name": "movescode/model",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/model.git",
+                "reference": "2b11ca9c5275128fe8b3923a2a97b2f09f758f7a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/model/zipball/2b11ca9c5275128fe8b3923a2a97b2f09f758f7a",
+                "reference": "2b11ca9c5275128fe8b3923a2a97b2f09f758f7a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-pdo": "*",
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\Model\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins",
+                    "email": "contato@moves.com.br",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Official database model component for MovesOS",
+            "homepage": "http://www.moves.com.br",
+            "keywords": [
+                "Active Record",
+                "database",
+                "model",
+                "movesos",
+                "pdo"
+            ],
+            "support": {
+                "issues": "https://github.com/djalmamartins/model/issues",
+                "source": "https://github.com/djalmamartins/model/tree/1.0.0"
+            },
+            "time": "2026-08-22T23:07:44+00:00"
+        },
+        {
+            "name": "movescode/pager",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/pager.git",
+                "reference": "944f837c2a8be60485ac1c891ea023b21cfe9ccb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/pager/zipball/944f837c2a8be60485ac1c891ea023b21cfe9ccb",
+                "reference": "944f837c2a8be60485ac1c891ea023b21cfe9ccb",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\Pager\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins",
+                    "email": "contato@moves.com.br",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Official pagination component for MovesOS",
+            "homepage": "http://www.moves.com.br",
+            "keywords": [
+                "movesos",
+                "pager",
+                "pagination"
+            ],
+            "support": {
+                "issues": "https://github.com/djalmamartins/pager/issues",
+                "source": "https://github.com/djalmamartins/pager/tree/1.0.0"
+            },
+            "time": "2026-08-22T22:58:03+00:00"
+        },
+        {
+            "name": "movescode/router",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/router.git",
+                "reference": "db258a9403a3863b8f4e25cc59464028f7afcea5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/router/zipball/db258a9403a3863b8f4e25cc59464028f7afcea5",
+                "reference": "db258a9403a3863b8f4e25cc59464028f7afcea5",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\Router\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins",
+                    "email": "contato@moves.com.br",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Official routing component for MovesOS",
+            "homepage": "http://www.moves.com.br",
+            "keywords": [
+                "api",
+                "domain",
+                "movesos",
+                "mvc",
+                "rest",
+                "router",
+                "routing",
+                "subdomain"
+            ],
+            "support": {
+                "issues": "https://github.com/djalmamartins/router/issues",
+                "source": "https://github.com/djalmamartins/router/tree/1.1.0"
+            },
+            "time": "2026-08-23T00:35:31+00:00"
+        },
+        {
+            "name": "movescode/storage",
+            "version": "1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/storage.git",
+                "reference": "ec3e4badfe9c5e28f5f57ff861beec1960a9dffe"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/storage/zipball/ec3e4badfe9c5e28f5f57ff861beec1960a9dffe",
+                "reference": "ec3e4badfe9c5e28f5f57ff861beec1960a9dffe",
+                "shasum": ""
+            },
+            "require": {
+                "ext-fileinfo": "*",
+                "ext-gd": "*",
+                "ext-iconv": "*",
+                "ext-mbstring": "*",
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\Storage\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins",
+                    "email": "contato@moves.com.br",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Official storage component for MovesOS",
+            "homepage": "http://www.moves.com.br",
+            "keywords": [
+                "image",
+                "media",
+                "movesos",
+                "storage",
+                "upload"
+            ],
+            "support": {
+                "issues": "https://github.com/djalmamartins/storage/issues",
+                "source": "https://github.com/djalmamartins/storage/tree/1.0.2"
+            },
+            "time": "2026-08-23T03:09:16+00:00"
+        },
+        {
+            "name": "movescode/view",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/djalmamartins/view.git",
+                "reference": "181f0fa71051e01e4660080f5150202ab1d97a94"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/djalmamartins/view/zipball/181f0fa71051e01e4660080f5150202ab1d97a94",
+                "reference": "181f0fa71051e01e4660080f5150202ab1d97a94",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MovesCode\\View\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Djalma Martins",
+                    "email": "contato@moves.com.br",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Official native PHP template component for MovesOS",
+            "homepage": "http://www.moves.com.br",
+            "keywords": [
+                "layout",
+                "movesos",
+                "mvc",
+                "template",
+                "view"
+            ],
+            "support": {
+                "issues": "https://github.com/djalmamartins/view/issues",
+                "source": "https://github.com/djalmamartins/view/tree/1.0.0"
+            },
+            "time": "2026-08-22T23:40:17+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^8.5",
+        "ext-pdo": "*",
+        "ext-intl": "*"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}

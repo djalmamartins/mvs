@@ -1,0 +1,32 @@
+{
+  "name": "djalmamartins/moves",
+  "description": "Moves application platform",
+  "type": "project",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Djalma Martins",
+      "email": "djalma-martins@hotmail.com",
+      "homepage": "https://www.moves.com.br",
+      "role": "Project manager and developer"
+    }
+  ],
+  "require": {
+    "php": "^8.5",
+    "ext-pdo": "*",
+    "ext-intl": "*",
+    "movescode/router": "*",
+    "movescode/view": "*",
+    "movescode/model": "*",
+    "movescode/pager": "*",
+    "movescode/storage": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Source\\": "source/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
