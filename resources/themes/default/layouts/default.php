@@ -32,6 +32,8 @@
     'title' => $title ?? 'Moves',
 ]); ?>
 
+<?php $this->insert('components/flash'); ?>
+
 <?= $this->section('content') ?>
 
 </body>
