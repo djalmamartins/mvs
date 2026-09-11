@@ -7,6 +7,7 @@ namespace Moves\Boot;
 use MovesCode\Router\Router;
 use Moves\Middleware\AuthMiddleware;
 use Moves\Middleware\GuestMiddleware;
+use Moves\Middleware\PermissionMiddleware;
 
 /**
  * Moves | Routes
@@ -35,7 +36,10 @@ final class Routes
             '/profile',
             'UserController:profile',
             'profile',
-            AuthMiddleware::class
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('profile.view'),
+            ]
         );
 
         $router->get(

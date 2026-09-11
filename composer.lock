@@ -210,16 +210,16 @@
         },
         {
             "name": "movescode/router",
-            "version": "1.2.0",
+            "version": "1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/djalmamartins/router.git",
-                "reference": "36c5572ef26bf638b215c2e8b05f3aa75d8cb084"
+                "reference": "3aec8114740b775a39b0682be034a17ea50c63d1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/djalmamartins/router/zipball/36c5572ef26bf638b215c2e8b05f3aa75d8cb084",
-                "reference": "36c5572ef26bf638b215c2e8b05f3aa75d8cb084",
+                "url": "https://api.github.com/repos/djalmamartins/router/zipball/3aec8114740b775a39b0682be034a17ea50c63d1",
+                "reference": "3aec8114740b775a39b0682be034a17ea50c63d1",
                 "shasum": ""
             },
             "require": {
@@ -261,9 +261,9 @@
             ],
             "support": {
                 "issues": "https://github.com/djalmamartins/router/issues",
-                "source": "https://github.com/djalmamartins/router/tree/1.2.0"
+                "source": "https://github.com/djalmamartins/router/tree/1.3.0"
             },
-            "time": "2026-09-10T14:51:42+00:00"
+            "time": "2026-09-11T23:05:04+00:00"
         },
         {
             "name": "movescode/storage",
