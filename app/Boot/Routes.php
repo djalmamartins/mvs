@@ -32,6 +32,13 @@ final class Routes
         );
 
         $router->get(
+            '/profile',
+            'UserController:profile',
+            'profile',
+            AuthMiddleware::class
+        );
+
+        $router->get(
             '/login',
             'AuthController:login',
             'login',
