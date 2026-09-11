@@ -6,6 +6,7 @@ namespace Moves\Boot;
 
 use MovesCode\Router\Router;
 use Moves\Middleware\AuthMiddleware;
+use Moves\Middleware\GuestMiddleware;
 
 /**
  * Moves | Routes
@@ -33,13 +34,15 @@ final class Routes
         $router->get(
             '/login',
             'AuthController:login',
-            'login'
+            'login',
+            GuestMiddleware::class
         );
 
         $router->post(
             '/login',
             'AuthController:authenticate',
-            'login.authenticate'
+            'login.authenticate',
+            GuestMiddleware::class
         );
 
         $router->post(
