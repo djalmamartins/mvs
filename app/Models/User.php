@@ -25,7 +25,6 @@ final class User extends Model
                 'name',
                 'email',
                 'password',
-                'role',
             ]
         );
     }
