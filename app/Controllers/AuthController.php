@@ -27,10 +27,6 @@ final class AuthController extends Controller
      */
     public function login(): void
     {
-        if (Auth::check()) {
-            Response::to('/');
-        }
-
         echo $this->view->render(
             'pages/login',
             [
