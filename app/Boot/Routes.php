@@ -38,6 +38,12 @@ final class Routes
         );
 
         $router->get(
+            '/projetos',
+            'Home:projects',
+            'site.projects'
+        );
+
+        $router->get(
             '/app',
             'Home:app',
             'app.home',

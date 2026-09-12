@@ -18,7 +18,7 @@
         <nav aria-label="Rodapé">
             <a href="/">Início</a>
             <a href="/servicos">Serviços</a>
-            <a href="/#projects">Projetos</a>
+            <a href="/projetos">Projetos</a>
             <a href="/#about">Sobre</a>
             <a href="/#content">Conteúdo</a>
             <a href="/#contact">Contato</a>

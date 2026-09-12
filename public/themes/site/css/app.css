@@ -4163,6 +4163,9 @@ body {
 .showcase-backdrop {
     position: absolute;
     inset: -100px 0;
+    width: 100%;
+    height: calc(100% + 200px);
+    object-fit: cover;
     z-index: -1;
     background-position: center;
     background-size: cover;
@@ -4259,7 +4262,8 @@ body {
 
 /* A faster background pass behind the steady project presentation. */
 .showcase-backdrop {
-    inset: -240px 0
+    inset: -240px 0;
+    height: calc(100% + 480px)
 }
 
 .project-showcase {
@@ -4278,12 +4282,14 @@ body {
 
 /* Stronger parallax with enough image bleed to keep edges covered. */
 .showcase-backdrop {
-    inset: -520px 0
+    inset: -520px 0;
+    height: calc(100% + 1040px)
 }
 
 @media (max-width: 640px) {
     .showcase-backdrop {
-        inset: -240px 0
+        inset: -240px 0;
+        height: calc(100% + 480px)
     }
 }
 

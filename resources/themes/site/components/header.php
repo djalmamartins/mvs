@@ -19,7 +19,7 @@
     <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
         <a href="/"<?= ($currentPage ?? null) === 'home' ? ' class="active" aria-current="page"' : '' ?>>Início</a>
         <a href="/servicos"<?= ($currentPage ?? null) === 'services' ? ' class="active" aria-current="page"' : '' ?>>Serviços</a>
-        <a href="/#projects">Projetos</a>
+        <a href="/projetos"<?= ($currentPage ?? null) === 'projects' ? ' class="active" aria-current="page"' : '' ?>>Projetos</a>
         <a href="/#about">Sobre</a>
         <a href="/#content">Conteúdo</a>
         <a href="/#contact">Contato</a>

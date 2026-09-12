@@ -35,6 +35,15 @@ final class Home extends Controller
         ]);
     }
 
+    public function projects(): void
+    {
+        echo $this->view->render('pages/projetos', [
+            'title' => 'Projetos — MOVES',
+            'description' => 'Apresentações de sites e projetos digitais com filtros por categoria.',
+            ...$this->pageMetadata('/projetos'),
+        ]);
+    }
+
     /**
      * Exibe o painel inicial do usuário autenticado.
      */
