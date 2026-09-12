@@ -33,7 +33,11 @@ final class Settings
             )
             ->fetch();
 
-        return $setting?->value ?? $default;
+        if (!$setting instanceof Setting) {
+            return $default;
+        }
+
+        return $setting->value ?? $default;
     }
 
     /**
@@ -50,7 +54,7 @@ final class Settings
             )
             ->fetch();
 
-        if ($setting === null) {
+        if (!$setting instanceof Setting) {
             $setting = new Setting();
             $setting->name = $name;
         }

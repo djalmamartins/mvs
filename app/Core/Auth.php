@@ -36,7 +36,7 @@ final class Auth
             )
             ->fetch();
 
-        if (!$user) {
+        if (!$user instanceof User) {
             return false;
         }
 

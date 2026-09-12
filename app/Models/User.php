@@ -13,6 +13,12 @@ use MovesCode\Model\Model;
  *
  * @author Djalma Martins
  * @package Moves\Models
+ * @property int|null $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property string $status
+ * @property string|null $role
  */
 final class User extends Model
 {

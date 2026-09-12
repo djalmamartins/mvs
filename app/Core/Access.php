@@ -54,7 +54,7 @@ final class Access
 
         if ($role === 'admin') {
             $permissions = array_merge(
-                self::PERMISSIONS['user'] ?? [],
+                self::PERMISSIONS['user'],
                 Modules::permissions('user'),
                 $permissions
             );

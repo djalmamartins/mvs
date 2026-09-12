@@ -13,6 +13,9 @@ use MovesCode\Model\Model;
  *
  * @author Djalma Martins
  * @package Moves\Models
+ * @property int|null $id
+ * @property string $name
+ * @property mixed $value
  */
 final class Setting extends Model
 {
