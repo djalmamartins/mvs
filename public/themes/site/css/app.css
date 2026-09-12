@@ -4122,12 +4122,46 @@ body {
     display: none
 }
 
+.main-nav .mobile-client {
+    display: none
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px
+}
+
+.header-client {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap
+}
+
+.header-client:hover {
+    color: var(--text)
+}
+
+.about-page {
+    padding-top: 160px
+}
+
 @media (max-width: 980px) {
+    .header-actions {
+        display: none
+    }
+
     .main-nav.is-open .mobile-budget {
         display: block;
         color: #ed66b6;
         border-top: 1px solid var(--line);
         margin-top: 8px
+    }
+
+    .main-nav.is-open .mobile-client {
+        display: block;
+        color: var(--muted)
     }
 }
 

@@ -20,10 +20,12 @@
         <a href="/"<?= ($currentPage ?? null) === 'home' ? ' class="active" aria-current="page"' : '' ?>>Início</a>
         <a href="/servicos"<?= ($currentPage ?? null) === 'services' ? ' class="active" aria-current="page"' : '' ?>>Serviços</a>
         <a href="/projetos"<?= ($currentPage ?? null) === 'projects' ? ' class="active" aria-current="page"' : '' ?>>Projetos</a>
-        <a href="/#about">Sobre</a>
         <a href="/#content">Conteúdo</a>
-        <a href="/#contact">Contato</a>
-        <a class="mobile-budget" href="/login">Área do cliente ↗</a>
+        <a class="mobile-budget" href="/#contact">Solicitar orçamento ↗</a>
+        <a class="mobile-client" href="/login">Área do cliente</a>
     </nav>
-    <a class="button button-primary small" href="/login">Área do cliente ↗</a>
+    <div class="header-actions">
+        <a class="button button-primary small" href="/#contact">Solicitar orçamento ↗</a>
+        <a class="header-client" href="/login">Área do cliente</a>
+    </div>
 </header>
