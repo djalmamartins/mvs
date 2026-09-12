@@ -75,7 +75,7 @@ final class Logger
             'timestamp' => date(DATE_ATOM),
             'level' => $level,
             'message' => $message,
-            'context' => $context,
+            'context' => self::sanitizeContext($context),
         ];
 
         $encoded = json_encode(
@@ -106,5 +106,34 @@ final class Logger
                 . $logFile
             );
         }
+    }
+
+    /**
+     * Remove valores cuja chave indica credencial ou sessão.
+     *
+     * @param array<mixed> $context
+     * @return array<mixed>
+     */
+    private static function sanitizeContext(array $context): array
+    {
+        $sanitized = [];
+
+        foreach ($context as $key => $value) {
+            $name = strtolower((string) $key);
+
+            if (preg_match(
+                '/password|passwd|secret|token|csrf|cookie|session|authorization|api[_-]?key/',
+                $name
+            ) === 1) {
+                $sanitized[$key] = '[REDACTED]';
+                continue;
+            }
+
+            $sanitized[$key] = is_array($value)
+                ? self::sanitizeContext($value)
+                : $value;
+        }
+
+        return $sanitized;
     }
 }
