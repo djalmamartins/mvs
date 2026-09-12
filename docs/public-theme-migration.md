@@ -16,6 +16,7 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 | SEO | Metadados fixos no HTML | Dados da Home enviados pelo controller e renderizados pelo layout | Preparar SEO por página sem regra de negócio na view |
 | Serviços | `servicos.html` e seus assets/comportamento | Rota `/servicos` e `pages/servicos.php` no tema público | Integrar a página ao Moves sem alterar conteúdo ou visual |
 | Projetos | `projetos.html`, 24 apresentações e filtros | Rota `/projetos`, `pages/projetos.php` e assets locais | Preservar a galeria, filtros e atribuição sem shell duplicado |
+| Sobre | Seção institucional `#about` da Home (não existe `sobre.html` na referência) | Rota `/sobre` e `pages/sobre.php` | Publicar apenas o conteúdo institucional aprovado, sem inventar uma página nova |
 
 ## Assets migrados
 
@@ -28,7 +29,7 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 
 ## SEO
 
-A Home, Serviços e Projetos fornecem título e descrição próprios, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` e o caminho da página somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
+A Home, Serviços, Projetos e Sobre fornecem título e descrição próprios, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` e o caminho da página somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
 
 `movescode/seo` não está instalado e não foi adicionado nesta rodada. A API deve ser avaliada antes de uma eventual integração.
 
@@ -40,10 +41,23 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 
 ## Diferenças deliberadas
 
-- Sobre, Conteúdo e Contato ainda não foram migrados. Seus links globais continuam apontando para seções reais da Home.
-- O CTA de contato usa `mailto:contato@moves.com.br` enquanto a página `/contato` ainda não existe.
+- Conteúdo e Orçamento ainda não foram migrados. Para não criar links quebrados, seus links globais apontam temporariamente para `/#content` e `/#contact`; os destinos definitivos serão `/conteudo` e `/orcamento`.
+- `contato.html` permanece apenas como referência histórica. Seu conteúdo comercial será migrado futuramente para `resources/themes/site/pages/orcamento.php`, com `GET /orcamento`, nome público “Orçamento” e metadados comerciais — não para `/contato`.
 - A área “Privacidade” do rodapé estático não foi exposta porque sua rota ainda não foi implementada.
-- O botão principal do header agora é “Área do cliente” e aponta para `/login`, conforme o escopo desta rodada.
+- O CTA principal do header é “Solicitar orçamento ↗”; “Área do cliente” aponta para `/login` com tratamento visual secundário.
+
+## Navegação oficial
+
+| Item | Destino definitivo | Estado atual |
+| --- | --- | --- |
+| Início | `/` | ativo |
+| Serviços | `/servicos` | ativo |
+| Projetos | `/projetos` | ativo |
+| Conteúdo | `/conteudo` | temporariamente `/#content` |
+| Solicitar orçamento ↗ | `/orcamento` | temporariamente `/#contact` |
+| Área do cliente | `/login` | ativo |
+
+Sobre está publicado em `/sobre`, mas intencionalmente não pertence à navbar principal; seu acesso institucional fica no footer. Não foram criados arquivos ou rotas vazias para Conteúdo e Orçamento.
 
 ## Responsividade e acessibilidade
 
