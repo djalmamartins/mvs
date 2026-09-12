@@ -7,6 +7,7 @@ namespace Moves\Middleware;
 use Moves\Core\Access;
 use Moves\Core\Response;
 use MovesCode\Middleware\MiddlewareInterface;
+use Moves\Core\HttpException;
 
 /**
  * Moves | Permission Middleware
@@ -28,7 +29,10 @@ final class PermissionMiddleware implements MiddlewareInterface
     public function handle(callable $next): mixed
     {
         if (!Access::can($this->permission)) {
-            Response::to('/');
+            throw new HttpException(
+                403,
+                'Você não tem permissão para acessar este recurso.'
+            );
         }
 
         return $next();

@@ -10,7 +10,7 @@ use Moves\Controllers\ErrorController;
 use MovesCode\Model\Connection as ModelConnection;
 use MovesCode\Router\Router;
 use Throwable;
-
+use Moves\Core\HttpException;
 /**
  * Moves | Application
  *
@@ -35,10 +35,25 @@ final class Application
             Routes::register($router);
 
             if (!$router->dispatch()) {
-                $error = (int) ($router->error() ?? 500);
+                $exception = $router->exception();
+
+                $error = $exception instanceof HttpException
+                    ? $exception->statusCode()
+                    : (int) ($router->error() ?? 500);
+
+                if (
+                    $exception !== null
+                    && !$exception instanceof HttpException
+                ) {
+                    Logger::exception($exception);
+                }
 
                 $controller = new ErrorController($router);
-                $controller->show($error);
+
+                $controller->show(
+                    $error,
+                    $exception
+                );
             }
         } catch (Throwable $exception) {
             Logger::exception($exception);

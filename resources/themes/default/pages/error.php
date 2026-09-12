@@ -2,9 +2,29 @@
 
 declare(strict_types=1);
 
-$this->layout('layouts/default', [
-    'title' => $title ?? 'Erro',
-]);
+$messages = [
+    403 => [
+        'title' => 'Acesso negado',
+        'message' => 'Você não tem permissão para acessar esta página.',
+    ],
+
+    404 => [
+        'title' => 'Página não encontrada',
+        'message' => 'A página solicitada não foi encontrada.',
+    ],
+
+    405 => [
+        'title' => 'Método não permitido',
+        'message' => 'O método utilizado não é permitido para esta página.',
+    ],
+
+    500 => [
+        'title' => 'Erro interno',
+        'message' => 'Ocorreu um erro inesperado durante o processamento da solicitação.',
+    ],
+];
+
+$error = $messages[$code] ?? $messages[500];
 ?>
 
 <section class="error-page">
@@ -13,23 +33,11 @@ $this->layout('layouts/default', [
     </div>
 
     <h1>
-        <?php if ($code === 404): ?>
-            Página não encontrada
-        <?php elseif ($code === 405): ?>
-            Método não permitido
-        <?php else: ?>
-            Erro interno
-        <?php endif; ?>
+        <?= htmlspecialchars($error['title'], ENT_QUOTES, 'UTF-8') ?>
     </h1>
 
     <p>
-        <?php if ($code === 404): ?>
-            A página que você tentou acessar não existe.
-        <?php elseif ($code === 405): ?>
-            Este método HTTP não é permitido para este endereço.
-        <?php else: ?>
-            Ocorreu um erro inesperado durante o processamento da solicitação.
-        <?php endif; ?>
+        <?= htmlspecialchars($error['message'], ENT_QUOTES, 'UTF-8') ?>
     </p>
     <?php if (($debug ?? false) && isset($exception)): ?>
         <div class="error-debug">

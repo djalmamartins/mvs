@@ -23,7 +23,7 @@ final class ErrorController extends Controller
         int $code,
         ?Throwable $exception = null
     ): void {
-        if (!in_array($code, [404, 405, 500], true)) {
+        if (!in_array($code, [403, 404, 405, 500], true)) {
             $code = 500;
         }
 
