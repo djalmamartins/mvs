@@ -21,6 +21,7 @@ final class Response
      */
     public static function securityHeaders(): void
     {
+        header_remove('X-Powered-By');
         header('Content-Type: text/html; charset=UTF-8');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');

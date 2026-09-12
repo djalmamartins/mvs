@@ -92,6 +92,7 @@ try {
     $check(str_starts_with($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
+    $check(stripos($response['headers'], 'X-Powered-By:') === false, 'versão do PHP não é exposta');
     $check(stripos($sessionHeaders, 'HttpOnly') !== false, 'cookie de sessão é HttpOnly');
     $check(stripos($sessionHeaders, 'SameSite=Lax') !== false, 'cookie de sessão usa SameSite Lax');
     $check(stripos($sessionHeaders, '; secure') === false, 'cookie HTTP local não exige Secure');
