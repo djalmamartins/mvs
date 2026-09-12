@@ -65,7 +65,7 @@ $request = static function (string $path, ?array $data = null) use ($client, $ba
     $size = curl_getinfo($client, CURLINFO_HEADER_SIZE);
     $headers = substr($raw, 0, $size);
     preg_match('/^Location:\s*(.+)$/mi', $headers, $location);
-    preg_match('/^X-Powered-By:\s*(.+)$/mi', $headers, $runtime);
+    preg_match('/^Server:\s*(.+)$/mi', $headers, $runtime);
     return [
         'status' => curl_getinfo($client, CURLINFO_RESPONSE_CODE),
         'location' => trim($location[1] ?? ''),
@@ -89,7 +89,7 @@ try {
     $sessionHeaders = $response['headers'];
     $response = $request('/admin');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /admin redirecionado para /login');
-    $check(str_starts_with($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
+    $check(str_contains($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
     $check(stripos($response['headers'], 'X-Powered-By:') === false, 'versão do PHP não é exposta');
