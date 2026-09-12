@@ -10,6 +10,7 @@ use Moves\Core\Validator;
 use Moves\Core\Response;
 use PHPUnit\Framework\TestCase;
 use MovesCode\Router\Router;
+use MovesCode\View\Engine;
 
 /**
  * Moves | Core Test
@@ -88,5 +89,34 @@ final class CoreTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         Response::redirect("/app\r\nX-Injected: value");
+    }
+
+    public function testDynamicTemplateOutputIsEscaped(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $payload = '<script>alert(1)</script>';
+        $output = $view->render('pages/home', [
+            'title' => $payload,
+            'description' => $payload,
+        ]);
+
+        self::assertStringNotContainsString($payload, $output);
+        self::assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $output);
+    }
+
+    public function testDevelopmentErrorShowsControlledDetails(): void
+    {
+        $_ENV['APP_DEBUG'] = 'true';
+        $_SERVER['REQUEST_URI'] = '/';
+        $controller = new ErrorController(new Router('http://localhost'));
+
+        ob_start();
+        $controller->show(500, new RuntimeException('development diagnostic'));
+        $output = (string) ob_get_clean();
+
+        self::assertStringContainsString('development diagnostic', $output);
     }
 }

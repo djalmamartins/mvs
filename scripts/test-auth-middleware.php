@@ -86,9 +86,15 @@ try {
 
     $response = $request('/app');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /app redirecionado para /login');
+    $sessionHeaders = $response['headers'];
+    $response = $request('/admin');
+    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /admin redirecionado para /login');
     $check(str_starts_with($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
+    $check(stripos($sessionHeaders, 'HttpOnly') !== false, 'cookie de sessão é HttpOnly');
+    $check(stripos($sessionHeaders, 'SameSite=Lax') !== false, 'cookie de sessão usa SameSite Lax');
+    $check(stripos($sessionHeaders, '; secure') === false, 'cookie HTTP local não exige Secure');
     foreach (
         [
             'Content-Security-Policy:',
@@ -105,6 +111,7 @@ try {
     }
     preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
     $token = $match[1] ?? '';
+    $guestToken = $token;
     $check($token !== '', 'formulário fornece token CSRF');
 
     foreach ([null, 'invalid-token'] as $invalidToken) {
@@ -128,6 +135,7 @@ try {
     preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
     $token = $match[1] ?? '';
     $check($token !== '', 'sessão autenticada fornece novo token CSRF');
+    $check($token !== $guestToken, 'token CSRF é rotacionado após login');
     $response = $request('/login');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
