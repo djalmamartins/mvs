@@ -7,7 +7,7 @@ namespace Moves\Core;
 /**
  * Moves | Theme
  *
- * Gerencia o tema visual ativo da aplicação.
+ * Resolve o contexto visual da aplicação pela URL atual.
  *
  * @author Djalma Martins
  * @package Moves\Core
@@ -16,7 +16,22 @@ final class Theme
 {
     public static function active(): string
     {
-        return (string) Config::get('APP_THEME', 'default');
+        $path = parse_url(
+            $_SERVER['REQUEST_URI'] ?? '/',
+            PHP_URL_PATH
+        );
+
+        $path = is_string($path) ? $path : '/';
+
+        if ($path === '/admin' || str_starts_with($path, '/admin/')) {
+            return 'admin';
+        }
+
+        if ($path === '/app' || str_starts_with($path, '/app/')) {
+            return 'app';
+        }
+
+        return 'site';
     }
 
     public static function path(): string

@@ -23,4 +23,15 @@ final class Home extends Controller
             'description' => 'Moves application platform',
         ]);
     }
+
+    /**
+     * Exibe o painel inicial do usuário autenticado.
+     */
+    public function app(): void
+    {
+        echo $this->view->render('pages/home', [
+            'title' => 'Minha aplicação',
+            'description' => 'Área autenticada do Moves.',
+        ]);
+    }
 }

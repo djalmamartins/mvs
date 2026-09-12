@@ -28,12 +28,25 @@ final class Routes
         $router->get(
             '/',
             'Home:index',
-            'home',
+            'home'
+        );
+
+        $router->get(
+            '/app',
+            'Home:app',
+            'app.home',
             AuthMiddleware::class
         );
 
         $router->get(
             '/profile',
+            'UserController:legacyProfile',
+            'profile.legacy',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/app/profile',
             'UserController:profile',
             'profile',
             [
@@ -79,7 +92,8 @@ final class Routes
         $router->post(
             '/logout',
             'AuthController:logout',
-            'logout'
+            'logout',
+            AuthMiddleware::class
         );
     }
 }

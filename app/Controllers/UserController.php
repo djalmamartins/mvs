@@ -6,6 +6,7 @@ namespace Moves\Controllers;
 
 use Moves\Core\Auth;
 use Moves\Core\Controller;
+use Moves\Core\Response;
 use Moves\Models\User;
 use MovesCode\Pager\Pager;
 
@@ -20,6 +21,14 @@ use MovesCode\Pager\Pager;
  */
 final class UserController extends Controller
 {
+    /**
+     * Preserva a URL antiga do perfil.
+     */
+    public function legacyProfile(): void
+    {
+        Response::to('/app/profile', 301);
+    }
+
     /**
      * Exibe o perfil do usuário autenticado.
      */

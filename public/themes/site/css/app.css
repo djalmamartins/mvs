@@ -1,0 +1,23 @@
+/**
+ * Moves | Default Theme
+ *
+ * Estilos principais do tema padrão.
+ */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+main {
+    padding: 40px;
+}

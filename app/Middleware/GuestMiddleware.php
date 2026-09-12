@@ -22,7 +22,7 @@ final class GuestMiddleware implements MiddlewareInterface
     public function handle(callable $next): mixed
     {
         if (Auth::check()) {
-            Response::home();
+            Response::to('/app');
         }
 
         return $next();

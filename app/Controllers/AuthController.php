@@ -106,7 +106,7 @@ final class AuthController extends Controller
             'Login realizado com sucesso.'
         );
 
-        Response::to('/');
+        Response::to('/app');
     }
 
     /**
@@ -125,7 +125,7 @@ final class AuthController extends Controller
                 'Token de segurança inválido.'
             );
 
-            Response::to('/');
+            Response::to('/app');
         }
 
         Auth::logout();

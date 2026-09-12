@@ -83,8 +83,8 @@ try {
     $insert->execute(['Middleware integration test', $email, password_hash($password, PASSWORD_DEFAULT), 'active']);
     $id = (int) $pdo->lastInsertId();
 
-    $response = $request('/');
-    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em / redirecionado para /login');
+    $response = $request('/app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /app redirecionado para /login');
     $check(str_starts_with($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
@@ -97,28 +97,28 @@ try {
         if ($invalidToken !== null) $data['_token'] = $invalidToken;
         $response = $request('/login', $data);
         $check($response['status'] === 302 && $response['location'] === $base . '/login', 'POST /login rejeita CSRF ausente ou inválido');
-        $check($request('/')['status'] === 302, 'CSRF inválido não autentica');
+        $check($request('/app')['status'] === 302, 'CSRF inválido não autentica');
     }
 
     $response = $request('/login', ['email' => $email, 'password' => 'incorrect-password', '_token' => $token]);
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'login inválido rejeitado');
-    $check($request('/')['status'] === 302, 'login inválido não autentica');
+    $check($request('/app')['status'] === 302, 'login inválido não autentica');
 
     $before = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/login', ['email' => $email, 'password' => $password, '_token' => $token]);
-    $check($response['status'] === 302 && $response['location'] === $base . '/', 'login válido redireciona para /');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'login válido redireciona para /app');
     $check($before !== curl_getinfo($client, CURLINFO_COOKIELIST), 'login regenera identificador da sessão');
-    $response = $request('/');
-    $check($response['status'] === 200 && str_contains($response['body'], 'Moves application platform'), 'usuário autenticado acessa o handler de /');
+    $response = $request('/app');
+    $check($response['status'] === 200 && str_contains($response['body'], 'Área autenticada do Moves'), 'usuário autenticado acessa /app');
     $response = $request('/login');
-    $check($response['status'] === 302 && $response['location'] === $base . '/', 'GET /login autenticado mantém redirecionamento existente');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
     $response = $request('/logout', ['_token' => 'invalid-token']);
-    $check($response['status'] === 302 && $response['location'] === $base . '/', 'logout rejeita CSRF inválido');
-    $check($request('/')['status'] === 200, 'CSRF inválido não encerra sessão');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
+    $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');
     $response = $request('/logout', ['_token' => $token]);
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'logout válido funciona');
-    $check($request('/')['status'] === 302, 'logout remove autenticação');
+    $check($request('/app')['status'] === 302, 'logout remove autenticação');
     $check($request('/login')['status'] === 200, 'login continua disponível após logout');
     echo 'OK: ' . $checks . ' verificações HTTP.' . PHP_EOL;
 } finally {

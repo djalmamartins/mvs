@@ -33,7 +33,7 @@ final class PermissionMiddleware implements MiddlewareInterface
                 'Você não tem permissão para acessar esta página.'
             );
 
-            Response::home();
+            Response::to('/app');
         }
 
         return $next();
