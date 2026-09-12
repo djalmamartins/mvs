@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Moves\Core;
 
+use Moves\Boot\Modules;
+
 /**
  * Moves | Access
  *
@@ -44,11 +46,15 @@ final class Access
 
         $role = (string) ($user->role ?? 'user');
 
-        $permissions = self::PERMISSIONS[$role] ?? [];
+        $permissions = array_merge(
+            self::PERMISSIONS[$role] ?? [],
+            Modules::permissions($role)
+        );
 
         if ($role === 'admin') {
             $permissions = array_merge(
                 self::PERMISSIONS['user'] ?? [],
+                Modules::permissions('user'),
                 $permissions
             );
         }

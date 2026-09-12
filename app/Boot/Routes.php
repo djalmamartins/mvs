@@ -114,5 +114,7 @@ final class Routes
             'logout',
             AuthMiddleware::class
         );
+
+        Modules::boot($router);
     }
 }
