@@ -25,6 +25,7 @@ final class Access
         'admin' => [
             'users.manage',
             'settings.manage',
+            'diagnostics.view',
         ],
 
         'user' => [

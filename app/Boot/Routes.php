@@ -95,6 +95,16 @@ final class Routes
         );
 
         $router->get(
+            '/admin/diagnostics',
+            'DiagnosticsController:index',
+            'diagnostics.index',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('diagnostics.view'),
+            ]
+        );
+
+        $router->get(
             '/login',
             'AuthController:login',
             'login',
