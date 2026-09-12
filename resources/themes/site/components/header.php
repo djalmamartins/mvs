@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Moves | Header Component
+ * Moves | Site Header Component
  *
  * Exibe o cabeçalho principal do tema padrão.
  *
@@ -10,5 +10,9 @@
 ?>
 
 <header>
-    <strong><?= $this->e($title ?? 'Moves') ?></strong>
+    <strong><a href="/">Moves</a></strong>
+    <nav aria-label="Navegação pública">
+        <a href="/">Início</a>
+        <a href="/login">Entrar</a>
+    </nav>
 </header>

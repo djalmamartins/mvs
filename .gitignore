@@ -3,5 +3,9 @@
 .DS_Store
 /storage/*
 !/storage/.gitkeep
+!/storage/logs/
+!/storage/logs/.gitkeep
+!/storage/uploads/
+!/storage/uploads/.gitkeep
 .idea/
 graphify-out/

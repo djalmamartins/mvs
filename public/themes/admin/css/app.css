@@ -16,8 +16,38 @@ body {
 
 body {
     font-family: Arial, sans-serif;
+    color: #1f2937;
+    line-height: 1.5;
 }
 
-main {
-    padding: 40px;
+header,
+main,
+section {
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 24px;
+}
+
+header,
+nav {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td,
+th {
+    border-bottom: 1px solid #d1d5db;
+    padding: 10px;
+    text-align: left;
+}
+
+.moves-flash {
+    margin: 16px auto;
+    max-width: 1052px;
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Moves | Header Component
+ * Moves | App Header Component
  *
  * Exibe o cabeçalho principal do tema padrão.
  *
@@ -10,5 +10,9 @@
 ?>
 
 <header>
-    <strong><?= $this->e($title ?? 'Moves') ?></strong>
+    <strong><a href="/app">Moves</a></strong>
+    <nav aria-label="Navegação da aplicação">
+        <a href="/app">Painel</a>
+        <a href="/app/profile">Perfil</a>
+    </nav>
 </header>

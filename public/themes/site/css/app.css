@@ -16,8 +16,32 @@ body {
 
 body {
     font-family: Arial, sans-serif;
+    color: #1f2937;
+    line-height: 1.5;
 }
 
-main {
-    padding: 40px;
+header,
+main,
+section {
+    margin: 0 auto;
+    max-width: 960px;
+    padding: 24px;
+}
+
+header,
+nav {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.moves-flash {
+    margin: 16px auto;
+    max-width: 912px;
+}
+
+.moves-flash__message {
+    border: 1px solid currentColor;
+    margin-bottom: 8px;
+    padding: 12px;
 }

@@ -43,9 +43,19 @@ final class Theme
 
     public static function asset(string $path): string
     {
-        return '/themes/'
+        $path = ltrim($path, '/');
+        $url = '/themes/'
             . self::active()
             . '/'
-            . ltrim($path, '/');
+            . $path;
+        $file = dirname(__DIR__, 2)
+            . '/public/themes/'
+            . self::active()
+            . '/'
+            . $path;
+
+        return is_file($file)
+            ? $url . '?v=' . filemtime($file)
+            : $url;
     }
 }
