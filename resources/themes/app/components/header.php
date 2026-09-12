@@ -14,5 +14,9 @@
     <nav aria-label="Navegação da aplicação">
         <a href="/app">Painel</a>
         <a href="/app/profile">Perfil</a>
+        <form method="post" action="/logout">
+            <?= $this->csrf() ?>
+            <button type="submit">Sair</button>
+        </form>
     </nav>
 </header>

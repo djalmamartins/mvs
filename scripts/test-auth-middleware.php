@@ -113,6 +113,11 @@ try {
     $response = $request('/login');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
+    $response = $request('/admin/users');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário sem permissão é redirecionado para /app');
+    $response = $request('/app');
+    $check(str_contains($response['body'], 'Você não tem permissão'), 'redirect de permissão apresenta Flash');
+
     $response = $request('/logout', ['_token' => 'invalid-token']);
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
     $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');

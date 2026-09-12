@@ -16,5 +16,9 @@
         <a href="/admin/settings">Configurações</a>
         <a href="/admin/diagnostics">Diagnóstico</a>
         <a href="/app">Aplicação</a>
+        <form method="post" action="/logout">
+            <?= $this->csrf() ?>
+            <button type="submit">Sair</button>
+        </form>
     </nav>
 </header>
