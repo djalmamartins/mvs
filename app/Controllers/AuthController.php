@@ -8,6 +8,8 @@ use Moves\Core\Auth;
 use Moves\Core\Controller;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
+use Moves\Core\Logger;
+use Moves\Core\LoginThrottle;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Validator;
@@ -92,7 +94,20 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
+        $ip = Request::ip();
+
+        if (LoginThrottle::blocked($email, $ip)) {
+            Flash::set('error', 'E-mail ou senha inválidos. Tente novamente mais tarde.');
+            Response::to('/login');
+        }
+
         if (!Auth::attempt($email, $password)) {
+            LoginThrottle::recordFailure($email, $ip);
+            Logger::warning('Falha de autenticação.', [
+                'login_key' => hash('sha256', strtolower($email) . '|' . $ip),
+            ]);
+            usleep(random_int(100000, 250000));
+
             Flash::set(
                 'error',
                 'E-mail ou senha inválidos.'
@@ -101,6 +116,7 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
+        LoginThrottle::clear($email, $ip);
         Csrf::regenerate();
 
         Flash::set(

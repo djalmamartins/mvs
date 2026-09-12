@@ -28,6 +28,18 @@ final class Request
     }
 
     /**
+     * Retorna o endereço informado diretamente pelo servidor web.
+     */
+    public static function ip(): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        return is_string($ip) && filter_var($ip, FILTER_VALIDATE_IP)
+            ? $ip
+            : '0.0.0.0';
+    }
+
+    /**
      * Verifica se a requisição utiliza um método específico.
      */
     public static function isMethod(string $method): bool
