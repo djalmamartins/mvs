@@ -110,6 +110,9 @@ try {
     $check($before !== curl_getinfo($client, CURLINFO_COOKIELIST), 'login regenera identificador da sessão');
     $response = $request('/app');
     $check($response['status'] === 200 && str_contains($response['body'], 'Área autenticada do Moves'), 'usuário autenticado acessa /app');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
+    $token = $match[1] ?? '';
+    $check($token !== '', 'sessão autenticada fornece novo token CSRF');
     $response = $request('/login');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
@@ -121,8 +124,10 @@ try {
     $response = $request('/logout', ['_token' => 'invalid-token']);
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
     $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');
+    $beforeLogout = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/logout', ['_token' => $token]);
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'logout válido funciona');
+    $check($beforeLogout !== curl_getinfo($client, CURLINFO_COOKIELIST), 'logout invalida identificador da sessão anterior');
     $check($request('/app')['status'] === 302, 'logout remove autenticação');
     $check($request('/login')['status'] === 200, 'login continua disponível após logout');
     echo 'OK: ' . $checks . ' verificações HTTP.' . PHP_EOL;

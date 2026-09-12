@@ -93,10 +93,6 @@ final class Auth
      */
     public static function logout(): void
     {
-        Session::remove(
-            self::SESSION_KEY
-        );
-
-        session_regenerate_id(true);
+        Session::destroy();
     }
 }

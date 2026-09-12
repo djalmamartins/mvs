@@ -22,6 +22,10 @@ final class Session
         if (session_status() !== PHP_SESSION_ACTIVE) {
             $url = (string) Config::get('APP_URL', '');
 
+            ini_set('session.use_strict_mode', '1');
+            ini_set('session.use_only_cookies', '1');
+            ini_set('session.cookie_httponly', '1');
+
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
@@ -103,14 +107,18 @@ final class Session
             setcookie(
                 session_name(),
                 '',
-                time() - 42000,
-                $parameters['path'],
-                $parameters['domain'],
-                $parameters['secure'],
-                $parameters['httponly']
+                [
+                    'expires' => time() - 42000,
+                    'path' => $parameters['path'],
+                    'domain' => $parameters['domain'],
+                    'secure' => $parameters['secure'],
+                    'httponly' => $parameters['httponly'],
+                    'samesite' => $parameters['samesite'],
+                ]
             );
         }
 
         session_destroy();
+        session_id('');
     }
 }

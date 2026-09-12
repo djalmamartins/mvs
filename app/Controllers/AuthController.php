@@ -101,6 +101,8 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
+        Csrf::regenerate();
+
         Flash::set(
             'success',
             'Login realizado com sucesso.'
