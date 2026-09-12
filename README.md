@@ -71,6 +71,22 @@ Cada contexto possui layouts, componentes e páginas em `resources/themes/<conte
 
 Rotas protegidas usam `AuthMiddleware`. Acesso web sem permissão cria Flash e redireciona para `/app`; exceções HTTP 403 continuam disponíveis para integrações técnicas.
 
+Após login, o identificador da sessão e o token CSRF são renovados. O logout destrói os dados e o cookie da sessão anterior. O login limita cinco falhas por combinação de IP e e-mail normalizado durante uma janela de 15 minutos; apenas o hash dessa combinação é persistido, e o limite é removido após autenticação válida.
+
+## Política de segurança
+
+Toda rota deve ser classificada como pública, convidado, autenticada ou administrativa. Esconder links não substitui autorização no backend. Rotas administrativas exigem `AuthMiddleware` e uma permissão explícita.
+
+Recursos pertencentes a usuário ou cliente devem sempre aplicar ownership no backend. IDs de URL, query string, formulário ou campo oculto nunca comprovam acesso. Essa regra é obrigatória para futuros documentos, chamados, faturas, pagamentos e demais recursos, prevenindo IDOR.
+
+Operações `POST`, `PUT`, `PATCH` e `DELETE` devem validar CSRF antes de alterar estado. Destinos de redirect devem ser internos ou pertencer exatamente à origem de `APP_URL`.
+
+As respostas enviam CSP, proteção contra framing, `nosniff`, Referrer Policy e Permissions Policy. HSTS só é ativado quando `APP_ENV=production` e `APP_URL` usa HTTPS. O projeto remove `X-Powered-By`; em produção, configure também `ServerTokens Prod` e `ServerSignature Off` no servidor web para reduzir o banner do Apache.
+
+O Logger remove recursivamente valores associados a senha, segredo, token, cookie, sessão e autorização. Chamadores também não devem inserir dados sensíveis diretamente na mensagem do log.
+
+Uploads futuros devem permanecer fora de `public/` sempre que possível, com limite de tamanho, MIME detectado pelo servidor, extensões permitidas, nome aleatório e proteção contra path traversal. Nunca confie no nome original nem permita execução de PHP em arquivos enviados.
+
 ## Criando rota, controller, model, página e middleware
 
 Registre a rota em `app/Boot/Routes.php`:

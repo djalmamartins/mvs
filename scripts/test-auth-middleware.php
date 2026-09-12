@@ -96,6 +96,13 @@ try {
     $check(stripos($sessionHeaders, 'HttpOnly') !== false, 'cookie de sessão é HttpOnly');
     $check(stripos($sessionHeaders, 'SameSite=Lax') !== false, 'cookie de sessão usa SameSite Lax');
     $check(stripos($sessionHeaders, '; secure') === false, 'cookie HTTP local não exige Secure');
+    foreach (['/.env', '/.git/config', '/storage/logs/moves.log'] as $privatePath) {
+        $privateResponse = $request($privatePath);
+        $check(
+            $privateResponse['status'] === 404,
+            'arquivo interno não é servido: ' . $privatePath
+        );
+    }
     foreach (
         [
             'Content-Security-Policy:',
