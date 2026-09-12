@@ -44,6 +44,12 @@ final class Routes
         );
 
         $router->get(
+            '/sobre',
+            'Home:about',
+            'site.about'
+        );
+
+        $router->get(
             '/app',
             'Home:app',
             'app.home',

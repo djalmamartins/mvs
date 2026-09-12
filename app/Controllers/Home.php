@@ -44,6 +44,15 @@ final class Home extends Controller
         ]);
     }
 
+    public function about(): void
+    {
+        echo $this->view->render('pages/sobre', [
+            'title' => 'Sobre a Moves — Estratégia, Design e Tecnologia',
+            'description' => 'Conheça a Moves, uma equipe que conecta estratégia, design e tecnologia para transformar ideias em soluções digitais.',
+            ...$this->pageMetadata('/sobre'),
+        ]);
+    }
+
     /**
      * Exibe o painel inicial do usuário autenticado.
      */
