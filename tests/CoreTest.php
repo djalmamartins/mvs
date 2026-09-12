@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use Moves\Boot\Modules;
+use Moves\Controllers\ErrorController;
 use Moves\Core\Config;
 use Moves\Core\Theme;
 use Moves\Core\Validator;
 use PHPUnit\Framework\TestCase;
+use MovesCode\Router\Router;
 
 /**
  * Moves | Core Test
@@ -57,5 +59,19 @@ final class CoreTest extends TestCase
             Modules::permissions('user'),
             array_values(array_unique(Modules::permissions('user')))
         );
+    }
+
+    public function testProductionErrorDoesNotExposeTechnicalDetails(): void
+    {
+        $_ENV['APP_DEBUG'] = 'false';
+        $_SERVER['REQUEST_URI'] = '/';
+        $controller = new ErrorController(new Router('http://localhost'));
+
+        ob_start();
+        $controller->show(500, new RuntimeException('secret technical detail'));
+        $output = (string) ob_get_clean();
+
+        self::assertStringContainsString('Erro interno', $output);
+        self::assertStringNotContainsString('secret technical detail', $output);
     }
 }
