@@ -78,14 +78,33 @@ final class Logger
             'context' => $context,
         ];
 
-        file_put_contents(
-            $directory . '/moves.log',
-            json_encode(
-                $record,
-                JSON_UNESCAPED_SLASHES
-                | JSON_UNESCAPED_UNICODE
-            ) . PHP_EOL,
+        $encoded = json_encode(
+            $record,
+            JSON_UNESCAPED_SLASHES
+            | JSON_UNESCAPED_UNICODE
+        );
+
+        if ($encoded === false) {
+            error_log(
+                '[Moves] Não foi possível converter o registro de log para JSON.'
+            );
+
+            return;
+        }
+
+        $logFile = $directory . '/moves.log';
+
+        $written = @file_put_contents(
+            $logFile,
+            $encoded . PHP_EOL,
             FILE_APPEND | LOCK_EX
         );
+
+        if ($written === false) {
+            error_log(
+                '[Moves] Não foi possível gravar o log em: '
+                . $logFile
+            );
+        }
     }
 }
