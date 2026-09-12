@@ -16,7 +16,12 @@ use Moves\Core\Diagnostics;
 
 $checks = Diagnostics::run(false);
 
-if (!$checks['php']['ok'] || !$checks['extensions']['ok'] || !$checks['storage']['ok']) {
+if (
+    !isset($checks['php'], $checks['extensions'], $checks['configuration'], $checks['storage'])
+    || !$checks['php']['ok']
+    || !$checks['extensions']['ok']
+    || !$checks['storage']['ok']
+) {
     throw new RuntimeException('FAIL: requisitos locais não atendidos.');
 }
 

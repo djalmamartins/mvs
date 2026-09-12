@@ -13,7 +13,6 @@
   ],
   "require": {
     "php": "^8.2",
-    "ext-intl": "*",
     "ext-pdo": "*",
     "movescode/middleware": "^0.1",
     "movescode/model": "^1.0",

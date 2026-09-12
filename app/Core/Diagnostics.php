@@ -29,8 +29,8 @@ final class Diagnostics
                 'message' => 'PHP ' . PHP_VERSION,
             ],
             'extensions' => [
-                'ok' => extension_loaded('pdo') && extension_loaded('intl'),
-                'message' => 'Extensões PDO e intl',
+                'ok' => extension_loaded('pdo'),
+                'message' => 'Extensão PDO',
             ],
             'configuration' => [
                 'ok' => self::hasConfiguration(),
