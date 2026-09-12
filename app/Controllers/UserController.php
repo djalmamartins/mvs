@@ -38,12 +38,14 @@ final class UserController extends Controller
 
     /**
      * Exibe a listagem paginada de usuários.
+     *
+     * @param array<string, string> $data
      */
-    public function index(): void
+    public function index(array $data = []): void
     {
         $page = max(
             1,
-            (int) ($_GET['page'] ?? 1)
+            (int) ($data['page'] ?? 1)
         );
 
         $total = (new User())
@@ -51,7 +53,7 @@ final class UserController extends Controller
             ->count();
 
         $pager = new Pager(
-            '/admin/users?page={page}'
+            '/admin/users/page/{page}'
         );
 
         $pager->pager(

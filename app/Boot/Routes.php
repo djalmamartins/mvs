@@ -53,6 +53,16 @@ final class Routes
         );
 
         $router->get(
+            '/admin/users/page/{page}',
+            'UserController:index',
+            'users.page',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('users.manage'),
+            ]
+        );
+
+        $router->get(
             '/login',
             'AuthController:login',
             'login',
