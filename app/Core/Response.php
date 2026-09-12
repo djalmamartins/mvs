@@ -15,6 +15,33 @@ namespace Moves\Core;
 final class Response
 {
     /**
+     * Envia headers defensivos compatíveis com os temas atuais.
+     */
+    public static function securityHeaders(): void
+    {
+        header('Content-Type: text/html; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: DENY');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+        header('Permissions-Policy: camera=(), geolocation=(), microphone=()');
+        header(
+            "Content-Security-Policy: default-src 'self'; "
+            . "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+            . "object-src 'none'; img-src 'self' data:; "
+            . "style-src 'self'; script-src 'self'"
+        );
+
+        $scheme = parse_url(
+            (string) Config::get('APP_URL', ''),
+            PHP_URL_SCHEME
+        );
+
+        if (Config::isProduction() && $scheme === 'https') {
+            header('Strict-Transport-Security: max-age=31536000');
+        }
+    }
+
+    /**
      * Redireciona a requisição para uma URL.
      */
     public static function redirect(

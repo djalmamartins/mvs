@@ -70,6 +70,7 @@ $request = static function (string $path, ?array $data = null) use ($client, $ba
         'status' => curl_getinfo($client, CURLINFO_RESPONSE_CODE),
         'location' => trim($location[1] ?? ''),
         'runtime' => trim($runtime[1] ?? ''),
+        'headers' => $headers,
         'body' => substr($raw, $size),
     ];
 };
@@ -88,6 +89,20 @@ try {
     $check(str_starts_with($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
+    foreach (
+        [
+            'Content-Security-Policy:',
+            'X-Content-Type-Options: nosniff',
+            'X-Frame-Options: DENY',
+            'Referrer-Policy: strict-origin-when-cross-origin',
+            'Permissions-Policy:',
+        ] as $expectedHeader
+    ) {
+        $check(
+            stripos($response['headers'], $expectedHeader) !== false,
+            'header de segurança presente: ' . $expectedHeader
+        );
+    }
     preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
     $token = $match[1] ?? '';
     $check($token !== '', 'formulário fornece token CSRF');

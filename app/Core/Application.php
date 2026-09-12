@@ -23,6 +23,8 @@ final class Application
 {
     public function run(): void
     {
+        Response::securityHeaders();
+
         $router = new Router(
             (string) Config::get('APP_URL')
         );
