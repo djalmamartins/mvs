@@ -65,6 +65,8 @@ O contexto é resolvido pela URL, sem `APP_THEME` global:
 
 Cada contexto possui layouts, componentes e páginas em `resources/themes/<contexto>` e assets em `public/themes/<contexto>`. O helper de view `asset()` acrescenta a data de modificação para evitar cache obsoleto.
 
+O tema público concentra seu shell em `resources/themes/site/layouts/default.php`, com header, footer e flash reutilizáveis. Os arquivos legíveis `css/app.css` e `js/app.js` são o contrato atual para desenvolvimento e permitem gerar variantes minificadas posteriormente. A migração visual inicial está documentada em `docs/public-theme-migration.md`.
+
 ## Autenticação e autorização
 
 `Session` usa cookie HTTP-only, SameSite Lax e Secure quando `APP_URL` é HTTPS. `Auth` responde quem é o usuário; `Access` e `PermissionMiddleware` controlam o que ele pode fazer. Formulários mutáveis devem incluir `<?= $this->csrf() ?>` e validar o token no controller.
