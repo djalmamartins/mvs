@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Controllers;
 
+use Moves\Core\Config;
 use Moves\Core\Controller;
 
 /**
@@ -18,9 +19,18 @@ final class Home extends Controller
 {
     public function index(): void
     {
+        $applicationUrl = rtrim((string) Config::get('APP_URL', ''), '/');
+        $canonical = null;
+
+        if (Config::isProduction() && $applicationUrl !== '') {
+            $canonical = $applicationUrl . '/';
+        }
+
         echo $this->view->render('pages/home', [
-            'title' => 'Moves',
-            'description' => 'Moves application platform',
+            'title' => 'Estratégia, Design e Tecnologia — MOVES',
+            'description' => 'Moves: sites, sistemas web, identidade visual e automação para colocar ideias em movimento.',
+            'canonical' => $canonical,
+            'robots' => Config::isProduction() ? 'index, follow' : 'noindex, nofollow',
         ]);
     }
 
