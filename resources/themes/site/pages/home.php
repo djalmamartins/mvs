@@ -8,6 +8,7 @@ $this->layout('layouts/default', [
     'canonical' => $canonical ?? null,
     'robots' => $robots ?? 'noindex, nofollow',
     'showIntro' => true,
+    'currentPage' => 'home',
 ]);
 ?>
 

@@ -32,6 +32,12 @@ final class Routes
         );
 
         $router->get(
+            '/servicos',
+            'Home:services',
+            'site.services'
+        );
+
+        $router->get(
             '/app',
             'Home:app',
             'app.home',

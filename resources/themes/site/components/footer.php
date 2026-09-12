@@ -16,8 +16,8 @@
         </a>
         <p>Tecnologia. Pessoas. Resultados.<br>Sempre em movimento.</p>
         <nav aria-label="Rodapé">
-            <a href="/#main">Início</a>
-            <a href="/#services">Serviços</a>
+            <a href="/">Início</a>
+            <a href="/servicos">Serviços</a>
             <a href="/#projects">Projetos</a>
             <a href="/#about">Sobre</a>
             <a href="/#content">Conteúdo</a>

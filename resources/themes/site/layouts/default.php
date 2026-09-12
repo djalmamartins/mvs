@@ -48,7 +48,9 @@
     <div class="noise" aria-hidden="true"></div>
     <div class="cursor-glow" aria-hidden="true"></div>
     <a class="skip-link" href="#main">Pular para o conteúdo</a>
-    <?php $this->insert('components/header'); ?>
+    <?php $this->insert('components/header', [
+        'currentPage' => $currentPage ?? null,
+    ]); ?>
     <?php $this->insert('components/flash'); ?>
     <main id="main">
         <?= $this->section('content') ?>

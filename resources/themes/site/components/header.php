@@ -17,8 +17,8 @@
         Menu <span aria-hidden="true">☰</span>
     </button>
     <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
-        <a href="/#main" class="active" aria-current="page">Início</a>
-        <a href="/#services">Serviços</a>
+        <a href="/"<?= ($currentPage ?? null) === 'home' ? ' class="active" aria-current="page"' : '' ?>>Início</a>
+        <a href="/servicos"<?= ($currentPage ?? null) === 'services' ? ' class="active" aria-current="page"' : '' ?>>Serviços</a>
         <a href="/#projects">Projetos</a>
         <a href="/#about">Sobre</a>
         <a href="/#content">Conteúdo</a>
