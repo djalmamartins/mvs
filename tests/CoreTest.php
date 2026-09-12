@@ -7,6 +7,7 @@ use Moves\Controllers\ErrorController;
 use Moves\Core\Config;
 use Moves\Core\Theme;
 use Moves\Core\Validator;
+use Moves\Core\Response;
 use PHPUnit\Framework\TestCase;
 use MovesCode\Router\Router;
 
@@ -73,5 +74,19 @@ final class CoreTest extends TestCase
 
         self::assertStringContainsString('Erro interno', $output);
         self::assertStringNotContainsString('secret technical detail', $output);
+    }
+
+    public function testExternalRedirectIsRejected(): void
+    {
+        $_ENV['APP_URL'] = 'http://mvs.lab';
+
+        $this->expectException(\InvalidArgumentException::class);
+        Response::redirect('https://attacker.invalid/phishing');
+    }
+
+    public function testHeaderInjectionRedirectIsRejected(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Response::redirect("/app\r\nX-Injected: value");
     }
 }

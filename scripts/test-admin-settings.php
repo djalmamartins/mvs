@@ -80,6 +80,16 @@ try {
     if ($page['status'] !== 200 || !str_contains($page['body'], 'name="app_name"')) {
         throw new RuntimeException('FAIL: formulário administrativo indisponível.');
     }
+    preg_match('/name="_token"\s+value="([^"]+)"/', $page['body'], $match);
+    $token = $match[1] ?? '';
+
+    if ($token === '') {
+        throw new RuntimeException('FAIL: formulário administrativo sem CSRF.');
+    }
+
+    if ($request('/admin')['status'] !== 200) {
+        throw new RuntimeException('FAIL: admin não acessa /admin.');
+    }
 
     $invalid = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
     if ($invalid['status'] !== 302 || Settings::get('app_name') !== $original) {

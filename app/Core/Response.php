@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Moves\Core;
 
+use InvalidArgumentException;
+
 /**
  * Moves | Response
  *
@@ -48,6 +50,14 @@ final class Response
         string $url,
         int $status = 302
     ): never {
+        if (!self::isSafeRedirect($url)) {
+            throw new InvalidArgumentException('Destino de redirecionamento inválido.');
+        }
+
+        if (!in_array($status, [301, 302, 303, 307, 308], true)) {
+            throw new InvalidArgumentException('Status de redirecionamento inválido.');
+        }
+
         header(
             'Location: ' . $url,
             true,
@@ -87,5 +97,32 @@ final class Response
             '/',
             $status
         );
+    }
+
+    private static function isSafeRedirect(string $url): bool
+    {
+        if ($url === '' || str_contains($url, "\r") || str_contains($url, "\n")) {
+            return false;
+        }
+
+        if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+            return true;
+        }
+
+        $target = parse_url($url);
+        $application = parse_url((string) Config::get('APP_URL', ''));
+
+        if ($target === false || $application === false) {
+            return false;
+        }
+
+        foreach (['scheme', 'host', 'port'] as $part) {
+            if (($target[$part] ?? null) !== ($application[$part] ?? null)) {
+                return false;
+            }
+        }
+
+        return isset($target['scheme'], $target['host'])
+            && !isset($target['user'], $target['pass']);
     }
 }

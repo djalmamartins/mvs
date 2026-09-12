@@ -133,6 +133,8 @@ try {
 
     $response = $request('/admin/users');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário sem permissão é redirecionado para /app');
+    $response = $request('/admin');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário comum não acessa /admin');
     $response = $request('/app');
     $check(str_contains($response['body'], 'Você não tem permissão'), 'redirect de permissão apresenta Flash');
 

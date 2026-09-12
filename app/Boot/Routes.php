@@ -66,6 +66,16 @@ final class Routes
         );
 
         $router->get(
+            '/admin',
+            'UserController:index',
+            'admin.home',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('users.manage'),
+            ]
+        );
+
+        $router->get(
             '/admin/users/page/{page}',
             'UserController:index',
             'users.page',
