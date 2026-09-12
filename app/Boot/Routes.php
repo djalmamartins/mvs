@@ -43,6 +43,16 @@ final class Routes
         );
 
         $router->get(
+            '/admin/users',
+            'UserController:index',
+            'users.index',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('users.manage'),
+            ]
+        );
+
+        $router->get(
             '/login',
             'AuthController:login',
             'login',

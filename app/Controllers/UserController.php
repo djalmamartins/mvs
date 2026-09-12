@@ -6,6 +6,7 @@ namespace Moves\Controllers;
 
 use Moves\Core\Auth;
 use Moves\Core\Controller;
+use Moves\Models\User;
 
 /**
  * Moves | User Controller
@@ -30,6 +31,25 @@ final class UserController extends Controller
             [
                 'title' => 'Meu perfil',
                 'user' => $user,
+            ]
+        );
+    }
+
+    /**
+     * Exibe a listagem de usuários.
+     */
+    public function index(): void
+    {
+        $users = (new \Moves\Models\User())
+            ->find()
+            ->order('name ASC')
+            ->fetch(true);
+
+        echo $this->view->render(
+            'pages/users',
+            [
+                'title' => 'Usuários',
+                'users' => $users ?? [],
             ]
         );
     }
