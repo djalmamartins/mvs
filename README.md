@@ -67,6 +67,8 @@ Cada contexto possui layouts, componentes e páginas em `resources/themes/<conte
 
 O tema público concentra seu shell em `resources/themes/site/layouts/default.php`, com header, footer e flash reutilizáveis. Os arquivos legíveis `css/app.css` e `js/app.js` são o contrato atual para desenvolvimento e permitem gerar variantes minificadas posteriormente. A migração visual inicial está documentada em `docs/public-theme-migration.md`.
 
+No XAMPP, o processo web precisa de escrita somente nas áreas de runtime em `storage/`. Não use `chmod 777` nem torne o projeto inteiro gravável. A ACL aplicada no ambiente macOS e a alternativa baseada no grupo do servidor estão registradas em `docs/public-theme-migration.md`.
+
 ## Autenticação e autorização
 
 `Session` usa cookie HTTP-only, SameSite Lax e Secure quando `APP_URL` é HTTPS. `Auth` responde quem é o usuário; `Access` e `PermissionMiddleware` controlam o que ele pode fazer. Formulários mutáveis devem incluir `<?= $this->csrf() ?>` e validar o token no controller.

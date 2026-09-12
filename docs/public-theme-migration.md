@@ -14,6 +14,8 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 | Tipografia | Manrope carregada pelo Google Fonts | Manrope servida localmente em pesos 400–800 | Manter a tipografia, privacidade e CSP `self` |
 | JavaScript | Dois arquivos e bootstrap inline | `js/app.js` externo | Compatibilidade com CSP sem `unsafe-inline` |
 | SEO | Metadados fixos no HTML | Dados da Home enviados pelo controller e renderizados pelo layout | Preparar SEO por página sem regra de negócio na view |
+| Serviços | `servicos.html` e seus assets/comportamento | Rota `/servicos` e `pages/servicos.php` no tema público | Integrar a página ao Moves sem alterar conteúdo ou visual |
+| Projetos | `projetos.html`, 24 apresentações e filtros | Rota `/projetos`, `pages/projetos.php` e assets locais | Preservar a galeria, filtros e atribuição sem shell duplicado |
 
 ## Assets migrados
 
@@ -22,10 +24,11 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 - imagens dos serviços, conceitos e artigos utilizadas pelas regras visuais da Home;
 - fonte Manrope nos pesos 400, 500, 600, 700 e 800;
 - estilos e comportamentos da referência, incluindo abertura, menu, reveal, contadores e movimento reduzido.
+- 48 imagens do portfólio usadas nas 24 apresentações da página Projetos.
 
 ## SEO
 
-A Home fornece título, descrição, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
+A Home, Serviços e Projetos fornecem título e descrição próprios, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` e o caminho da página somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
 
 `movescode/seo` não está instalado e não foi adicionado nesta rodada. A API deve ser avaliada antes de uma eventual integração.
 
@@ -37,7 +40,7 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 
 ## Diferenças deliberadas
 
-- Páginas internas do site estático ainda não foram migradas. Links globais usam seções reais da Home, e cards ainda sem página detalhada são apresentados sem links.
+- Sobre, Conteúdo e Contato ainda não foram migrados. Seus links globais continuam apontando para seções reais da Home.
 - O CTA de contato usa `mailto:contato@moves.com.br` enquanto a página `/contato` ainda não existe.
 - A área “Privacidade” do rodapé estático não foi exposta porque sua rota ainda não foi implementada.
 - O botão principal do header agora é “Área do cliente” e aponta para `/login`, conforme o escopo desta rodada.
@@ -45,3 +48,20 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 ## Responsividade e acessibilidade
 
 Os breakpoints originais de 1100, 980, 800, 640 e 520 pixels foram preservados. O menu mantém estado com `aria-expanded`, fecha por Escape, clique externo e seleção de item. `prefers-reduced-motion` desativa a abertura e animações não essenciais.
+
+## Permissões de storage no XAMPP
+
+**Antigo:** `storage/` pertencia a `djalmamartins:admin` com modo `755`; o PHP CLI escrevia como proprietário, mas o Apache `daemon:daemon` não conseguia escrever na raiz.
+
+**Novo:** uma ACL permite ao usuário `daemon` criar e remover itens somente em `storage/` e `storage/uploads/`, com herança para novos itens. `storage/logs/` continua em `djalmamartins:daemon` com modo `775`.
+
+**Motivo:** CLI e Apache executam com usuários diferentes. A ACL limita escrita às áreas de runtime e evita tornar o restante do projeto gravável.
+
+Comandos usados neste ambiente macOS:
+
+```bash
+chmod +a 'daemon allow list,search,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit,readattr,writeattr,readextattr,writeextattr,readsecurity' storage
+chmod +a 'daemon allow list,search,add_file,add_subdirectory,delete_child,file_inherit,directory_inherit,readattr,writeattr,readextattr,writeextattr,readsecurity' storage/uploads
+```
+
+Nenhum `chmod 777` foi usado. A configuração é externa ao Git e deve ser reaplicada ao preparar um novo ambiente. Em servidores onde o deploy pode definir grupos, a alternativa preferencial é atribuir somente `storage/` ao grupo do processo web e conceder `g+rwX` com setgid nos diretórios.
