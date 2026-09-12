@@ -75,6 +75,25 @@ final class Routes
             ]
         );
 
+        $settingsMiddleware = [
+            AuthMiddleware::class,
+            new PermissionMiddleware('settings.manage'),
+        ];
+
+        $router->get(
+            '/admin/settings',
+            'SettingsController:index',
+            'settings.index',
+            $settingsMiddleware
+        );
+
+        $router->post(
+            '/admin/settings',
+            'SettingsController:update',
+            'settings.update',
+            $settingsMiddleware
+        );
+
         $router->get(
             '/login',
             'AuthController:login',
