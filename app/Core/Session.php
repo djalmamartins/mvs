@@ -20,6 +20,16 @@ final class Session
     public static function start(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            $url = (string) Config::get('APP_URL', '');
+
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path' => '/',
+                'secure' => str_starts_with($url, 'https://'),
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+
             session_start();
         }
     }

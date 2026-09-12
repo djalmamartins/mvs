@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Boot;
 
 use Dotenv\Dotenv;
+use Moves\Core\Config;
 
 /**
  * Moves | Environment
@@ -27,6 +28,12 @@ final class Environment
 
         date_default_timezone_set(
             $timezone
+        );
+
+        error_reporting(E_ALL);
+        ini_set(
+            'display_errors',
+            Config::debug() ? '1' : '0'
         );
     }
 }
