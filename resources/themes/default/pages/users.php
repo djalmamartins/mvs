@@ -48,5 +48,8 @@ $this->layout(
             <?php endforeach; ?>
             </tbody>
         </table>
+        <?php if ($pagination !== null): ?>
+            <?= $pagination ?>
+        <?php endif; ?>
     <?php endif; ?>
 </section>

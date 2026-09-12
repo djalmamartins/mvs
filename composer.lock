@@ -163,16 +163,16 @@
         },
         {
             "name": "movescode/pager",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/djalmamartins/pager.git",
-                "reference": "944f837c2a8be60485ac1c891ea023b21cfe9ccb"
+                "reference": "0bb829d85146394f0abc5c06b889aa9222136f30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/djalmamartins/pager/zipball/944f837c2a8be60485ac1c891ea023b21cfe9ccb",
-                "reference": "944f837c2a8be60485ac1c891ea023b21cfe9ccb",
+                "url": "https://api.github.com/repos/djalmamartins/pager/zipball/0bb829d85146394f0abc5c06b889aa9222136f30",
+                "reference": "0bb829d85146394f0abc5c06b889aa9222136f30",
                 "shasum": ""
             },
             "require": {
@@ -204,9 +204,9 @@
             ],
             "support": {
                 "issues": "https://github.com/djalmamartins/pager/issues",
-                "source": "https://github.com/djalmamartins/pager/tree/1.0.0"
+                "source": "https://github.com/djalmamartins/pager/tree/1.0.1"
             },
-            "time": "2026-08-22T22:58:03+00:00"
+            "time": "2026-09-12T01:21:35+00:00"
         },
         {
             "name": "movescode/router",
