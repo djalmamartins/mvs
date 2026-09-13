@@ -4147,6 +4147,12 @@ body {
     padding-top: 160px
 }
 
+.page-section .article-card h2 {
+    font-size: 18px;
+    line-height: 1.35;
+    margin: 18px 0
+}
+
 @media (max-width: 980px) {
     .header-actions {
         display: none

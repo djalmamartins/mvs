@@ -53,6 +53,24 @@ final class Home extends Controller
         ]);
     }
 
+    public function content(): void
+    {
+        echo $this->view->render('pages/conteudo', [
+            'title' => 'Conteúdo — MOVES',
+            'description' => 'Guias sobre planejamento de sites, automação e produtos digitais.',
+            ...$this->pageMetadata('/conteudo'),
+        ]);
+    }
+
+    public function contact(): void
+    {
+        echo $this->view->render('pages/contato', [
+            'title' => 'Contato e solicitação de orçamento — MOVES',
+            'description' => 'Conte seu projeto para a Moves e prepare sua solicitação de proposta em design e tecnologia.',
+            ...$this->pageMetadata('/contato'),
+        ]);
+    }
+
     /**
      * Exibe o painel inicial do usuário autenticado.
      */

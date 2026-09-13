@@ -50,6 +50,18 @@ final class Routes
         );
 
         $router->get(
+            '/conteudo',
+            'Home:content',
+            'site.content'
+        );
+
+        $router->get(
+            '/contato',
+            'Home:contact',
+            'site.contact'
+        );
+
+        $router->get(
             '/app',
             'Home:app',
             'app.home',
