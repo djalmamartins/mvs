@@ -39,10 +39,11 @@ final class StudioModulesController extends Controller
             $action = (string) Request::post('action', 'save');
             $id = max(0, (int) Request::post('id', 0));
 
-            if ($module === 'articles' && $action === 'category') {
+            if (in_array($module, ['articles', 'faq'], true) && $action === 'category') {
                 $name = mb_substr(trim(strip_tags((string) Request::post('category_name', ''))), 0, 120);
                 if (mb_strlen($name) < 2) { Flash::set('error', 'Informe o nome da categoria.'); Response::to('/admin/articles'); }
-                try { $pdo->prepare("INSERT INTO studio_taxonomies(type,name,slug) VALUES('article_category',?,?)")->execute([$name, $this->slug($name)]); Flash::set('success', 'Categoria criada.'); }
+                $taxonomyType = $module === 'articles' ? 'article_category' : 'faq_category';
+                try { $pdo->prepare('INSERT INTO studio_taxonomies(type,name,slug) VALUES(?,?,?)')->execute([$taxonomyType, $name, $this->slug($name)]); Flash::set('success', 'Categoria criada.'); }
                 catch (Throwable $exception) { Flash::set('error', 'A categoria já existe ou não pôde ser criada.'); }
                 Response::to('/admin/articles');
             }
@@ -66,7 +67,7 @@ final class StudioModulesController extends Controller
             $seoTitle = mb_substr(trim(strip_tags((string) Request::post('seo_title', ''))), 0, 160);
             $seoDescription = mb_substr(trim(strip_tags((string) Request::post('seo_description', ''))), 0, 320);
             $mediaId = max(0, (int) Request::post('media_id', 0)) ?: null;
-            $categoryId = $module === 'articles' ? (max(0, (int) Request::post('category_id', 0)) ?: null) : null;
+            $categoryId = in_array($module, ['articles', 'faq'], true) ? (max(0, (int) Request::post('category_id', 0)) ?: null) : null;
             $template = $module === 'pages' && in_array(Request::post('template'), ['default', 'landing', 'wide'], true) ? (string) Request::post('template') : null;
             $startsAt = $module === 'highlights' ? $this->dateTime((string) Request::post('starts_at', '')) : null;
             $endsAt = $module === 'highlights' ? $this->dateTime((string) Request::post('ends_at', '')) : null;
@@ -78,8 +79,10 @@ final class StudioModulesController extends Controller
             };
 
             if ($mediaId !== null && !$this->mediaExists($mediaId)) { $mediaId = null; }
-            if ($categoryId !== null && !$this->taxonomyExists($categoryId, 'article_category')) { $categoryId = null; }
+            if ($module === 'articles' && $categoryId !== null && !$this->taxonomyExists($categoryId, 'article_category')) { $categoryId = null; }
             if ($module === 'articles' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/articles' . ($id ? '?edit=' . $id : '')); }
+            if ($module === 'faq' && $categoryId !== null && !$this->taxonomyExists($categoryId, 'faq_category')) { $categoryId = null; }
+            if ($module === 'faq' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/faq' . ($id ? '?edit=' . $id : '')); }
             if ($startsAt && $endsAt && $startsAt > $endsAt) { Flash::set('error', 'O fim da exibição deve ocorrer depois do início.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
             if (($meta['cta_url'] ?? '') !== '' && filter_var($meta['cta_url'], FILTER_VALIDATE_URL) === false && !str_starts_with((string) $meta['cta_url'], '/')) { Flash::set('error', 'Informe uma URL de CTA válida.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
 
@@ -123,7 +126,9 @@ final class StudioModulesController extends Controller
         }
 
         $media = $pdo->query('SELECT id,name,width,height FROM studio_media ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
-        $categories = $pdo->query("SELECT id,name FROM studio_taxonomies WHERE type='article_category' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        $taxonomyType = $module === 'faq' ? 'faq_category' : 'article_category';
+        $categoryStatement = $pdo->prepare('SELECT id,name FROM studio_taxonomies WHERE type=? ORDER BY name'); $categoryStatement->execute([$taxonomyType]);
+        $categories = $categoryStatement->fetchAll(PDO::FETCH_ASSOC);
         if ($edit) { $edit['meta'] = json_decode((string) ($edit['meta_json'] ?? ''), true) ?: []; }
         echo $this->view->render('pages/content-module', [
             'title' => $definition['title'], 'module' => $module, 'singular' => $definition['singular'],
@@ -199,20 +204,46 @@ final class StudioModulesController extends Controller
         $pdo = Connection::getInstance();
         if (Request::isMethod('POST')) {
             $this->validateCsrf();
-            $status = in_array(Request::post('status'), ['new','contacted','qualified','won','lost','archived'], true) ? Request::post('status') : 'new';
-            $pdo->prepare('UPDATE proposals SET status=? WHERE id=?')->execute([$status, (int) Request::post('id', 0)]);
-            Flash::set('success', 'Proposta atualizada.'); Response::to('/admin/proposals');
+            $id = max(0, (int) Request::post('id', 0)); $action = (string) Request::post('action', 'status');
+            $exists = $pdo->prepare('SELECT 1 FROM proposals WHERE id=?'); $exists->execute([$id]);
+            if (!$exists->fetchColumn()) { Flash::set('error', 'Proposta não encontrada.'); Response::to('/admin/proposals'); }
+            $note = mb_substr(trim(strip_tags((string) Request::post('note', ''))), 0, 5000);
+            if ($action === 'status') {
+                $status = in_array(Request::post('status'), ['new','contacted','qualified','won','lost','archived'], true) ? (string) Request::post('status') : 'new';
+                $pdo->prepare('UPDATE proposals SET status=?,converted_at=? WHERE id=?')->execute([$status, $status === 'won' ? date('Y-m-d H:i:s') : null, $id]);
+                $note = 'Status alterado para ' . $status . ($note ? ': ' . $note : '');
+            } elseif ($action === 'note') {
+                if (mb_strlen($note) < 2) { Flash::set('error', 'Escreva uma observação.'); Response::to('/admin/proposals?view=' . $id); }
+            } elseif ($action === 'respond') {
+                if (mb_strlen($note) < 10) { Flash::set('error', 'A resposta deve ter ao menos 10 caracteres.'); Response::to('/admin/proposals?view=' . $id); }
+                $pdo->prepare("UPDATE proposals SET response=?,responded_at=NOW(),status=IF(status='new','contacted',status),assigned_to=? WHERE id=?")->execute([$note, Auth::user()?->id, $id]);
+            } elseif ($action === 'convert') {
+                $pdo->prepare("UPDATE proposals SET status='won',converted_at=NOW(),assigned_to=? WHERE id=?")->execute([Auth::user()?->id, $id]);
+                $note = $note ?: 'Proposta convertida em oportunidade ganha.';
+            } else { Flash::set('error', 'Ação inválida.'); Response::to('/admin/proposals'); }
+            $pdo->prepare('INSERT INTO proposal_history(proposal_id,action,note,created_by) VALUES(?,?,?,?)')->execute([$id, $action, $note, Auth::user()?->id]);
+            Logger::info('Proposta atualizada no Studio.', ['record_id' => $id, 'action' => $action]);
+            Flash::set('success', 'Proposta atualizada.'); Response::to('/admin/proposals?view=' . $id);
         }
         $status = in_array(Request::get('status'), ['new','contacted','qualified','won','lost','archived'], true) ? (string) Request::get('status') : '';
-        $statement = $pdo->prepare('SELECT * FROM proposals' . ($status ? ' WHERE status=?' : '') . ' ORDER BY id DESC LIMIT 200'); $statement->execute($status ? [$status] : []);
-        echo $this->view->render('pages/proposals', ['title'=>'Propostas','records'=>$statement->fetchAll(PDO::FETCH_ASSOC),'status'=>$status]);
+        $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100); $where=[]; $params=[];
+        if ($status) { $where[]='p.status=?'; $params[]=$status; } if ($search) { $where[]='(p.name LIKE ? OR p.email LIKE ? OR p.company LIKE ?)'; array_push($params, "%{$search}%", "%{$search}%", "%{$search}%"); }
+        $statement = $pdo->prepare('SELECT p.*,u.name assignee_name,(SELECT COUNT(*) FROM proposal_history h WHERE h.proposal_id=p.id) history_count FROM proposals p LEFT JOIN users u ON u.id=p.assigned_to' . ($where ? ' WHERE '.implode(' AND ',$where) : '') . ' ORDER BY p.id DESC LIMIT 200'); $statement->execute($params);
+        $selected=null; $history=[]; $viewId=max(0,(int)Request::get('view',0));
+        if($viewId){$detail=$pdo->prepare('SELECT p.*,u.name assignee_name FROM proposals p LEFT JOIN users u ON u.id=p.assigned_to WHERE p.id=?');$detail->execute([$viewId]);$selected=$detail->fetch(PDO::FETCH_ASSOC)?:null;$hist=$pdo->prepare('SELECT h.*,u.name author_name FROM proposal_history h LEFT JOIN users u ON u.id=h.created_by WHERE h.proposal_id=? ORDER BY h.id DESC');$hist->execute([$viewId]);$history=$hist->fetchAll(PDO::FETCH_ASSOC);}
+        echo $this->view->render('pages/proposals', ['title'=>'Propostas','records'=>$statement->fetchAll(PDO::FETCH_ASSOC),'status'=>$status,'search'=>$search,'selected'=>$selected,'history'=>$history]);
     }
 
     public function notifications(): void
     {
         $pdo = Connection::getInstance();
-        if (Request::isMethod('POST')) { $this->validateCsrf(); $pdo->prepare('UPDATE notifications SET read_at=NOW() WHERE id=?')->execute([(int) Request::post('id',0)]); Response::to('/admin/notifications'); }
-        echo $this->view->render('pages/notifications', ['title'=>'Notificações','records'=>$pdo->query('SELECT * FROM notifications ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC)]);
+        $actorId=(int)Auth::user()?->id;
+        if (Request::isMethod('POST')) { $this->validateCsrf(); $action=(string)Request::post('action','read');$id=max(0,(int)Request::post('id',0));
+            if($action==='read_all'){$pdo->prepare('UPDATE notifications SET read_at=NOW() WHERE recipient_id IS NULL OR recipient_id=?')->execute([$actorId]);}
+            elseif(in_array($action,['read','unread','delete'],true)){$sql=$action==='delete'?'DELETE FROM notifications WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)':'UPDATE notifications SET read_at='.($action==='read'?'NOW()':'NULL').' WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)';$pdo->prepare($sql)->execute([$id,$actorId]);}
+            else{Flash::set('error','Ação inválida.');Response::to('/admin/notifications');} Response::to('/admin/notifications'); }
+        $statement=$pdo->prepare('SELECT * FROM notifications WHERE recipient_id IS NULL OR recipient_id=? ORDER BY id DESC LIMIT 200');$statement->execute([$actorId]);$records=$statement->fetchAll(PDO::FETCH_ASSOC);
+        echo $this->view->render('pages/notifications', ['title'=>'Notificações','records'=>$records,'unread'=>count(array_filter($records,static fn(array $row):bool=>$row['read_at']===null))]);
     }
 
     public function reports(): void
@@ -226,7 +257,10 @@ final class StudioModulesController extends Controller
         }
         $counts['media'] = ['total'=>(int)$pdo->query('SELECT COUNT(*) FROM studio_media')->fetchColumn(),'published'=>null];
         $counts['proposal'] = ['total'=>(int)$pdo->query('SELECT COUNT(*) FROM proposals')->fetchColumn(),'published'=>null];
-        echo $this->view->render('pages/reports', ['title'=>'Relatórios','counts'=>$counts]);
+        $proposalStates=$pdo->query('SELECT status,COUNT(*) total FROM proposals GROUP BY status ORDER BY total DESC')->fetchAll(PDO::FETCH_ASSOC);
+        $monthly=$pdo->query("SELECT DATE_FORMAT(created_at,'%Y-%m') period,COUNT(*) total FROM proposals WHERE created_at>=DATE_SUB(CURDATE(),INTERVAL 11 MONTH) GROUP BY period ORDER BY period")->fetchAll(PDO::FETCH_ASSOC);
+        if(Request::get('format')==='csv'){header('Content-Type: text/csv; charset=UTF-8');header('Content-Disposition: attachment; filename="moves-studio-report.csv"');$out=fopen('php://output','wb');fputcsv($out,['Módulo','Total','Publicados'],separator:';');foreach($counts as $key=>$count){fputcsv($out,[$key,$count['total'],$count['published']??''],separator:';');}fclose($out);exit;}
+        echo $this->view->render('pages/reports', ['title'=>'Relatórios','counts'=>$counts,'proposalStates'=>$proposalStates,'monthly'=>$monthly]);
     }
 
     private function currentModule(): string

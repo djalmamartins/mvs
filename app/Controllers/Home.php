@@ -98,7 +98,7 @@ final class Home extends Controller
         $validator=(new Validator())->required('nome',$name)->email('email',$email)->required('servico',$service)->min('mensagem',$message,20)->max('mensagem',$message,5000);
         if ($validator->fails()) { Flash::set('error','Revise os campos obrigatórios da proposta.'); Response::to('/contato'); }
         $pdo=Connection::getInstance(); $stmt=$pdo->prepare('INSERT INTO proposals(name,email,company,service,message) VALUES(?,?,?,?,?)'); $stmt->execute([$name,$email,mb_substr(trim(strip_tags((string)Request::post('empresa',''))),0,160) ?: null,$service,$message]);
-        $id=(int)$pdo->lastInsertId(); $notify=$pdo->prepare('INSERT INTO notifications(title,message,link) VALUES(?,?,?)'); $notify->execute(['Nova proposta recebida','Proposta de '.$name.' para '.$service.'.','/admin/proposals']);
+        $id=(int)$pdo->lastInsertId(); $notify=$pdo->prepare('INSERT INTO notifications(title,message,source_type,source_id,action_url,link) VALUES(?,?,?,?,?,?)'); $notify->execute(['Nova proposta recebida','Proposta de '.$name.' para '.$service.'.','proposal',$id,'/admin/proposals?view='.$id,'/admin/proposals?view='.$id]);
         Flash::set('success','Proposta recebida. Entraremos em contato em breve.'); Response::to('/contato');
     }
 

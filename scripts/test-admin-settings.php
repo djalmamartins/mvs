@@ -39,6 +39,7 @@ $logFingerprint = null;
 $proposalId = null;
 $contentIds = [];
 $taxonomyId = null;
+$faqTaxonomyId = null;
 $mediaIds = [];
 $mediaPaths = [];
 
@@ -167,10 +168,14 @@ try {
     $categoryName = 'Categoria teste ' . bin2hex(random_bytes(3));
     $request('/admin/articles', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $categoryName]);
     $taxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($categoryName))->fetchColumn();
-    foreach (['articles' => 'Artigo', 'pages' => 'Página', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento'] as $module => $label) {
+    $faqCategoryName = 'FAQ teste ' . bin2hex(random_bytes(3));
+    $request('/admin/faq', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $faqCategoryName]);
+    $faqTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($faqCategoryName))->fetchColumn();
+    foreach (['articles' => 'Artigo', 'pages' => 'Página', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
         $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
         $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => $module === 'articles' ? 'published' : 'draft', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
         if ($module === 'articles') { $payload['category_id'] = $taxonomyId; $payload['video'] = ''; }
+        if ($module === 'faq') { $payload['category_id'] = $faqTaxonomyId; }
         if ($module === 'pages') { $payload['template'] = 'landing'; }
         if ($module === 'highlights') { $payload += ['cta_label' => 'Saiba mais', 'cta_url' => '/contato', 'alignment' => 'center']; }
         if ($module === 'testimonials') { $payload += ['company' => 'Moves', 'job_title' => 'Cliente']; }
@@ -196,6 +201,18 @@ try {
         throw new RuntimeException('FAIL: proposta pública não foi persistida.');
     }
     $proposalId = (int) $pdo->query("SELECT id FROM proposals WHERE email='studio-test@example.invalid' ORDER BY id DESC LIMIT 1")->fetchColumn();
+    $proposalAction = $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'respond','note'=>'Resposta comercial registrada pelo teste automatizado.']);
+    $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'note','note'=>'Observação interna segura.']);
+    $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'convert','note'=>'Conversão validada.']);
+    $proposalState = $pdo->query('SELECT status FROM proposals WHERE id=' . $proposalId)->fetchColumn();
+    $historyCount = (int) $pdo->query('SELECT COUNT(*) FROM proposal_history WHERE proposal_id=' . $proposalId)->fetchColumn();
+    if ($proposalAction['status'] !== 302 || $proposalState !== 'won' || $historyCount !== 3) { throw new RuntimeException('FAIL: operação e histórico da proposta inválidos.'); }
+    $notification = $pdo->query('SELECT id FROM notifications WHERE source_type=\'proposal\' AND source_id=' . $proposalId)->fetchColumn();
+    if (!$notification) { throw new RuntimeException('FAIL: notificação não registrou origem da proposta.'); }
+    $request('/admin/notifications', ['_token'=>$studioToken,'id'=>(int)$notification,'action'=>'read']);
+    if (!$pdo->query('SELECT read_at FROM notifications WHERE id=' . (int)$notification)->fetchColumn()) { throw new RuntimeException('FAIL: notificação não foi marcada como lida.'); }
+    $csv = $request('/admin/reports?format=csv');
+    if ($csv['status'] !== 200 || !str_contains($csv['body'], 'Módulo;Total;Publicados')) { throw new RuntimeException('FAIL: exportação real de relatórios indisponível.'); }
 
     $invalid = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
     if ($invalid['status'] !== 302 || Settings::get('app_name') !== $original) {
@@ -223,6 +240,7 @@ try {
     }
     foreach ($contentIds as $contentId) { $pdo->prepare('DELETE FROM studio_content WHERE id=?')->execute([$contentId]); }
     if ($taxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$taxonomyId]); }
+    if ($faqTaxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$faqTaxonomyId]); }
     foreach (array_reverse($mediaIds) as $mediaId) { $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$mediaId]); }
     foreach ($mediaPaths as $mediaPath) { if (is_file($mediaPath)) { @unlink($mediaPath); } }
     if ($id !== null) {
