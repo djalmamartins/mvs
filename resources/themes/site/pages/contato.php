@@ -25,7 +25,8 @@ $this->layout('layouts/default', [
         <p>Conselheiro Lafaiete · MG<br>Projetos digitais, de onde você estiver.</p>
         <div class="contact-note">Prefere escrever com calma? Preencha o resumo ao lado para preparar uma mensagem no seu aplicativo de e-mail.</div>
     </aside>
-    <form id="contact-form">
+    <form id="contact-form" method="post" action="/contato">
+        <?= $this->csrf() ?>
         <div class="form-row">
             <label>Seu nome<input name="nome" autocomplete="name" required maxlength="100" placeholder="Como podemos chamar você?"></label>
             <label>E-mail<input type="email" name="email" autocomplete="email" required maxlength="200" placeholder="voce@empresa.com.br"></label>
@@ -36,8 +37,7 @@ $this->layout('layouts/default', [
         </div>
         <label>Conte sobre o projeto<textarea name="mensagem" rows="6" required minlength="20" maxlength="5000" placeholder="O que você precisa resolver? Tem um prazo ou alguma referência?"></textarea></label>
         <label class="checkbox-label"><input type="checkbox" required> <span>Revisei as informações e quero preparar este contato comercial.</span></label>
-        <button class="button button-primary" type="submit">Preparar e-mail ↗</button>
-        <p class="form-help">Nenhuma mensagem é enviada automaticamente. Você revisa e envia pelo seu aplicativo de e-mail.</p>
-        <div id="form-result" role="status" hidden><h3>Seu resumo está pronto.</h3><p>Abra seu aplicativo de e-mail para revisar e enviar. Se ele não abrir, copie o resumo abaixo e envie para contato@moves.com.br.</p><textarea id="message-preview" readonly aria-label="Resumo da solicitação"></textarea><div class="hero-actions"><a id="email-link" class="button button-primary">Abrir aplicativo de e-mail ↗</a><button id="copy-message" class="button button-ghost" type="button">Copiar resumo</button></div></div>
+        <button class="button button-primary" type="submit">Enviar proposta ↗</button>
+        <p class="form-help">A solicitação será enviada com segurança ao Moves Studio.</p>
     </form>
 </section>

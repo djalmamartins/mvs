@@ -33,6 +33,7 @@ $password = bin2hex(random_bytes(16));
 $original = Settings::get('app_name', 'Moves');
 $client = curl_init();
 $id = null;
+$proposalId = null;
 
 if ($client === false) {
     throw new RuntimeException('Não foi possível iniciar o cliente HTTP.');
@@ -101,6 +102,23 @@ try {
         throw new RuntimeException('FAIL: leitura segura do log indisponível.');
     }
 
+    foreach (['pages','articles','media','highlights','testimonials','faq','proposals','notifications','reports'] as $module) {
+        $modulePage = $request('/admin/' . $module);
+        if ($modulePage['status'] !== 200) {
+            throw new RuntimeException('FAIL: módulo Studio indisponível: ' . $module);
+        }
+    }
+
+    $contact = $request('/contato');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $contact['body'], $match);
+    $contactToken = $match[1] ?? '';
+    $beforeProposal = (int) $pdo->query('SELECT COUNT(*) FROM proposals')->fetchColumn();
+    $submitted = $request('/contato', ['_token'=>$contactToken,'nome'=>'Teste Studio','email'=>'studio-test@example.invalid','empresa'=>'Moves','servico'=>'sistemas-web','mensagem'=>'Solicitação segura criada pelo teste automatizado.']);
+    if ($submitted['status'] !== 302 || (int) $pdo->query('SELECT COUNT(*) FROM proposals')->fetchColumn() !== $beforeProposal + 1) {
+        throw new RuntimeException('FAIL: proposta pública não foi persistida.');
+    }
+    $proposalId = (int) $pdo->query("SELECT id FROM proposals WHERE email='studio-test@example.invalid' ORDER BY id DESC LIMIT 1")->fetchColumn();
+
     $invalid = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
     if ($invalid['status'] !== 302 || Settings::get('app_name') !== $original) {
         throw new RuntimeException('FAIL: CSRF inválido alterou Settings.');
@@ -117,6 +135,10 @@ try {
     Settings::set('app_name', $original);
     if ($id !== null) {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+    }
+    if ($proposalId !== null) {
+        $pdo->prepare('DELETE FROM proposals WHERE id = ?')->execute([$proposalId]);
+        $pdo->prepare("DELETE FROM notifications WHERE message LIKE 'Proposta de Teste Studio%'")->execute();
     }
     curl_close($client);
 }

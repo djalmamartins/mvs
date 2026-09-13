@@ -55,11 +55,14 @@ final class Routes
             'site.content'
         );
 
+        $router->get('/conteudo/{slug}', 'Home:article', 'site.article');
+
         $router->get(
             '/contato',
             'Home:contact',
             'site.contact'
         );
+        $router->post('/contato', 'Home:contactSubmit', 'site.contact.submit');
 
         $router->get(
             '/app',
@@ -123,6 +126,19 @@ final class Routes
             'admin.logs',
             $studioTechnicalMiddleware
         );
+
+        foreach (['pages', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
+            $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioTechnicalMiddleware);
+            $router->post('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module . '.save', $studioTechnicalMiddleware);
+        }
+        $router->get('/admin/media', 'StudioModulesController:media', 'admin.media', $studioTechnicalMiddleware);
+        $router->post('/admin/media', 'StudioModulesController:media', 'admin.media.save', $studioTechnicalMiddleware);
+        $router->get('/admin/media/file/{id}', 'StudioModulesController:mediaFile', 'admin.media.file', $studioTechnicalMiddleware);
+        $router->get('/admin/proposals', 'StudioModulesController:proposals', 'admin.proposals', $studioTechnicalMiddleware);
+        $router->post('/admin/proposals', 'StudioModulesController:proposals', 'admin.proposals.save', $studioTechnicalMiddleware);
+        $router->get('/admin/notifications', 'StudioModulesController:notifications', 'admin.notifications', $studioTechnicalMiddleware);
+        $router->post('/admin/notifications', 'StudioModulesController:notifications', 'admin.notifications.read', $studioTechnicalMiddleware);
+        $router->get('/admin/reports', 'StudioModulesController:reports', 'admin.reports', $studioTechnicalMiddleware);
 
         $router->get(
             '/admin/users/page/{page}',

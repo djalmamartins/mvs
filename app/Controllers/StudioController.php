@@ -11,6 +11,7 @@ use Moves\Core\LogReader;
 use Moves\Core\Request;
 use Moves\Core\Settings;
 use Moves\Models\User;
+use Moves\Boot\Connection;
 
 /** Provides the initial Moves Studio dashboard. */
 final class StudioController extends Controller
@@ -19,6 +20,16 @@ final class StudioController extends Controller
     {
         $checks = Diagnostics::run();
         $activity = (new LogReader())->read('', '', 1, 10);
+        $contentCounts = [];
+        foreach (['page', 'article', 'media'] as $type) {
+            if ($type === 'media') {
+                $contentCounts[$type] = (int) Connection::getInstance()->query('SELECT COUNT(*) FROM studio_media')->fetchColumn();
+                continue;
+            }
+            $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM studio_content WHERE type=?');
+            $statement->execute([$type]);
+            $contentCounts[$type] = (int) $statement->fetchColumn();
+        }
 
         echo $this->view->render('pages/dashboard', [
             'title' => 'Dashboard',
@@ -32,6 +43,7 @@ final class StudioController extends Controller
             'environment' => Config::environment(),
             'version' => $this->applicationVersion(),
             'activity' => array_slice($activity['entries'], 0, 5),
+            'contentCounts' => $contentCounts,
         ]);
     }
 

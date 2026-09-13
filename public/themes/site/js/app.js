@@ -24,24 +24,6 @@ const form = document.querySelector('#contact-form');
 if (form) {
   const service = new URLSearchParams(location.search).get('servico');
   if ([...form.elements.servico.options].some(option => option.value === service)) form.elements.servico.value = service;
-  form.addEventListener('submit', event => {
-    event.preventDefault();
-    if (!form.reportValidity()) return;
-    const data = new FormData(form);
-    const serviceName = form.elements.servico.selectedOptions[0].textContent;
-    const message = `Olá, Moves!\n\nNome: ${data.get('nome')}\nE-mail: ${data.get('email')}\nEmpresa: ${data.get('empresa') || 'Não informada'}\nServiço: ${serviceName}\n\nSobre o projeto:\n${data.get('mensagem')}`;
-    document.querySelector('#message-preview').value = message;
-    document.querySelector('#email-link').href = `mailto:contato@moves.com.br?subject=${encodeURIComponent('Novo projeto — ' + serviceName)}&body=${encodeURIComponent(message)}`;
-    const result = document.querySelector('#form-result');
-    result.hidden = false;
-    result.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
-  });
-  document.querySelector('#copy-message').addEventListener('click', async event => {
-    const preview = document.querySelector('#message-preview');
-    const button = event.currentTarget;
-    try { await navigator.clipboard.writeText(preview.value); button.textContent = 'Resumo copiado'; }
-    catch { preview.focus(); preview.select(); button.textContent = 'Selecione e copie o resumo'; }
-  });
 }
 
 // Shared atmosphere and motion from the original homepage.

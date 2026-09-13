@@ -19,9 +19,8 @@ $this->layout('layouts/default', [
 
 <section class="section-shell page-section" aria-label="Conteúdos da Moves">
     <div class="articles-grid">
-        <article class="article-card"><div class="article-image article-1" role="img" aria-label="Planejamento de conteúdo para sites"></div><div><small>ESTRATÉGIA · GUIA MOVES</small><h2>Como preparar o conteúdo do seu novo site</h2><p>Um roteiro para organizar objetivos, páginas e materiais antes de começar.</p><span>Em breve</span></div></article>
-        <article class="article-card"><div class="article-image article-2" role="img" aria-label="Automação de processos"></div><div><small>TECNOLOGIA · GUIA MOVES</small><h2>Por onde começar a automatizar processos</h2><p>Observe as tarefas repetitivas antes de escolher uma ferramenta.</p><span>Em breve</span></div></article>
-        <article class="article-card"><div class="article-image article-3" role="img" aria-label="Validação de produto digital"></div><div><small>PRODUTO · GUIA MOVES</small><h2>Como validar uma ideia antes de desenvolver um aplicativo</h2><p>Transforme suposições em perguntas que podem ser testadas.</p><span>Em breve</span></div></article>
+        <?php if ($articles === []): ?><p class="page-lead">Novos conteúdos estão sendo preparados.</p><?php endif; ?>
+        <?php foreach ($articles as $article): ?><article class="article-card"><div class="article-image article-1" role="img" aria-label="<?= $this->e($article['title']) ?>"></div><div><small>CONTEÚDO · MOVES</small><h2><?= $this->e($article['title']) ?></h2><p><?= $this->e($article['excerpt'] ?? '') ?></p><a href="/conteudo/<?= $this->e($article['slug']) ?>">Ler conteúdo ↗</a></div></article><?php endforeach; ?>
     </div>
 </section>
 

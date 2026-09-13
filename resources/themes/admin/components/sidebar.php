@@ -5,17 +5,17 @@
 $groups = [
     'Visão geral' => [
         ['label' => 'Dashboard', 'icon' => '⌂', 'href' => '/admin', 'key' => 'dashboard'],
-        ['label' => 'Relatórios', 'icon' => '↗'],
-        ['label' => 'Notificações', 'icon' => '•'],
-        ['label' => 'Propostas', 'icon' => '◇'],
+        ['label' => 'Relatórios', 'icon' => '↗', 'href' => '/admin/reports', 'key' => 'reports'],
+        ['label' => 'Notificações', 'icon' => '•', 'href' => '/admin/notifications', 'key' => 'notifications'],
+        ['label' => 'Propostas', 'icon' => '◇', 'href' => '/admin/proposals', 'key' => 'proposals'],
     ],
     'Conteúdo' => [
-        ['label' => 'Páginas', 'icon' => '▤'],
-        ['label' => 'Artigos', 'icon' => '¶'],
-        ['label' => 'Mídia', 'icon' => '▧'],
-        ['label' => 'Destaques', 'icon' => '✦'],
-        ['label' => 'Depoimentos', 'icon' => '“'],
-        ['label' => 'FAQ', 'icon' => '?'],
+        ['label' => 'Páginas', 'icon' => '▤', 'href' => '/admin/pages', 'key' => 'pages'],
+        ['label' => 'Artigos', 'icon' => '¶', 'href' => '/admin/articles', 'key' => 'articles'],
+        ['label' => 'Mídia', 'icon' => '▧', 'href' => '/admin/media', 'key' => 'media'],
+        ['label' => 'Destaques', 'icon' => '✦', 'href' => '/admin/highlights', 'key' => 'highlights'],
+        ['label' => 'Depoimentos', 'icon' => '“', 'href' => '/admin/testimonials', 'key' => 'testimonials'],
+        ['label' => 'FAQ', 'icon' => '?', 'href' => '/admin/faq', 'key' => 'faq'],
     ],
     'Gestão' => [
         ['label' => 'Usuários', 'icon' => '◎', 'href' => '/admin/users', 'key' => 'users'],

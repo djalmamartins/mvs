@@ -6,6 +6,13 @@ namespace Moves\Controllers;
 
 use Moves\Core\Config;
 use Moves\Core\Controller;
+use Moves\Boot\Connection;
+use Moves\Core\Csrf;
+use Moves\Core\Flash;
+use Moves\Core\Request;
+use Moves\Core\Response;
+use Moves\Core\Validator;
+use PDO;
 
 /**
  * Moves | Home Controller
@@ -55,11 +62,23 @@ final class Home extends Controller
 
     public function content(): void
     {
+        $statement = Connection::getInstance()->query("SELECT title,slug,excerpt,image_path,published_at FROM studio_content WHERE type='article' AND status='published' ORDER BY published_at DESC,id DESC LIMIT 50");
         echo $this->view->render('pages/conteudo', [
             'title' => 'Conteúdo — MOVES',
             'description' => 'Guias sobre planejamento de sites, automação e produtos digitais.',
             ...$this->pageMetadata('/conteudo'),
+            'articles' => $statement->fetchAll(PDO::FETCH_ASSOC),
         ]);
+    }
+
+    /** @param array<string,string> $data */
+    public function article(array $data): void
+    {
+        $statement = Connection::getInstance()->prepare("SELECT * FROM studio_content WHERE type='article' AND status='published' AND slug=? LIMIT 1");
+        $statement->execute([$data['slug'] ?? '']);
+        $article = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!$article) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
+        echo $this->view->render('pages/article', ['title'=>$article['title'].' — MOVES','description'=>$article['excerpt'] ?: $article['title'],'article'=>$article,...$this->pageMetadata('/conteudo/'.$article['slug'])]);
     }
 
     public function contact(): void
@@ -69,6 +88,17 @@ final class Home extends Controller
             'description' => 'Conte seu projeto para a Moves e prepare sua solicitação de proposta em design e tecnologia.',
             ...$this->pageMetadata('/contato'),
         ]);
+    }
+
+    public function contactSubmit(): void
+    {
+        if (!Csrf::validate(is_string(Request::post('_token')) ? Request::post('_token') : null)) { Flash::set('error','Sessão expirada. Atualize a página.'); Response::to('/contato'); }
+        $name=trim(strip_tags((string)Request::post('nome',''))); $email=trim((string)Request::post('email','')); $service=trim(strip_tags((string)Request::post('servico',''))); $message=trim(strip_tags((string)Request::post('mensagem','')));
+        $validator=(new Validator())->required('nome',$name)->email('email',$email)->required('servico',$service)->min('mensagem',$message,20)->max('mensagem',$message,5000);
+        if ($validator->fails()) { Flash::set('error','Revise os campos obrigatórios da proposta.'); Response::to('/contato'); }
+        $pdo=Connection::getInstance(); $stmt=$pdo->prepare('INSERT INTO proposals(name,email,company,service,message) VALUES(?,?,?,?,?)'); $stmt->execute([$name,$email,mb_substr(trim(strip_tags((string)Request::post('empresa',''))),0,160) ?: null,$service,$message]);
+        $id=(int)$pdo->lastInsertId(); $notify=$pdo->prepare('INSERT INTO notifications(title,message,link) VALUES(?,?,?)'); $notify->execute(['Nova proposta recebida','Proposta de '.$name.' para '.$service.'.','/admin/proposals']);
+        Flash::set('success','Proposta recebida. Entraremos em contato em breve.'); Response::to('/contato');
     }
 
     /**
