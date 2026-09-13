@@ -37,6 +37,10 @@ $managedUserId = null;
 $versionId = null;
 $logFingerprint = null;
 $proposalId = null;
+$contentIds = [];
+$taxonomyId = null;
+$mediaIds = [];
+$mediaPaths = [];
 
 if ($client === false) {
     throw new RuntimeException('Não foi possível iniciar o cliente HTTP.');
@@ -57,7 +61,8 @@ $request = static function (string $path, ?array $data = null) use ($client, $ba
         curl_setopt($client, CURLOPT_HTTPGET, true);
     } else {
         curl_setopt($client, CURLOPT_POST, true);
-        curl_setopt($client, CURLOPT_POSTFIELDS, http_build_query($data));
+        $hasFile = array_filter($data, static fn (mixed $value): bool => $value instanceof CURLFile) !== [];
+        curl_setopt($client, CURLOPT_POSTFIELDS, $hasFile ? $data : http_build_query($data));
     }
     $raw = curl_exec($client);
     if (!is_string($raw)) {
@@ -145,6 +150,43 @@ try {
         }
     }
 
+    $articlesPage = $request('/admin/articles');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $articlesPage['body'], $match);
+    $studioToken = $match[1] ?? '';
+    $fixture = tempnam(sys_get_temp_dir(), 'moves-media-');
+    $canvas = imagecreatetruecolor(80, 60); imagefill($canvas, 0, 0, imagecolorallocate($canvas, 104, 16, 159)); imagepng($canvas, $fixture);
+    $uploaded = $request('/admin/media', ['_token' => $studioToken, 'action' => 'upload', 'image' => new CURLFile($fixture, 'image/png', 'teste-midia.png')]);
+    @unlink($fixture);
+    $mediaRow = $pdo->query("SELECT id,path FROM studio_media WHERE name LIKE 'teste-midia%' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    if ($uploaded['status'] !== 302 || !$mediaRow) { throw new RuntimeException('FAIL: upload seguro de mídia não foi persistido.'); }
+    $mediaIds[] = (int) $mediaRow['id']; $mediaPaths[] = (string) $mediaRow['path'];
+    $cropped = $request('/admin/media', ['_token' => $studioToken, 'action' => 'crop', 'id' => $mediaRow['id'], 'crop_x' => 10, 'crop_y' => 10, 'crop_width' => 40, 'crop_height' => 30]);
+    $cropRow = $pdo->query('SELECT id,path FROM studio_media WHERE parent_id=' . (int) $mediaRow['id'] . ' ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    if ($cropped['status'] !== 302 || !$cropRow) { throw new RuntimeException('FAIL: recorte derivado não foi criado.'); }
+    $mediaIds[] = (int) $cropRow['id']; $mediaPaths[] = (string) $cropRow['path'];
+    $categoryName = 'Categoria teste ' . bin2hex(random_bytes(3));
+    $request('/admin/articles', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $categoryName]);
+    $taxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($categoryName))->fetchColumn();
+    foreach (['articles' => 'Artigo', 'pages' => 'Página', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento'] as $module => $label) {
+        $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
+        $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => $module === 'articles' ? 'published' : 'draft', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
+        if ($module === 'articles') { $payload['category_id'] = $taxonomyId; $payload['video'] = ''; }
+        if ($module === 'pages') { $payload['template'] = 'landing'; }
+        if ($module === 'highlights') { $payload += ['cta_label' => 'Saiba mais', 'cta_url' => '/contato', 'alignment' => 'center']; }
+        if ($module === 'testimonials') { $payload += ['company' => 'Moves', 'job_title' => 'Cliente']; }
+        $saved = $request('/admin/' . $module, $payload);
+        $contentId = (int) $pdo->query('SELECT id FROM studio_content WHERE slug=' . $pdo->quote($slug))->fetchColumn();
+        if ($saved['status'] !== 302 || $contentId < 1) { throw new RuntimeException('FAIL: conteúdo não persistido em ' . $module); }
+        $contentIds[] = $contentId;
+        if ($module === 'articles') {
+            $publicArticle = $request('/conteudo/' . $slug);
+            $publicMedia = $request('/media/' . (int) $mediaRow['id']);
+            if ($publicArticle['status'] !== 200 || !str_contains($publicArticle['body'], $label . ' automatizado') || $publicMedia['status'] !== 200) { throw new RuntimeException('FAIL: artigo ou mídia publicada indisponível.'); }
+        }
+    }
+    $protectedDelete = $request('/admin/media', ['_token' => $studioToken, 'action' => 'delete', 'id' => $mediaRow['id']]);
+    if ($protectedDelete['status'] !== 302 || !(bool) $pdo->query('SELECT 1 FROM studio_media WHERE id=' . (int) $mediaRow['id'])->fetchColumn()) { throw new RuntimeException('FAIL: mídia associada pôde ser excluída.'); }
+
     $contact = $request('/contato');
     preg_match('/name="_token"\s+value="([^"]+)"/', $contact['body'], $match);
     $contactToken = $match[1] ?? '';
@@ -179,6 +221,10 @@ try {
     if ($managedUserId !== null) {
         $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$managedUserId]);
     }
+    foreach ($contentIds as $contentId) { $pdo->prepare('DELETE FROM studio_content WHERE id=?')->execute([$contentId]); }
+    if ($taxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$taxonomyId]); }
+    foreach (array_reverse($mediaIds) as $mediaId) { $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$mediaId]); }
+    foreach ($mediaPaths as $mediaPath) { if (is_file($mediaPath)) { @unlink($mediaPath); } }
     if ($id !== null) {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
     }

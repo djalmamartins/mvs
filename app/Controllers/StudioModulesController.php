@@ -39,6 +39,14 @@ final class StudioModulesController extends Controller
             $action = (string) Request::post('action', 'save');
             $id = max(0, (int) Request::post('id', 0));
 
+            if ($module === 'articles' && $action === 'category') {
+                $name = mb_substr(trim(strip_tags((string) Request::post('category_name', ''))), 0, 120);
+                if (mb_strlen($name) < 2) { Flash::set('error', 'Informe o nome da categoria.'); Response::to('/admin/articles'); }
+                try { $pdo->prepare("INSERT INTO studio_taxonomies(type,name,slug) VALUES('article_category',?,?)")->execute([$name, $this->slug($name)]); Flash::set('success', 'Categoria criada.'); }
+                catch (Throwable $exception) { Flash::set('error', 'A categoria já existe ou não pôde ser criada.'); }
+                Response::to('/admin/articles');
+            }
+
             if ($action === 'delete') {
                 $statement = $pdo->prepare('DELETE FROM studio_content WHERE id = ? AND type = ?');
                 $statement->execute([$id, $definition['type']]);
@@ -55,6 +63,25 @@ final class StudioModulesController extends Controller
                 ? (string) Request::post('status')
                 : 'draft';
             $position = max(0, min(9999, (int) Request::post('position', 0)));
+            $seoTitle = mb_substr(trim(strip_tags((string) Request::post('seo_title', ''))), 0, 160);
+            $seoDescription = mb_substr(trim(strip_tags((string) Request::post('seo_description', ''))), 0, 320);
+            $mediaId = max(0, (int) Request::post('media_id', 0)) ?: null;
+            $categoryId = $module === 'articles' ? (max(0, (int) Request::post('category_id', 0)) ?: null) : null;
+            $template = $module === 'pages' && in_array(Request::post('template'), ['default', 'landing', 'wide'], true) ? (string) Request::post('template') : null;
+            $startsAt = $module === 'highlights' ? $this->dateTime((string) Request::post('starts_at', '')) : null;
+            $endsAt = $module === 'highlights' ? $this->dateTime((string) Request::post('ends_at', '')) : null;
+            $meta = match ($module) {
+                'articles' => ['video' => mb_substr(trim(strip_tags((string) Request::post('video', ''))), 0, 255)],
+                'highlights' => ['cta_label' => mb_substr(trim(strip_tags((string) Request::post('cta_label', ''))), 0, 80), 'cta_url' => mb_substr(trim((string) Request::post('cta_url', '')), 0, 500), 'alignment' => in_array(Request::post('alignment'), ['left', 'center', 'right'], true) ? Request::post('alignment') : 'left'],
+                'testimonials' => ['company' => mb_substr(trim(strip_tags((string) Request::post('company', ''))), 0, 160), 'job_title' => mb_substr(trim(strip_tags((string) Request::post('job_title', ''))), 0, 120)],
+                default => [],
+            };
+
+            if ($mediaId !== null && !$this->mediaExists($mediaId)) { $mediaId = null; }
+            if ($categoryId !== null && !$this->taxonomyExists($categoryId, 'article_category')) { $categoryId = null; }
+            if ($module === 'articles' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/articles' . ($id ? '?edit=' . $id : '')); }
+            if ($startsAt && $endsAt && $startsAt > $endsAt) { Flash::set('error', 'O fim da exibição deve ocorrer depois do início.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
+            if (($meta['cta_url'] ?? '') !== '' && filter_var($meta['cta_url'], FILTER_VALIDATE_URL) === false && !str_starts_with((string) $meta['cta_url'], '/')) { Flash::set('error', 'Informe uma URL de CTA válida.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
 
             if (mb_strlen($title) < 3 || $slug === '') {
                 Flash::set('error', 'Informe um título válido.');
@@ -63,11 +90,11 @@ final class StudioModulesController extends Controller
 
             try {
                 if ($id > 0) {
-                    $statement = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,status=?,position=?,published_at=? WHERE id=? AND type=?');
-                    $statement->execute([$title, $slug, $excerpt ?: null, $content ?: null, $status, $position, $status === 'published' ? date('Y-m-d H:i:s') : null, $id, $definition['type']]);
+                    $statement = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,starts_at=?,ends_at=?,published_at=? WHERE id=? AND type=?');
+                    $statement->execute([$title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, $id, $definition['type']]);
                 } else {
-                    $statement = $pdo->prepare('INSERT INTO studio_content(type,title,slug,excerpt,content,status,position,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?)');
-                    $statement->execute([$definition['type'], $title, $slug, $excerpt ?: null, $content ?: null, $status, $position, $status === 'published' ? date('Y-m-d H:i:s') : null, Auth::user()?->id]);
+                    $statement = $pdo->prepare('INSERT INTO studio_content(type,title,slug,excerpt,content,seo_title,seo_description,media_id,category_id,template,meta_json,status,position,starts_at,ends_at,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+                    $statement->execute([$definition['type'], $title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, Auth::user()?->id]);
                 }
             } catch (Throwable $exception) {
                 Logger::exception($exception);
@@ -95,9 +122,12 @@ final class StudioModulesController extends Controller
             $edit = $editStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         }
 
+        $media = $pdo->query('SELECT id,name,width,height FROM studio_media ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
+        $categories = $pdo->query("SELECT id,name FROM studio_taxonomies WHERE type='article_category' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        if ($edit) { $edit['meta'] = json_decode((string) ($edit['meta_json'] ?? ''), true) ?: []; }
         echo $this->view->render('pages/content-module', [
             'title' => $definition['title'], 'module' => $module, 'singular' => $definition['singular'],
-            'records' => $statement->fetchAll(PDO::FETCH_ASSOC), 'edit' => $edit, 'search' => $search, 'status' => $status,
+            'records' => $statement->fetchAll(PDO::FETCH_ASSOC), 'edit' => $edit, 'search' => $search, 'status' => $status, 'media' => $media, 'categories' => $categories,
         ]);
     }
 
@@ -109,6 +139,9 @@ final class StudioModulesController extends Controller
             $action = (string) Request::post('action', 'upload');
             if ($action === 'delete') {
                 $id = max(0, (int) Request::post('id', 0));
+                $usage = $pdo->prepare('SELECT COUNT(*) FROM studio_content WHERE media_id=?');
+                $usage->execute([$id]);
+                if ((int) $usage->fetchColumn() > 0) { Flash::set('error', 'A imagem está associada a conteúdo. Remova os vínculos antes de excluir.'); Response::to('/admin/media'); }
                 $statement = $pdo->prepare('SELECT path FROM studio_media WHERE id=?');
                 $statement->execute([$id]);
                 $path = $statement->fetchColumn();
@@ -117,6 +150,17 @@ final class StudioModulesController extends Controller
                 if ($root && $file && str_starts_with($file, $root . DIRECTORY_SEPARATOR)) { @unlink($file); }
                 $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$id]);
                 Flash::set('success', 'Arquivo removido.');
+                Response::to('/admin/media');
+            }
+            if ($action === 'metadata') {
+                $id = max(0, (int) Request::post('id', 0));
+                $alt = mb_substr(trim(strip_tags((string) Request::post('alt_text', ''))), 0, 255);
+                $pdo->prepare('UPDATE studio_media SET alt_text=? WHERE id=?')->execute([$alt ?: null, $id]);
+                Flash::set('success', 'Metadados da imagem atualizados.');
+                Response::to('/admin/media');
+            }
+            if ($action === 'crop') {
+                $this->cropMedia($pdo, max(0, (int) Request::post('id', 0)));
                 Response::to('/admin/media');
             }
             try {
@@ -134,8 +178,8 @@ final class StudioModulesController extends Controller
             Response::to('/admin/media');
         }
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
-        $statement = $pdo->prepare('SELECT id,name,mime,size,width,height,created_at FROM studio_media' . ($search !== '' ? ' WHERE name LIKE ?' : '') . ' ORDER BY id DESC LIMIT 200');
-        $statement->execute($search !== '' ? ['%' . $search . '%'] : []);
+        $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
+        $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
         echo $this->view->render('pages/media', ['title' => 'Mídia', 'files' => $statement->fetchAll(PDO::FETCH_ASSOC), 'search' => $search]);
     }
 
@@ -202,5 +246,47 @@ final class StudioModulesController extends Controller
     {
         $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', mb_strtolower(trim($value)));
         return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($ascii ?: $value)), '-');
+    }
+
+    private function mediaExists(int $id): bool
+    {
+        $statement = Connection::getInstance()->prepare('SELECT 1 FROM studio_media WHERE id=?');
+        $statement->execute([$id]);
+        return (bool) $statement->fetchColumn();
+    }
+
+    private function taxonomyExists(int $id, string $type): bool
+    {
+        $statement = Connection::getInstance()->prepare('SELECT 1 FROM studio_taxonomies WHERE id=? AND type=?');
+        $statement->execute([$id, $type]);
+        return (bool) $statement->fetchColumn();
+    }
+
+    private function dateTime(string $value): ?string
+    {
+        $timestamp = $value === '' ? false : strtotime($value);
+        return $timestamp === false ? null : date('Y-m-d H:i:s', $timestamp);
+    }
+
+    private function cropMedia(PDO $pdo, int $id): void
+    {
+        $statement = $pdo->prepare('SELECT * FROM studio_media WHERE id=?'); $statement->execute([$id]);
+        $media = $statement->fetch(PDO::FETCH_ASSOC);
+        $root = realpath(dirname(__DIR__, 2) . '/storage/media');
+        $file = $media ? realpath((string) $media['path']) : false;
+        if (!$root || !$file || !str_starts_with($file, $root . DIRECTORY_SEPARATOR)) { Flash::set('error', 'Imagem não encontrada.'); return; }
+        $info = getimagesize($file); $width = (int) ($info[0] ?? 0); $height = (int) ($info[1] ?? 0);
+        $x = max(0, min($width - 1, (int) Request::post('crop_x', 0))); $y = max(0, min($height - 1, (int) Request::post('crop_y', 0)));
+        $cropWidth = max(1, min($width - $x, (int) Request::post('crop_width', $width))); $cropHeight = max(1, min($height - $y, (int) Request::post('crop_height', $height)));
+        $source = match ($media['mime']) { 'image/jpeg' => imagecreatefromjpeg($file), 'image/png' => imagecreatefrompng($file), 'image/gif' => imagecreatefromgif($file), 'image/webp' => imagecreatefromwebp($file), default => false };
+        if (!$source) { Flash::set('error', 'Não foi possível processar a imagem.'); return; }
+        $target = imagecreatetruecolor($cropWidth, $cropHeight); imagealphablending($target, false); imagesavealpha($target, true);
+        imagecopy($target, $source, 0, 0, $x, $y, $cropWidth, $cropHeight);
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION)); $targetPath = $root . DIRECTORY_SEPARATOR . pathinfo($file, PATHINFO_FILENAME) . '-crop-' . bin2hex(random_bytes(4)) . '.' . $extension;
+        $saved = match ($media['mime']) { 'image/jpeg' => imagejpeg($target, $targetPath, 82), 'image/png' => imagepng($target, $targetPath, 5), 'image/gif' => imagegif($target, $targetPath), 'image/webp' => imagewebp($target, $targetPath, 82), default => false };
+        if (!$saved) { Flash::set('error', 'Não foi possível salvar o recorte.'); return; }
+        $insert = $pdo->prepare('INSERT INTO studio_media(name,alt_text,path,mime,size,width,height,parent_id,crop_data,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)');
+        $insert->execute([basename($targetPath), $media['alt_text'], $targetPath, $media['mime'], filesize($targetPath), $cropWidth, $cropHeight, $id, json_encode(compact('x','y','cropWidth','cropHeight')), Auth::user()?->id]);
+        Flash::set('success', 'Recorte criado como nova imagem; o original foi preservado.');
     }
 }

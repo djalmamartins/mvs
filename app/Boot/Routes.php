@@ -56,6 +56,7 @@ final class Routes
         );
 
         $router->get('/conteudo/{slug}', 'Home:article', 'site.article');
+        $router->get('/media/{id}', 'StudioModulesController:mediaFile', 'site.media.file');
 
         $router->get(
             '/contato',

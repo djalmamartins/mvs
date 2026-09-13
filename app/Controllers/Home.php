@@ -63,7 +63,7 @@ final class Home extends Controller
 
     public function content(): void
     {
-        $statement = Connection::getInstance()->query("SELECT title,slug,excerpt,image_path,published_at FROM studio_content WHERE type='article' AND status='published' ORDER BY published_at DESC,id DESC LIMIT 50");
+        $statement = Connection::getInstance()->query("SELECT c.title,c.slug,c.excerpt,c.media_id,c.published_at,t.name category_name,m.alt_text FROM studio_content c LEFT JOIN studio_taxonomies t ON t.id=c.category_id LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='article' AND c.status='published' AND (c.published_at IS NULL OR c.published_at<=NOW()) ORDER BY c.published_at DESC,c.id DESC LIMIT 50");
         echo $this->view->render('pages/conteudo', [
             'title' => 'Conteúdo — MOVES',
             'description' => 'Guias sobre planejamento de sites, automação e produtos digitais.',
@@ -79,7 +79,7 @@ final class Home extends Controller
         $statement->execute([$data['slug'] ?? '']);
         $article = $statement->fetch(PDO::FETCH_ASSOC);
         if (!$article) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
-        echo $this->view->render('pages/article', ['title'=>$article['title'].' — MOVES','description'=>$article['excerpt'] ?: $article['title'],'article'=>$article,...$this->pageMetadata('/conteudo/'.$article['slug'])]);
+        echo $this->view->render('pages/article', ['title'=>($article['seo_title'] ?: $article['title']).' — MOVES','description'=>$article['seo_description'] ?: ($article['excerpt'] ?: $article['title']),'article'=>$article,...$this->pageMetadata('/conteudo/'.$article['slug'])]);
     }
 
     public function contact(): void

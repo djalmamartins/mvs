@@ -20,7 +20,7 @@ $this->layout('layouts/default', [
 <section class="section-shell page-section" aria-label="Conteúdos da Moves">
     <div class="articles-grid">
         <?php if ($articles === []): ?><p class="page-lead">Novos conteúdos estão sendo preparados.</p><?php endif; ?>
-        <?php foreach ($articles as $article): ?><article class="article-card"><div class="article-image article-1" role="img" aria-label="<?= $this->e($article['title']) ?>"></div><div><small>CONTEÚDO · MOVES</small><h2><?= $this->e($article['title']) ?></h2><p><?= $this->e($article['excerpt'] ?? '') ?></p><a href="/conteudo/<?= $this->e($article['slug']) ?>">Ler conteúdo ↗</a></div></article><?php endforeach; ?>
+        <?php foreach ($articles as $article): ?><article class="article-card"><?php if($article['media_id']):?><img class="article-image" src="/media/<?= (int)$article['media_id'] ?>" alt="<?= $this->e($article['alt_text']?:$article['title']) ?>"><?php else:?><div class="article-image article-1" role="img" aria-label="<?= $this->e($article['title']) ?>"></div><?php endif;?><div><small><?= $this->e(mb_strtoupper($article['category_name']??'CONTEÚDO')) ?> · MOVES</small><h2><?= $this->e($article['title']) ?></h2><p><?= $this->e($article['excerpt'] ?? '') ?></p><a href="/conteudo/<?= $this->e($article['slug']) ?>">Ler conteúdo ↗</a></div></article><?php endforeach; ?>
     </div>
 </section>
 
