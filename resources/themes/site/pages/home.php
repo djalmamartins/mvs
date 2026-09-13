@@ -4,6 +4,7 @@
 
 $highlights = $highlights ?? [];
 $testimonials = $testimonials ?? [];
+$projects = $projects ?? [];
 
 $this->layout('layouts/default', [
     'title' => $title,
@@ -50,14 +51,7 @@ $this->layout('layouts/default', [
 
 <section class="section-shell projects-block" id="projects">
     <div class="projects-intro reveal"><p class="eyebrow">IDEIAS EM MOVIMENTO</p><h2>Possibilidades<br>em <span class="brand-gradient">movimento.</span></h2><p>Conceitos de soluções para explorar novas possibilidades em diferentes setores.</p></div>
-    <div class="projects-grid portfolio-grid">
-        <article class="project-card editorial-project project-a"><div class="project-content"><span aria-hidden="true">01</span><p class="project-kind">Plataforma digital · conceito</p><h3>Condomínios</h3><p class="project-summary">Portal para administradoras.</p></div></article>
-        <article class="project-card editorial-project project-office"><div class="project-content"><span aria-hidden="true">02</span><p class="project-kind">Site institucional · conceito</p><h3>Escritório virtual</h3><p class="project-summary">Presença digital para serviços profissionais.</p></div></article>
-        <article class="project-card editorial-project project-fashion"><div class="project-content"><span aria-hidden="true">03</span><p class="project-kind">E-commerce · conceito</p><h3>Moda e lifestyle</h3><p class="project-summary">Uma vitrine para explorar coleções.</p></div></article>
-        <article class="project-card editorial-project project-c"><div class="project-content"><span aria-hidden="true">04</span><p class="project-kind">Identidade visual · conceito</p><h3>Gastronomia</h3><p class="project-summary">Design e identidade para a marca.</p></div></article>
-        <article class="project-card editorial-project project-b"><div class="project-content"><span aria-hidden="true">05</span><p class="project-kind">Aplicativo · conceito</p><h3>Saúde</h3><p class="project-summary">Experiência digital para pacientes.</p></div></article>
-        <article class="project-card editorial-project project-d"><div class="project-content"><span aria-hidden="true">06</span><p class="project-kind">Plataforma de aprendizagem · conceito</p><h3>Educação</h3><p class="project-summary">Um ambiente para aprender online.</p></div></article>
-    </div>
+    <?php $this->insert('components/portfolio',['projects'=>$projects,'variant'=>'cards']); ?>
 </section>
 
 <section class="section-shell process block">

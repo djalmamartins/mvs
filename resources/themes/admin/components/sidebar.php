@@ -11,6 +11,7 @@ $groups = [
     ],
     'Conteúdo' => [
         ['label' => 'Páginas', 'icon' => 'copy', 'href' => '/admin/pages', 'key' => 'pages'],
+        ['label' => 'Projetos', 'icon' => 'briefcase', 'href' => '/admin/projects', 'key' => 'projects'],
         ['label' => 'Artigos', 'icon' => 'newspaper', 'href' => '/admin/articles', 'key' => 'articles'],
         ['label' => 'Mídia', 'icon' => 'image', 'href' => '/admin/media', 'key' => 'media'],
         ['label' => 'Destaques', 'icon' => 'archive', 'href' => '/admin/highlights', 'key' => 'highlights'],

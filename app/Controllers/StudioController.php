@@ -26,7 +26,7 @@ final class StudioController extends Controller
         $checks = Diagnostics::run();
         $activity = (new LogReader())->read('', '', 1, 10);
         $contentCounts = [];
-        foreach (['page', 'article', 'media', 'highlight', 'testimonial', 'faq'] as $type) {
+        foreach (['page', 'project', 'article', 'media', 'highlight', 'testimonial', 'faq'] as $type) {
             if ($type === 'media') {
                 $contentCounts[$type] = (int) Connection::getInstance()->query('SELECT COUNT(*) FROM studio_media')->fetchColumn();
                 continue;

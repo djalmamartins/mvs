@@ -13,7 +13,7 @@ O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A m
 ## Navegação
 
 - Visão geral: Dashboard, Relatórios, Notificações e Propostas são funcionais.
-- Conteúdo: Páginas, Artigos, Mídia, Destaques, Depoimentos e FAQ são funcionais.
+- Conteúdo: Páginas, Projetos, Artigos, Mídia, Destaques, Depoimentos e FAQ são funcionais.
 - Gestão: Usuários, Configurações, Versões informativa e Log somente leitura são funcionais.
 - Diagnóstico continua funcional em `/admin/diagnostics`, acessível pelo Dashboard e por Configurações.
 
@@ -30,7 +30,7 @@ Os indicadores usam somente fontes existentes: usuários, saúde de `Diagnostics
 - `/admin/versions` informa o ambiente e registra um histórico semântico auditável por autor. O registro não executa deploy, atualização, tag ou rollback.
 - `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL sanitizado e permite classificar eventos existentes como aberto, resolvido ou ignorado. O conteúdo original permanece imutável e o caminho do arquivo não é revelado.
 - `/admin/media` mantém a biblioteca de imagens, texto alternativo, recortes derivados e associações protegidas com conteúdos.
-- `/admin/articles`, `/admin/pages`, `/admin/highlights` e `/admin/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação; artigos também alimentam `/conteudo`.
+- `/admin/articles`, `/admin/pages`, `/admin/projects`, `/admin/highlights` e `/admin/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação. Artigos alimentam `/conteudo`; projetos alimentam o componente de portfólio reutilizado na home e em `/projetos`.
 - `/admin/faq` organiza perguntas e respostas por categoria; `/admin/proposals` mantém pipeline e histórico; `/admin/notifications` oferece contador e ações por destinatário; `/admin/reports` agrega dados reais e exporta CSV.
 - `/admin/search` pesquisa conteúdo, usuários e propostas. Páginas publicadas usam `/pagina/{slug}`, FAQ usa `/faq`, e destaques/depoimentos publicados alimentam a página inicial respeitando ordem e período.
 
@@ -50,3 +50,9 @@ As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, com
 4. **CMS institucional — concluída:** Páginas, Destaques, Depoimentos e FAQ.
 5. **Comercial — concluída:** propostas persistidas a partir de `/contato` e notificações.
 6. **Relatórios — concluída:** contagens reais dos módulos persistidos, sem métricas simuladas.
+
+## Homologação integrada
+
+`php scripts/seed-studio-demo.php` cadastra ou atualiza, somente no ambiente local não produtivo, exemplos publicados de página, artigo, destaque, depoimento, FAQ e projeto, além de uma proposta e uma notificação. O comando é idempotente e serve para inspeção manual de todos os componentes.
+
+`php scripts/test-admin-settings.php` executa o fluxo HTTP autenticado de cadastro e publicação dos módulos, busca global, mídia e recorte, proposta, notificação e relatório. Os registros aleatórios desse teste são removidos ao final.

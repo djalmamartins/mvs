@@ -1435,6 +1435,21 @@ main {
     display: none
 }
 
+.portfolio-card-db:before {
+    background-image: var(--portfolio-image, linear-gradient(135deg, #68109f, #d32689));
+}
+
+.portfolio-empty {
+    grid-column: 1 / -1;
+    padding: 52px 24px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    text-align: center;
+    background: #101319;
+}
+
+.portfolio-empty p { color: #a7aeb9 }
+
 .filter-status {
     color: #a7aeb9;
     font-size: 14px

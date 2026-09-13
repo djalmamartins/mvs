@@ -32,7 +32,9 @@
   },
   "scripts": {
     "test": "phpunit",
-    "analyse": "phpstan analyse --no-progress"
+    "analyse": "phpstan analyse --no-progress",
+    "test:integration": "php scripts/test-admin-settings.php",
+    "seed:demo": "php scripts/seed-studio-demo.php"
   },
   "config": {
     "sort-packages": true

@@ -150,7 +150,7 @@ final class Routes
         $router->post('/admin/logs', 'StudioController:logs', 'admin.logs.action', $studioTechnicalMiddleware);
 
         $studioContentMiddleware = [AuthMiddleware::class, new PermissionMiddleware('content.manage')];
-        foreach (['pages', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
+        foreach (['pages', 'projects', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
             $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioContentMiddleware);
             $router->post('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module . '.save', $studioContentMiddleware);
         }

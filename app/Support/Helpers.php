@@ -46,7 +46,7 @@ if (!function_exists('studio_icon')) {
     function studio_icon(string $name, string $class = ''): string
     {
         $allowed = [
-            'apps', 'archive', 'bell', 'bug', 'calendar', 'chart', 'chevron-down',
+            'apps', 'archive', 'bell', 'briefcase', 'bug', 'calendar', 'chart', 'chevron-down',
             'circle-help', 'copy', 'dashboard', 'external-link', 'file-text', 'globe',
             'headphones', 'image', 'log-out', 'message-square', 'moon', 'newspaper',
             'pencil', 'search', 'settings', 'sparkles', 'tag', 'trash', 'upload', 'users',

@@ -40,6 +40,7 @@ $proposalId = null;
 $contentIds = [];
 $taxonomyId = null;
 $faqTaxonomyId = null;
+$projectTaxonomyId = null;
 $mediaIds = [];
 $mediaPaths = [];
 $createdSlugs = [];
@@ -145,7 +146,7 @@ try {
         throw new RuntimeException('FAIL: estado do usuário não foi alterado.');
     }
 
-    foreach (['pages','articles','media','highlights','testimonials','faq','proposals','notifications','reports'] as $module) {
+    foreach (['pages','projects','articles','media','highlights','testimonials','faq','proposals','notifications','reports'] as $module) {
         $modulePage = $request('/admin/' . $module);
         if ($modulePage['status'] !== 200) {
             throw new RuntimeException('FAIL: módulo Studio indisponível: ' . $module);
@@ -172,12 +173,16 @@ try {
     $faqCategoryName = 'FAQ teste ' . bin2hex(random_bytes(3));
     $request('/admin/faq', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $faqCategoryName]);
     $faqTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($faqCategoryName))->fetchColumn();
-    foreach (['articles' => 'Artigo', 'pages' => 'Página', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
+    $projectCategoryName = 'Projetos teste ' . bin2hex(random_bytes(3));
+    $request('/admin/projects', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $projectCategoryName]);
+    $projectTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($projectCategoryName))->fetchColumn();
+    foreach (['articles' => 'Artigo', 'pages' => 'Página', 'projects' => 'Projeto', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
         $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
         $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => 'published', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
         if ($module === 'articles') { $payload['category_id'] = $taxonomyId; $payload['video'] = ''; }
         if ($module === 'faq') { $payload['category_id'] = $faqTaxonomyId; }
         if ($module === 'pages') { $payload['template'] = 'landing'; }
+        if ($module === 'projects') { $payload += ['category_id'=>$projectTaxonomyId,'client'=>'Cliente teste','kind'=>'Site institucional','project_url'=>'/contato','image'=>'images/portfolio/studio-alta.png','backdrop'=>'images/portfolio/studio-alta-bg.jpg']; }
         if ($module === 'highlights') { $payload += ['cta_label' => 'Saiba mais', 'cta_url' => '/contato', 'alignment' => 'center']; }
         if ($module === 'testimonials') { $payload += ['company' => 'Moves', 'job_title' => 'Cliente']; }
         $saved = $request('/admin/' . $module, $payload);
@@ -195,7 +200,15 @@ try {
     $publicPage = $request('/pagina/' . $createdSlugs['pages']);
     $publicFaq = $request('/faq');
     $publicHome = $request('/');
-    if ($globalSearch['status'] !== 200 || !str_contains($globalSearch['body'], 'Artigo automatizado') || $publicPage['status'] !== 200 || !str_contains($publicPage['body'], 'Página automatizado') || !str_contains($publicFaq['body'], 'Pergunta automatizado') || !str_contains($publicHome['body'], 'Destaque automatizado') || !str_contains($publicHome['body'], 'Depoimento automatizado')) { throw new RuntimeException('FAIL: integração pública ou busca global incompleta.'); }
+    $publicProjects = $request('/projetos');
+    if ($globalSearch['status'] !== 200 || !str_contains($globalSearch['body'], 'Artigo automatizado') || !str_contains($globalSearch['body'], 'Projeto automatizado') || $publicPage['status'] !== 200 || !str_contains($publicPage['body'], 'Página automatizado') || !str_contains($publicFaq['body'], 'Pergunta automatizado') || !str_contains($publicProjects['body'], 'Projeto automatizado') || !str_contains($publicHome['body'], 'Destaque automatizado') || !str_contains($publicHome['body'], 'Depoimento automatizado') || !str_contains($publicHome['body'], 'Projeto automatizado')) { throw new RuntimeException('FAIL: integração pública ou busca global incompleta.'); }
+
+    $notificationTitle = 'Notificação automatizada ' . bin2hex(random_bytes(3));
+    $notificationCreated = $request('/admin/notifications', ['_token'=>$studioToken,'action'=>'create','title'=>$notificationTitle,'message'=>'Mensagem completa para validar o cadastro de comunicação.','recipient_id'=>'','action_url'=>'/admin/projects']);
+    $createdNotificationId = (int) $pdo->query('SELECT id FROM notifications WHERE title=' . $pdo->quote($notificationTitle))->fetchColumn();
+    if ($notificationCreated['status'] !== 302 || $createdNotificationId < 1) { throw new RuntimeException('FAIL: cadastro de notificação não foi persistido.'); }
+    $request('/admin/notifications', ['_token'=>$studioToken,'id'=>$createdNotificationId,'action'=>'delete']);
+    if ($pdo->query('SELECT id FROM notifications WHERE id=' . $createdNotificationId)->fetchColumn()) { throw new RuntimeException('FAIL: notificação de teste não foi removida.'); }
     $protectedDelete = $request('/admin/media', ['_token' => $studioToken, 'action' => 'delete', 'id' => $mediaRow['id']]);
     if ($protectedDelete['status'] !== 302 || !(bool) $pdo->query('SELECT 1 FROM studio_media WHERE id=' . (int) $mediaRow['id'])->fetchColumn()) { throw new RuntimeException('FAIL: mídia associada pôde ser excluída.'); }
 
@@ -248,6 +261,7 @@ try {
     foreach ($contentIds as $contentId) { $pdo->prepare('DELETE FROM studio_content WHERE id=?')->execute([$contentId]); }
     if ($taxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$taxonomyId]); }
     if ($faqTaxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$faqTaxonomyId]); }
+    if ($projectTaxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$projectTaxonomyId]); }
     foreach (array_reverse($mediaIds) as $mediaId) { $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$mediaId]); }
     foreach ($mediaPaths as $mediaPath) { if (is_file($mediaPath)) { @unlink($mediaPath); } }
     if ($id !== null) {

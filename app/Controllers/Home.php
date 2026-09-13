@@ -40,6 +40,7 @@ final class Home extends Controller
             ...$this->pageMetadata('/'),
             'highlights'=>$highlights,
             'testimonials'=>$testimonials,
+            'projects'=>$this->publishedProjects(6),
         ]);
     }
 
@@ -75,6 +76,7 @@ final class Home extends Controller
             'title' => 'Projetos — MOVES',
             'description' => 'Apresentações de sites e projetos digitais com filtros por categoria.',
             ...$this->pageMetadata('/projetos'),
+            'projects' => $this->publishedProjects(),
         ]);
     }
 
@@ -183,5 +185,20 @@ final class Home extends Controller
             'canonical' => $canonical,
             'robots' => Config::isProduction() ? 'index, follow' : 'noindex, nofollow',
         ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function publishedProjects(int $limit = 100): array
+    {
+        $limit = max(1, min(100, $limit));
+        $statement = Connection::getInstance()->query(
+            "SELECT c.*,t.name category_name,m.alt_text FROM studio_content c LEFT JOIN studio_taxonomies t ON t.id=c.category_id LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='project' AND c.status='published' AND (c.published_at IS NULL OR c.published_at<=NOW()) ORDER BY c.position,c.id DESC LIMIT {$limit}"
+        );
+        $projects = $statement->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($projects as &$project) {
+            $project['meta'] = json_decode((string) ($project['meta_json'] ?? ''), true) ?: [];
+        }
+        unset($project);
+        return $projects;
     }
 }

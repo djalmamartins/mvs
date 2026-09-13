@@ -5,6 +5,7 @@
   <symbol id="studio-icon-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
   <symbol id="studio-icon-file-text" viewBox="0 0 24 24"><path d="M6 2h8l4 4v16H6zM14 2v5h5M9 13h6M9 17h6"/></symbol>
   <symbol id="studio-icon-copy" viewBox="0 0 24 24"><rect x="8" y="7" width="11" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="studio-icon-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/></symbol>
   <symbol id="studio-icon-newspaper" viewBox="0 0 24 24"><path d="M4 4h14v16H4zM18 8h2v10a2 2 0 0 1-2 2M7 8h3v3H7zM12 8h3M12 11h3M7 15h8M7 18h8"/></symbol>
   <symbol id="studio-icon-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 2-2 5 4"/></symbol>
   <symbol id="studio-icon-archive" viewBox="0 0 24 24"><path d="M4 7h16v14H4zM3 3h18v4H3zM9 11h6"/></symbol>
