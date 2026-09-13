@@ -1,0 +1,113 @@
+@charset "UTF-8";
+
+/*
+ * Moves Studio Design System
+ * Ativos tipográficos e métricas consolidados do Studio original.
+ * Esta camada contém fundações; componentes permanecem em studio-reference.css.
+ */
+@font-face {
+    font-family: "Gotham";
+    src: local("Gotham Book"), local("GothamBook"), url("../fonts/GothamBookRegular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Gotham";
+    src: local("Gotham Medium"), local("GothamMedium"), url("../fonts/GothamMedium.otf") format("opentype");
+    font-weight: 500 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Moves Studio Icons";
+    src: url("../fonts/studio.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+:root {
+    --studio-font-family: "Gotham", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    --studio-primary: #7410b5;
+    --studio-primary-hover: #5f0d96;
+    --studio-primary-soft: #f6effa;
+    --studio-primary-line: #dfcaec;
+    --studio-canvas: #f7f8fa;
+    --studio-surface: #ffffff;
+    --studio-surface-soft: #fafbfc;
+    --studio-ink: #151b34;
+    --studio-text: #465066;
+    --studio-muted: #6f7a94;
+    --studio-border: #e1e4eb;
+    --studio-success: #287a48;
+    --studio-warning: #9a6400;
+    --studio-danger: #bd3042;
+    --studio-info: #286f9e;
+
+    --studio-space-1: .25rem;
+    --studio-space-2: .5rem;
+    --studio-space-3: .75rem;
+    --studio-space-4: 1rem;
+    --studio-space-5: 1.25rem;
+    --studio-space-6: 1.5rem;
+    --studio-space-8: 2rem;
+    --studio-space-10: 2.5rem;
+    --studio-space-12: 3rem;
+
+    --studio-radius-sm: 8px;
+    --studio-radius: 12px;
+    --studio-radius-lg: 16px;
+    --studio-radius-pill: 999px;
+    --studio-shadow-sm: 0 1px 3px rgb(25 20 31 / 5%);
+    --studio-shadow: 0 10px 30px rgb(25 20 31 / 7%);
+    --studio-shadow-lg: 0 22px 60px rgb(24 18 29 / 18%);
+    --studio-motion-fast: 160ms ease;
+    --studio-motion: 220ms ease;
+    --studio-sidebar-width: 236px;
+    --studio-topbar-height: 64px;
+}
+
+/*
+ * Compatibilidade visual para módulos vindos do ERP. Novos componentes devem
+ * preferir studio_icon(), cujo SVG oferece melhor semântica e acessibilidade.
+ */
+.studio-v2 .moves-font-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    font: normal normal 1em/1 "Moves Studio Icons";
+    text-rendering: auto;
+    speak: never;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.studio-v2 .moves-font-icon::before { display: block }
+.studio-v2 .moves-font-icon.icon-home::before { content: "F" }
+.studio-v2 .moves-font-icon.icon-dashboard::before { content: "\e023" }
+.studio-v2 .moves-font-icon.icon-chart::before { content: "o" }
+.studio-v2 .moves-font-icon.icon-bell::before { content: "O" }
+.studio-v2 .moves-font-icon.icon-page::before { content: "\e039" }
+.studio-v2 .moves-font-icon.icon-article::before { content: "\e017" }
+.studio-v2 .moves-font-icon.icon-media::before { content: "\e019" }
+.studio-v2 .moves-font-icon.icon-highlight::before { content: "\e00b" }
+.studio-v2 .moves-font-icon.icon-comments::before { content: "8" }
+.studio-v2 .moves-font-icon.icon-users::before { content: "\e02b" }
+.studio-v2 .moves-font-icon.icon-settings::before { content: "L" }
+.studio-v2 .moves-font-icon.icon-tags::before { content: "[" }
+.studio-v2 .moves-font-icon.icon-upload::before { content: "\e006" }
+.studio-v2 .moves-font-icon.icon-edit::before { content: ";" }
+.studio-v2 .moves-font-icon.icon-delete::before { content: "\e001" }
+.studio-v2 .moves-font-icon.icon-search::before { content: "z" }
+.studio-v2 .moves-font-icon.icon-help::before { content: "v" }
+.studio-v2 .moves-font-icon.icon-logout::before { content: "l" }
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --studio-motion-fast: 1ms linear;
+        --studio-motion: 1ms linear;
+    }
+}
