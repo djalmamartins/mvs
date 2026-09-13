@@ -72,6 +72,13 @@ final class Routes
         );
 
         $router->get(
+            '/app/status',
+            'Home:appStatus',
+            'app.status',
+            AuthMiddleware::class
+        );
+
+        $router->get(
             '/profile',
             'UserController:legacyProfile',
             'profile.legacy',

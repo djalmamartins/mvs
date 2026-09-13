@@ -117,6 +117,28 @@ final class Home extends Controller
     }
 
     /**
+     * Retorna somente o estado real disponível para o cliente autenticado.
+     */
+    public function appStatus(): never
+    {
+        $user = Auth::user();
+
+        Response::json([
+            'user' => [
+                'id' => (int) $user->id,
+                'name' => (string) $user->name,
+            ],
+            'summary' => [
+                'services' => 0,
+                'projects' => 0,
+                'tickets' => 0,
+                'invoices' => 0,
+            ],
+            'updatedAt' => date(DATE_ATOM),
+        ]);
+    }
+
+    /**
      * @return array{canonical: ?string, robots: string}
      */
     private function pageMetadata(string $path): array

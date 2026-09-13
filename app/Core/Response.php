@@ -17,6 +17,25 @@ use InvalidArgumentException;
 final class Response
 {
     /**
+     * Envia uma resposta JSON e encerra a requisição.
+     *
+     * @param array<string, mixed> $payload
+     */
+    public static function json(array $payload, int $status = 200): never
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+
+        echo json_encode(
+            $payload,
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
+
+        exit;
+    }
+
+    /**
      * Envia headers defensivos compatíveis com os temas atuais.
      */
     public static function securityHeaders(): void

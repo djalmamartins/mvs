@@ -78,14 +78,16 @@ $request = static function (string $path, ?array $data = null) use ($client, $ba
 $pdo = Connection::getInstance();
 $email = 'middleware-test-' . bin2hex(random_bytes(12)) . '@example.invalid';
 $password = bin2hex(random_bytes(24));
+$name = 'Middleware integration test';
 $id = null;
 try {
     $insert = $pdo->prepare('INSERT INTO users (name, email, password, status) VALUES (?, ?, ?, ?)');
-    $insert->execute(['Middleware integration test', $email, password_hash($password, PASSWORD_DEFAULT), 'active']);
+    $insert->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), 'active']);
     $id = (int) $pdo->lastInsertId();
 
     $response = $request('/app');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /app redirecionado para /login');
+    $check($request('/app/status')['status'] === 302, 'visitante não acessa estado em tempo real');
     $sessionHeaders = $response['headers'];
     $response = $request('/admin');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /admin redirecionado para /login');
@@ -147,6 +149,11 @@ try {
     $check(stripos($response['headers'], 'Cache-Control: private, no-store') !== false, 'área autenticada não permite cache público');
     $profile = $request('/app/profile');
     $check($profile['status'] === 200 && str_contains($profile['body'], $email), 'perfil pertence ao usuário autenticado');
+    $status = $request('/app/status');
+    $statusPayload = json_decode($status['body'], true);
+    $check($status['status'] === 200 && is_array($statusPayload), 'estado em tempo real exige autenticação e retorna JSON');
+    $check(stripos($status['headers'], 'Content-Type: application/json') !== false, 'estado em tempo real declara JSON');
+    $check(($statusPayload['user']['name'] ?? null) === $name, 'estado em tempo real pertence ao usuário autenticado');
     preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
     $token = $match[1] ?? '';
     $check($token !== '', 'sessão autenticada fornece novo token CSRF');
@@ -180,5 +187,4 @@ try {
         }
         echo 'Usuário descartável removido.' . PHP_EOL;
     }
-    curl_close($client);
 }

@@ -15,6 +15,7 @@ A Área do Cliente (`/app`) é o ambiente privado de relacionamento entre a Move
 ## Rotas atuais
 
 - `GET /app`: Dashboard protegido por autenticação.
+- `GET /app/status`: estado JSON autenticado para sincronização do Dashboard.
 - `GET /app/profile`: perfil protegido por autenticação e `profile.view`.
 - `GET /profile`: redirecionamento legado permanente para `/app/profile`.
 - `POST /logout`: encerramento protegido por autenticação e CSRF.
@@ -30,6 +31,8 @@ Ainda não existe entidade `Client`. Nesta rodada não foram criados recursos pe
 ## Dashboard
 
 Os quatro indicadores usam zero real porque ainda não existem tabelas ou vínculos de serviços, projetos, chamados e faturas. Projetos, próximas ações e atividade exibem estados vazios explícitos. Nenhum dado demonstrativo foi inserido.
+
+O navegador consulta `/app/status` a cada 30 segundos enquanto a página está visível e também permite atualização manual. A sincronização é pausada em abas ocultas, reage aos estados online/offline e nunca compartilha dados entre usuários. As animações são progressivas e desativadas para quem configura `prefers-reduced-motion`.
 
 ## Roadmap
 

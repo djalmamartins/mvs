@@ -27,6 +27,7 @@
             rel="stylesheet"
             href="<?= $this->e($this->asset('css/app.css')) ?>"
     >
+    <link rel="stylesheet" href="<?= $this->e($this->asset('css/live.css')) ?>">
 </head>
 
 <body class="customer-body">

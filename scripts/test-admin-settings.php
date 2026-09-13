@@ -140,5 +140,4 @@ try {
         $pdo->prepare('DELETE FROM proposals WHERE id = ?')->execute([$proposalId]);
         $pdo->prepare("DELETE FROM notifications WHERE message LIKE 'Proposta de Teste Studio%'")->execute();
     }
-    curl_close($client);
 }
