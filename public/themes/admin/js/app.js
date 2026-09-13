@@ -1,6 +1,7 @@
 const menuButton = document.querySelector('.studio-menu');
 const backdrop = document.querySelector('.studio-sidebar-backdrop');
 const profile = document.querySelector('.studio-header-profile');
+const profileTrigger = profile?.querySelector('.studio-profile-trigger');
 const themeButton = document.querySelector('.studio-theme-toggle');
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
 
@@ -12,10 +13,12 @@ function setMenuState() {
 }
 
 function closeOverlays() {
+    const profileWasOpen = profile?.classList.contains('open');
     document.body.classList.remove('menu-open');
     profile?.classList.remove('open');
-    profile?.setAttribute('aria-expanded', 'false');
+    profileTrigger?.setAttribute('aria-expanded', 'false');
     setMenuState();
+    if (profileWasOpen) profileTrigger?.focus();
 }
 
 function applyTheme(theme) {
@@ -45,22 +48,15 @@ menuButton?.addEventListener('click', () => {
     setMenuState();
 });
 backdrop?.addEventListener('click', closeOverlays);
-profile?.addEventListener('click', event => {
-    if (event.target.closest('a, form')) return;
+profileTrigger?.addEventListener('click', () => {
     const open = !profile.classList.contains('open');
     profile.classList.toggle('open', open);
-    profile.setAttribute('aria-expanded', String(open));
-});
-profile?.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        profile.click();
-    }
+    profileTrigger.setAttribute('aria-expanded', String(open));
 });
 document.addEventListener('click', event => {
     if (!event.target.closest('.studio-header-profile')) {
         profile?.classList.remove('open');
-        profile?.setAttribute('aria-expanded', 'false');
+        profileTrigger?.setAttribute('aria-expanded', 'false');
     }
 });
 document.addEventListener('keydown', event => {
@@ -69,6 +65,16 @@ document.addEventListener('keydown', event => {
 window.addEventListener('resize', () => {
     if (!isMobile()) document.body.classList.remove('menu-open');
     setMenuState();
+});
+
+document.addEventListener('submit', event => {
+    const form = event.target.closest('form[data-confirm-submit]');
+    if (form && !window.confirm(form.dataset.confirmSubmit)) event.preventDefault();
+});
+
+document.addEventListener('click', event => {
+    const control = event.target.closest('[data-confirm]');
+    if (control && !window.confirm(control.dataset.confirm)) event.preventDefault();
 });
 
 const seoForm = document.querySelector('.studio-editor');

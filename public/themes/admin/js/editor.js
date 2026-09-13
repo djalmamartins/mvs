@@ -21,7 +21,13 @@ const editorButton = (label, title, action, icon = null) => {
     button.className = "moves-organic-tool";
     button.title = title;
     button.setAttribute("aria-label", title);
-    if (icon) button.innerHTML = `<ion-icon name="${icon}"></ion-icon><span class="moves-organic-tool-label">${label}</span>`;
+    if (icon) {
+        button.dataset.icon = icon;
+        const text = document.createElement("span");
+        text.className = "moves-organic-tool-label";
+        text.textContent = label;
+        button.append(text);
+    }
     else button.textContent = label;
     button.addEventListener("mousedown", (event) => event.preventDefault());
     button.addEventListener("click", action);
@@ -39,14 +45,14 @@ const installToolbar = (editor, textarea) => {
     block.addEventListener("change", () => { editor.commands.formatBlock(block.value); editor.focus(); });
     toolbar.append(block);
     [
-        ["", "Desfazer", "undo", "arrow-undo-outline"], ["", "Refazer", "redo", "arrow-redo-outline"],
-        ["", "Negrito", "bold", "bold-outline"], ["I", "Itálico", "italic", null], ["U", "Sublinhado", "underline", null], ["S", "Tachado", "strikeThrough", null],
-        ["", "Lista com marcadores", "insertUnorderedList", "list-outline"], ["", "Lista numerada", "insertOrderedList", "list-circle-outline"],
-        ["", "Diminuir recuo", "outdent", "arrow-back-outline"], ["", "Aumentar recuo", "indent", "arrow-forward-outline"],
-        ["", "Alinhar à esquerda", "justifyLeft", "reorder-three-outline"], ["", "Centralizar", "justifyCenter", "menu-outline"], ["", "Alinhar à direita", "justifyRight", "reorder-two-outline"],
-        ["Tx", "Limpar formatação", "removeFormat", null]
+        ["", "Desfazer", "undo", "undo"], ["", "Refazer", "redo", "redo"],
+        ["", "Negrito", "bold", "bold"], ["", "Itálico", "italic", "italic"], ["", "Sublinhado", "underline", "underline"], ["", "Tachado", "strikeThrough", "strike"],
+        ["", "Lista com marcadores", "insertUnorderedList", "list"], ["", "Lista numerada", "insertOrderedList", "list-ordered"],
+        ["", "Diminuir recuo", "outdent", "outdent"], ["", "Aumentar recuo", "indent", "indent"],
+        ["", "Alinhar à esquerda", "justifyLeft", "align-left"], ["", "Centralizar", "justifyCenter", "align-center"], ["", "Alinhar à direita", "justifyRight", "align-right"],
+        ["", "Limpar formatação", "removeFormat", "clear-format"]
     ].forEach(([label, title, command, icon]) => toolbar.append(editorButton(label, title, () => editor.execCommand(command), icon)));
-    toolbar.append(editorButton("", "Inserir link", () => { editor.selection.restore(); const href = window.prompt("URL do link (https://...)"); if (href) editor.execCommand("createLink", href.trim()); }, "link-outline"));
+    toolbar.append(editorButton("", "Inserir link", () => { editor.selection.restore(); const href = window.prompt("URL do link (https://...)"); if (href) editor.execCommand("createLink", href.trim()); }, "link"));
     const file = document.createElement("input");
     file.type = "file";
     file.accept = "image/jpeg,image/png,image/webp,image/gif";
@@ -62,7 +68,7 @@ const installToolbar = (editor, textarea) => {
         } catch (error) { window.alert(error.message); }
         finally { button?.classList.remove("is-loading"); file.value = ""; }
     });
-    const imageButton = editorButton("", "Enviar imagem", () => file.click(), "cloud-upload-outline");
+    const imageButton = editorButton("", "Enviar imagem", () => file.click(), "upload");
     imageButton.dataset.uploadTool = "true";
     toolbar.append(imageButton, file);
     toolbar.append(editorButton("", "Escolher imagem da biblioteca", () => {
@@ -76,7 +82,7 @@ const installToolbar = (editor, textarea) => {
             toolbar.append(picker);
         }
         picker.click();
-    }, "images-outline"));
+    }, "library"));
     toolbar.append(editorButton("", "Inserir tabela", () => {
         const rowInput = window.prompt("Número de linhas:", "3");
         if (rowInput === null) return;
@@ -86,10 +92,10 @@ const installToolbar = (editor, textarea) => {
         const columns = Math.min(10, Math.max(1, Number(columnInput) || 1));
         const cells = (tag) => `<${tag}>Conteúdo</${tag}>`.repeat(columns);
         editor.insertContent(`<div class="organic-table-wrap"><table class="organic-content-table"><thead><tr>${cells("th")}</tr></thead><tbody>${`<tr>${cells("td")}</tr>`.repeat(rows)}</tbody></table></div><p><br></p>`);
-    }, "grid-outline"));
-    toolbar.append(editorButton("", "Inserir linha horizontal", () => editor.execCommand("insertHorizontalRule"), "remove-outline"));
-    toolbar.append(editorButton("", "Editar HTML", () => { const html = window.prompt("Edite o HTML do conteúdo:", editor.getContent()); if (html !== null) editor.setExternalContent(html); }, "code-slash-outline"));
-    toolbar.append(editorButton("", "Tela cheia", () => textarea.closest(".studio-panel")?.classList.toggle("moves-organic-fullscreen"), "expand-outline"));
+    }, "table"));
+    toolbar.append(editorButton("", "Inserir linha horizontal", () => editor.execCommand("insertHorizontalRule"), "minus"));
+    toolbar.append(editorButton("", "Editar HTML", () => { const html = window.prompt("Edite o HTML do conteúdo:", editor.getContent()); if (html !== null) editor.setExternalContent(html); }, "code"));
+    toolbar.append(editorButton("", "Tela cheia", () => textarea.closest(".studio-panel")?.classList.toggle("moves-organic-fullscreen"), "fullscreen"));
     editor.element.before(toolbar);
 };
 
