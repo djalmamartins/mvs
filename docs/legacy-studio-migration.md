@@ -16,10 +16,10 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 | 8 | Páginas | [CONCLUÍDO] | SEO, imagem, template e ordenação |
 | 9 | Destaques | [CONCLUÍDO] | Período, CTA, imagem e ordenação |
 | 10 | Depoimentos | [CONCLUÍDO] | Empresa, cargo, foto e ordenação |
-| 11 | FAQ | [PLANEJADO] | Migrar categoria, resposta e ordenação |
-| 12 | Propostas | [PLANEJADO] | Migrar histórico, observações, resposta e conversão |
-| 13 | Notificações | [PLANEJADO] | Migrar destinatário, origem, badge e ações |
-| 14 | Relatórios | [PLANEJADO] | Migrar somente métricas reais e exportações úteis |
+| 11 | FAQ | [CONCLUÍDO] | Categoria, resposta e ordenação |
+| 12 | Propostas | [CONCLUÍDO] | Histórico, observações, resposta e conversão |
+| 13 | Notificações | [CONCLUÍDO] | Destinatário, origem, badge e ações |
+| 14 | Relatórios | [CONCLUÍDO] | Métricas reais e exportação CSV |
 
 ## Dashboard — [CONCLUÍDO]
 
@@ -116,3 +116,30 @@ Sidebar branca e off-canvas, item ativo roxo, topbar clara, fonte base de 16 px,
 ## Padrão visual da rodada editorial
 
 Os editores usam coluna principal para texto/SEO e painel lateral para publicação, mídia e atributos específicos. Em tablet e mobile as colunas viram uma sequência única; biblioteca, formulários de crop, tabelas e ações mantêm labels e foco visíveis.
+
+## FAQ — [CONCLUÍDO]
+
+- Migrado: categorias próprias, pergunta, resposta, slug, estado e ordenação.
+- Segurança: categoria validada por tipo, corpo exibido como texto seguro, CSRF e prepared statements.
+
+## Propostas — [CONCLUÍDO]
+
+- Migrado: busca, pipeline, detalhe, responsável, respostas, observações, histórico e conversão para estado ganho.
+- Auditoria: cada mudança persiste ação, nota, operador e data em `proposal_history`; a mensagem original não é sobrescrita.
+- Simplificado: não há envio automático de e-mail ou geração de PDF até existir infraestrutura de fila e transporte configurada.
+
+## Notificações — [CONCLUÍDO]
+
+- Migrado: notificações globais ou por destinatário, origem, referência, ação interna, contador não lido, marcar lida/não lida, marcar todas e excluir.
+- Segurança: um usuário só altera notificações globais ou destinadas a ele; links renderizados são restritos a caminhos internos.
+- Integração: novas propostas registram origem, ID e link direto ao detalhe comercial.
+
+## Relatórios — [CONCLUÍDO]
+
+- Migrado: totais/publicados por módulo, distribuição real do pipeline e propostas mensais dos últimos 12 meses.
+- Exportação: CSV administrativo gerado sob autenticação com os mesmos totais persistidos.
+- Descartado: visitas, conversões estimadas, usuários online e gráficos fictícios sem telemetria confiável.
+
+## Banco da rodada operacional
+
+A migration `20260913_004_complete_studio_operations.sql` adiciona responsável/resposta/conversão às propostas, histórico imutável de ações e metadados de destinatário/origem às notificações.

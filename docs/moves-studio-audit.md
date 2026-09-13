@@ -43,10 +43,10 @@ Foram confirmadas checagens de permissão por módulo, CSRF em mutações recent
 | Páginas | CRUD editorial e publicação | Completo | SEO, imagem, template e ordem | Migrado com templates em allowlist | P2 |
 | Destaques | CRUD de slides/banners | Completo | Período, CTA, imagem e ordem | Migrado com validação de período/URL | P2 |
 | Depoimentos | CRUD, foto, avaliação e status | Completo | Empresa, cargo, foto e ordem | Migrado sem avaliação sem consumidor | P2 |
-| FAQ | Canais, perguntas, ordem e suporte | Completo | Não | Simplificar categorias/publicação | P2 |
-| Propostas | Pipeline, responsável, PDF e e-mail | Completo | Formulário público sem pipeline | Reconstruir a partir de `/contato` | P3 |
-| Notificações | Central, badge, destinatários e e-mail | Completo | Não | Reconstruir após propostas | P3 |
-| Relatórios | Acessos, conteúdo e usuários | Parcial/real | Não | Adiar até existir telemetria confiável | P4 |
+| FAQ | Canais, perguntas, ordem e suporte | Completo | Categorias, respostas e ordem | Migrado sem acoplamento ao Help Desk | P2 |
+| Propostas | Pipeline, responsável, PDF e e-mail | Completo | Pipeline, histórico, resposta e conversão | Migrado sem PDF/e-mail sem infraestrutura | P3 |
+| Notificações | Central, badge, destinatários e e-mail | Completo | Destino, origem, badge e ações | Migrado com links internos | P3 |
+| Relatórios | Acessos, conteúdo e usuários | Parcial/real | Conteúdo e pipeline persistidos | Migrado somente com métricas verificáveis | P4 |
 | Busca global | Conteúdo, usuários e propostas | Completo | Não | Adiar até haver módulos pesquisáveis | P4 |
 | Agenda/suporte/tickets | Operação e Help Desk | Completo | Não | Descartar do escopo CMS | Fora |
 | Eventos/resultados/associações | Módulos verticais antigos | Legado paralelo | Não | Descartar do produto atual | Fora |
