@@ -69,7 +69,7 @@ $this->layout('layouts/default', [
 
 <section class="section-shell about-editorial" id="about">
     <div class="about-manifesto">MAIS QUE PROJETOS.<br>CONSTRUÍMOS<br>PARCERIAS.<span></span></div>
-    <div class="about-editorial-image"><img src="<?= $this->e($this->asset('images/home/team.png')) ?>" alt="Equipe Moves colaborando em um projeto digital" width="1671" height="941" loading="lazy"></div>
+    <div class="about-editorial-image"><img src="<?= $this->e($this->asset('images/home/team.png')) ?>" alt="Profissionais colaborando em um projeto digital" width="1670" height="941" loading="lazy"></div>
     <div class="about-editorial-copy"><p class="eyebrow">SOMOS A MOVES</p><h2>Uma equipe que conecta ideias e <span class="brand-gradient">ama</span> o que faz.</h2><p>Unimos estratégia, design e tecnologia para construir soluções com você, do primeiro desafio à próxima evolução.</p><a class="text-link" href="/contato">Converse com a Moves →</a></div>
 </section>
 
