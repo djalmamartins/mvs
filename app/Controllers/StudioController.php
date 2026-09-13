@@ -30,6 +30,14 @@ final class StudioController extends Controller
             $statement->execute([$type]);
             $contentCounts[$type] = (int) $statement->fetchColumn();
         }
+        $publishedStatement = Connection::getInstance()->prepare(
+            'SELECT COUNT(*) FROM studio_content WHERE type = ? AND status = ?'
+        );
+        $publishedStatement->execute(['article', 'published']);
+        $publishedArticles = (int) $publishedStatement->fetchColumn();
+        $proposalCount = (int) Connection::getInstance()
+            ->query('SELECT COUNT(*) FROM proposals')
+            ->fetchColumn();
 
         echo $this->view->render('pages/dashboard', [
             'title' => 'Dashboard',
@@ -44,6 +52,8 @@ final class StudioController extends Controller
             'version' => $this->applicationVersion(),
             'activity' => array_slice($activity['entries'], 0, 5),
             'contentCounts' => $contentCounts,
+            'publishedArticles' => $publishedArticles,
+            'proposalCount' => $proposalCount,
         ]);
     }
 

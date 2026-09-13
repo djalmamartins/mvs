@@ -13,9 +13,10 @@ $totalChecks = count($checks);
 </section>
 <section class="studio-dashboard-kpis" aria-label="Indicadores atuais">
     <a class="studio-panel" href="/admin/pages"><i aria-hidden="true">▤</i><div><span>Páginas</span><strong><?= $this->e((string) $contentCounts['page']) ?></strong><small>conteúdos cadastrados</small></div></a>
-    <a class="studio-panel" href="/admin/articles"><i aria-hidden="true">¶</i><div><span>Artigos</span><strong><?= $this->e((string) $contentCounts['article']) ?></strong><small>registros editoriais</small></div></a>
+    <a class="studio-panel" href="/admin/articles"><i aria-hidden="true">¶</i><div><span>Artigos</span><strong><?= $this->e((string) $contentCounts['article']) ?></strong><small><?= $this->e((string) $publishedArticles) ?> publicado(s)</small></div></a>
     <a class="studio-panel" href="/admin/users"><i aria-hidden="true">◎</i><div><span>Usuários</span><strong><?= $this->e((string) $userCount) ?></strong><small>contas cadastradas</small></div></a>
     <a class="studio-panel" href="/admin/diagnostics"><i aria-hidden="true">✓</i><div><span>Saúde</span><strong><?= $this->e((string) $healthyChecks) ?>/<?= $this->e((string) $totalChecks) ?></strong><small>verificações aprovadas</small></div></a>
+    <a class="studio-panel" href="/admin/proposals"><i aria-hidden="true">◇</i><div><span>Propostas</span><strong><?= $this->e((string) $proposalCount) ?></strong><small>recebidas pelo contato</small></div></a>
 </section>
 <section class="studio-dashboard-actions studio-panel-body"><p class="studio-eyebrow">Ações rápidas</p><div class="studio-actions"><a class="studio-btn primary" href="/admin/pages#editor">Nova página</a><a class="studio-btn" href="/admin/articles#editor">Novo artigo</a><a class="studio-btn" href="/admin/highlights#editor">Novo destaque</a><a class="studio-btn" href="/admin/faq">Perguntas frequentes</a><a class="studio-btn" href="/admin/proposals">Propostas recebidas</a><a class="studio-btn" href="/admin/settings">Configurações</a></div></section>
 <section class="studio-panel-grid">
