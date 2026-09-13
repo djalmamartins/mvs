@@ -58,7 +58,8 @@ final class Home extends Controller
     public function faq(): void
     {
         $statement=Connection::getInstance()->query("SELECT c.title,c.content,t.name category_name FROM studio_content c LEFT JOIN studio_taxonomies t ON t.id=c.category_id WHERE c.type='faq' AND c.status='published' ORDER BY t.name,c.position,c.id");
-        echo $this->view->render('pages/faq',['title'=>'Perguntas frequentes — MOVES','description'=>'Respostas para perguntas frequentes sobre os serviços da Moves.','items'=>$statement->fetchAll(PDO::FETCH_ASSOC),...$this->pageMetadata('/faq')]);
+        $items = array_map(static function (array $item): array { $item['rendered_content'] = HtmlSanitizer::clean((string) ($item['content'] ?? '')); return $item; }, $statement->fetchAll(PDO::FETCH_ASSOC));
+        echo $this->view->render('pages/faq',['title'=>'Perguntas frequentes — MOVES','description'=>'Respostas para perguntas frequentes sobre os serviços da Moves.','items'=>$items,...$this->pageMetadata('/faq')]);
     }
 
     public function services(): void

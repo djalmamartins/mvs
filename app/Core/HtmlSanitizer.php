@@ -11,8 +11,9 @@ use DOMNode;
 /** Sanitização defensiva do HTML produzido pelo editor visual. */
 final class HtmlSanitizer
 {
-    private const TAGS = ['p','br','h2','h3','h4','blockquote','pre','code','strong','b','em','i','u','s','ul','ol','li','a','img','figure','figcaption','table','thead','tbody','tr','th','td','hr','span','div'];
-    private const ATTRIBUTES = ['href','title','target','rel','src','alt','class','colspan','rowspan','width','height'];
+    private const TAGS = ['p','br','h2','h3','h4','blockquote','pre','code','strong','b','em','i','u','s','ul','ol','li','a','img','figure','figcaption','table','thead','tbody','tfoot','tr','th','td','hr','div','iframe'];
+    private const ATTRIBUTES = ['href','title','target','rel','src','alt','class','colspan','rowspan','width','height','loading','allow','allowfullscreen'];
+    private const CLASSES = ['moves-table-scroll', 'moves-embed'];
 
     public static function clean(string $html): string
     {
@@ -35,8 +36,9 @@ final class HtmlSanitizer
         foreach (iterator_to_array($parent->childNodes) as $node) {
             if (!$node instanceof DOMElement) { continue; }
             $tag = strtolower($node->tagName);
-            if (in_array($tag, ['script','style','iframe','object','embed'], true)) { $parent->removeChild($node); continue; }
+            if (in_array($tag, ['script','style','object','embed','form','input','button'], true)) { $parent->removeChild($node); continue; }
             if (!in_array($tag, self::TAGS, true)) {
+                self::sanitizeChildren($node);
                 while ($node->firstChild) { $parent->insertBefore($node->firstChild, $node); }
                 $parent->removeChild($node);
                 continue;
@@ -45,9 +47,14 @@ final class HtmlSanitizer
                 $name = strtolower($attribute->name);
                 if (!in_array($name, self::ATTRIBUTES, true)) { $node->removeAttribute($name); continue; }
                 if ($name === 'href' && !self::safeLink($attribute->value)) { $node->removeAttribute($name); }
-                if ($name === 'src' && !preg_match('#^/media/\d+$#', $attribute->value)) { $node->removeAttribute($name); }
+                if ($name === 'src' && (($tag === 'img' && !preg_match('#^/media/\d+$#', $attribute->value)) || ($tag === 'iframe' && !self::safeEmbed($attribute->value)))) { $node->removeAttribute($name); }
+                if ($name === 'class') {
+                    $classes = array_values(array_intersect(preg_split('/\s+/', trim($attribute->value)) ?: [], self::CLASSES));
+                    $classes === [] ? $node->removeAttribute('class') : $node->setAttribute('class', implode(' ', $classes));
+                }
             }
             if ($tag === 'a' && $node->getAttribute('target') === '_blank') { $node->setAttribute('rel', 'noopener noreferrer'); }
+            if ($tag === 'iframe' && !$node->hasAttribute('src')) { $parent->removeChild($node); continue; }
             self::sanitizeChildren($node);
         }
     }
@@ -55,5 +62,13 @@ final class HtmlSanitizer
     private static function safeLink(string $url): bool
     {
         return str_starts_with($url, '/') || str_starts_with($url, '#') || preg_match('#^(https?://|mailto:)#i', $url) === 1;
+    }
+
+    private static function safeEmbed(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        return ($host === 'www.youtube-nocookie.com' && preg_match('#^/embed/[A-Za-z0-9_-]+$#', $path) === 1)
+            || ($host === 'player.vimeo.com' && preg_match('#^/video/\d+$#', $path) === 1);
     }
 }

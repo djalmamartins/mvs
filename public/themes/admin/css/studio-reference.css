@@ -293,16 +293,6 @@ body.studio-v2 { min-width: 320px; margin: 0; overflow-x: hidden; background: va
 .studio-v2 .studio-agenda-day.is-today { background: #fbf7fd; box-shadow: inset 0 0 0 2px rgb(104 16 159 / 20%) }
 .studio-v2 .studio-agenda-event { display: block; width: 100%; margin: 4px 0; padding: 6px 7px; overflow: hidden; border: 0; border-left: 3px solid var(--studio-primary); border-radius: 6px; background: var(--studio-primary-soft); color: #55306c; font-size:.875rem; text-align: left; text-overflow: ellipsis; white-space: nowrap }
 
-/* Organic Editor isolado e alinhado */
-.studio-v2 .studio-organic-editor { width: 100%; min-width: 0; overflow: hidden; border: 1px solid var(--studio-border); border-radius:var(--studio-radius); background: #fff }
-.studio-v2 .moves-organic-toolbar { position: sticky; top: 0; z-index: 20; display: flex; width: 100%; align-items: center; flex-wrap: wrap; gap: 3px; padding: 7px; overflow-x: auto; border: 0; border-bottom: 1px solid var(--studio-border); border-radius: 0; background: #fafbfc }
-.studio-v2 .moves-organic-toolbar select, .studio-v2 .moves-organic-tool { width: auto; min-width: 33px; height: 33px; min-height: 33px; margin: 0; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #444c59; font-size:.875rem; line-height: 1 }
-.studio-v2 .moves-organic-toolbar select { min-width: 118px; border-color: var(--studio-border); background: #fff }
-.studio-v2 .moves-organic-tool:hover { border-color: var(--studio-primary-line); background: var(--studio-primary-soft); color: var(--studio-primary) }
-.studio-v2 .studio-organic-editor > .organic-editor { width: 100%; max-width: none; min-height: 620px; margin: 0; padding: 26px; overflow-x: hidden; border: 0; border-radius: 0; background: #f1f2f5; box-shadow: none }
-.studio-v2 .studio-organic-editor > .organic-editor[data-mode="email"] { min-height: 560px; padding: clamp(28px, 4vw, 48px); background: #fff; color: #20242d; line-height: 1.7; box-shadow: none }
-.studio-v2 .studio-organic-editor .organic-document-page { width: min(100%, 840px) !important; min-height: 760px; margin: 0 auto 20px; padding: clamp(30px, 5vw, 62px); border: 1px solid #d8dce3; background: #fff; box-shadow: 0 7px 24px rgb(31 24 39 / 8%) }
-.studio-v2 .moves-organic-fullscreen { position: fixed !important; inset: 0; z-index: 3000; overflow: auto; margin: 0 !important; padding: 16px !important; border-radius: 0; background: #eef0f3 }
 
 /* Legado ainda acessível */
 .studio-v2 .dash_content_sidebar { display: none }
@@ -331,14 +321,6 @@ html[data-theme="dark"] .studio-v2 .studio-nav-v2 > a { color: #cfc8d3 }
 html[data-theme="dark"] .studio-v2 .studio-nav-v2 > a:hover, html[data-theme="dark"] .studio-v2 .studio-nav-v2 > a.active { border-color: var(--studio-primary-line); background: var(--studio-primary-soft); color: #f5eef8 }
 html[data-theme="dark"] .studio-v2 .studio-nav-icon, html[data-theme="dark"] .studio-v2 .studio-nav-v2 > a.active .studio-nav-icon { background: #2a252e; color: #d9cfe0; box-shadow: none }
 html[data-theme="dark"] .studio-v2 .studio-global-search input, html[data-theme="dark"] .studio-v2 .studio-header-actions > a, html[data-theme="dark"] .studio-v2 .studio-theme-toggle, html[data-theme="dark"] .studio-v2 .studio-notification-toggle { border-color: var(--studio-border); background: #27232b; color: var(--studio-ink) }
-html[data-theme="dark"] .studio-v2 .studio-organic-editor { border-color: #453d49; background: #1e1b22 }
-html[data-theme="dark"] .studio-v2 .moves-organic-toolbar { border-color: #453d49; background: #27232b }
-html[data-theme="dark"] .studio-v2 .moves-organic-toolbar select, html[data-theme="dark"] .studio-v2 .moves-organic-tool { border-color: transparent; background: transparent; color: #e1d9e5 }
-html[data-theme="dark"] .studio-v2 .moves-organic-toolbar select { border-color: #4a424f; background: #211e25; color: #f2eef4 }
-html[data-theme="dark"] .studio-v2 .studio-organic-editor > .organic-editor[data-mode="email"] { background: #211e25 !important; color: #eee9f1 !important; caret-color: #fff !important; color-scheme: dark !important }
-html[data-theme="dark"] .studio-v2 .studio-organic-editor > .organic-editor[data-mode="email"] a { color: #c993e5 !important }
-html[data-theme="dark"] .studio-v2 .studio-organic-editor > .organic-editor[data-mode="email"] blockquote { border-left-color: #a557cf !important; background: #2c2431 !important; color: #d6cdd9 !important }
-html[data-theme="dark"] .studio-v2 .studio-organic-editor > .organic-editor[data-mode="email"] pre { border-color: #4a424f !important; background: #17151a !important; color: #f3eff5 !important }
 
 /* Responsividade */
 @media (max-width: 1180px) {
@@ -388,8 +370,6 @@ html[data-theme="dark"] .studio-v2 .studio-organic-editor > .organic-editor[data
     .studio-v2 .studio-library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) }
     .studio-v2 .studio-media-grid, .studio-v2 .studio-report-grid, .studio-v2 .studio-diagnostics, .studio-v2 .studio-facts { grid-template-columns:1fr }
     .studio-v2 .studio-footer { align-items: flex-start; flex-direction: column }
-    .studio-v2 .studio-organic-editor > .organic-editor { min-height: 520px; padding: 10px }
-    .studio-v2 .studio-organic-editor .organic-document-page { min-height: 580px; padding: 24px 19px }
 }
 
 /* Login e erros usam a mesma identidade sem herdar o painel. */

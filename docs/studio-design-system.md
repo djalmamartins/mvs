@@ -14,7 +14,7 @@ As fundações visuais do Studio ficam em `public/themes/admin/css/design-system
 
 O sprite SVG local e o helper `studio_icon()` são o único padrão de ícones do shell e dos módulos. Os ícones usam traço, alinhamento e escala comuns de 16, 18, 20 e 24 px. A fonte de ícones do ERP e os elementos `ion-icon` foram removidos.
 
-O Organic Editor usa seu próprio sprite SVG local, fornecido com o componente e permitido pela CSP. Botões somente com ícone devem manter `aria-label`; `title` é complementar, não substituto.
+O Moves Editor usa controles nativos e locais compatíveis com a CSP. Botões somente com ícone devem manter `aria-label`; `title` é complementar, não substituto.
 
 ## Tokens
 
@@ -39,7 +39,7 @@ O antigo `app.css` deixou de ser carregado e foi removido porque duplicava token
 
 ## Interações
 
-`js/app.js` centraliza menu desktop/mobile, tema, perfil, Escape, fechamento de overlays e confirmações declarativas. `js/editor.js` integra upload e o Organic Editor sem CDN. Não são permitidos handlers inline em templates do Studio.
+`js/app.js` centraliza menu desktop/mobile, tema, perfil, Escape, fechamento de overlays e confirmações declarativas. `js/moves-editor.js` fornece a edição rica e integra o Moves Media sem CDN. Não são permitidos handlers inline em templates do Studio.
 
 ## Rotas
 

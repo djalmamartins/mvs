@@ -153,6 +153,12 @@ try {
         }
     }
 
+    $editorPage = $request('/studio/articles?create=1');
+    $nonEditorPage = $request('/studio/users');
+    if (!str_contains($editorPage['body'], 'js/moves-editor.js') || !str_contains($editorPage['body'], 'data-editor="moves"') || str_contains($nonEditorPage['body'], 'js/moves-editor.js')) {
+        throw new RuntimeException('FAIL: carregamento condicional do Moves Editor está incorreto.');
+    }
+
     $articlesPage = $request('/studio/articles');
     preg_match('/name="_token"\s+value="([^"]+)"/', $articlesPage['body'], $match);
     $studioToken = $match[1] ?? '';
@@ -163,6 +169,9 @@ try {
     $mediaRow = $pdo->query("SELECT id,path FROM studio_media WHERE name LIKE 'teste-midia%' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
     if ($uploaded['status'] !== 302 || !$mediaRow) { throw new RuntimeException('FAIL: upload seguro de mídia não foi persistido.'); }
     $mediaIds[] = (int) $mediaRow['id']; $mediaPaths[] = (string) $mediaRow['path'];
+    $library = $request('/studio/media/library?q=teste-midia');
+    $libraryData = json_decode($library['body'], true);
+    if ($library['status'] !== 200 || !isset($libraryData['files'][0]['url'])) { throw new RuntimeException('FAIL: biblioteca do Moves Editor indisponível.'); }
     $cropped = $request('/studio/media', ['_token' => $studioToken, 'action' => 'crop', 'id' => $mediaRow['id'], 'crop_x' => 10, 'crop_y' => 10, 'crop_width' => 40, 'crop_height' => 30]);
     $cropRow = $pdo->query('SELECT id,path FROM studio_media WHERE parent_id=' . (int) $mediaRow['id'] . ' ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
     if ($cropped['status'] !== 302 || !$cropRow) { throw new RuntimeException('FAIL: recorte derivado não foi criado.'); }
@@ -178,7 +187,8 @@ try {
     $projectTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($projectCategoryName))->fetchColumn();
     foreach (['articles' => 'Artigo', 'pages' => 'Página', 'projects' => 'Projeto', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
         $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
-        $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => 'published', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
+        $richContent = '<h2>Conteúdo seguro</h2><p><strong>Texto funcional</strong><script>alert(1)</script><img src="/media/' . (int) $mediaRow['id'] . '" onerror="alert(2)"></p>';
+        $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => in_array($module, ['articles','pages','projects','faq'], true) ? $richContent : 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => 'published', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
         if ($module === 'articles') { $payload['category_id'] = $taxonomyId; $payload['video'] = ''; }
         if ($module === 'faq') { $payload['category_id'] = $faqTaxonomyId; }
         if ($module === 'pages') { $payload['template'] = 'landing'; }
@@ -188,6 +198,11 @@ try {
         $saved = $request('/studio/' . $module, $payload);
         $contentId = (int) $pdo->query('SELECT id FROM studio_content WHERE slug=' . $pdo->quote($slug))->fetchColumn();
         if ($saved['status'] !== 302 || $contentId < 1) { throw new RuntimeException('FAIL: conteúdo não persistido em ' . $module); }
+        if (in_array($module, ['articles','pages','projects','faq'], true)) {
+            $storedHtml = (string) $pdo->query('SELECT content FROM studio_content WHERE id=' . $contentId)->fetchColumn();
+            $reopened = $request('/studio/' . $module . '?edit=' . $contentId);
+            if (!str_contains($storedHtml, '<strong>Texto funcional</strong>') || str_contains($storedHtml, '<script') || str_contains($storedHtml, 'onerror') || !str_contains($reopened['body'], 'Conteúdo seguro')) { throw new RuntimeException('FAIL: HTML seguro não foi salvo/reaberto em ' . $module); }
+        }
         $contentIds[] = $contentId;
         $createdSlugs[$module] = $slug;
         if ($module === 'articles') {

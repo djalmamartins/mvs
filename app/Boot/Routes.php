@@ -160,6 +160,7 @@ final class Routes
         $reportMiddleware = [AuthMiddleware::class, new PermissionMiddleware('reports.view')];
         $router->get('/studio/media', 'StudioModulesController:media', 'studio.media', $mediaMiddleware);
         $router->post('/studio/media', 'StudioModulesController:media', 'studio.media.save', $mediaMiddleware);
+        $router->get('/studio/media/library', 'StudioModulesController:mediaLibrary', 'studio.media.library', $studioContentMiddleware);
         $router->get('/studio/media/file/{id}', 'StudioModulesController:mediaFile', 'studio.media.file', $mediaMiddleware);
         $router->get('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals', $proposalMiddleware);
         $router->post('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals.save', $proposalMiddleware);

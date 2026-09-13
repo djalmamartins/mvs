@@ -63,7 +63,7 @@ final class StudioModulesController extends Controller
             $requestedSlug = trim((string) Request::post('slug', ''));
             $excerpt = mb_substr(trim(strip_tags((string) Request::post('excerpt', ''))), 0, 1000);
             $submittedContent = mb_substr(trim((string) Request::post('content', '')), 0, 50000);
-            $content = in_array($module, ['articles', 'pages', 'projects'], true) ? HtmlSanitizer::clean($submittedContent) : trim(strip_tags($submittedContent));
+            $content = in_array($module, ['articles', 'pages', 'projects', 'faq'], true) ? HtmlSanitizer::clean($submittedContent) : trim(strip_tags($submittedContent));
             $status = in_array(Request::post('status'), ['draft', 'published', 'archived'], true)
                 ? (string) Request::post('status')
                 : 'draft';
@@ -214,6 +214,28 @@ final class StudioModulesController extends Controller
         $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
         $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
         echo $this->view->render('pages/media', ['title' => 'Mídia', 'files' => $statement->fetchAll(PDO::FETCH_ASSOC), 'search' => $search]);
+    }
+
+    /** Read-only data source used by the Moves Editor media picker. */
+    public function mediaLibrary(): void
+    {
+        $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
+        $statement = Connection::getInstance()->prepare(
+            'SELECT id,name,alt_text,mime,width,height FROM studio_media'
+            . ($search !== '' ? ' WHERE name LIKE ? OR alt_text LIKE ?' : '')
+            . ' ORDER BY id DESC LIMIT 100'
+        );
+        $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
+        $files = array_map(static fn (array $file): array => [
+            'id' => (int) $file['id'],
+            'name' => (string) $file['name'],
+            'alt' => (string) ($file['alt_text'] ?? ''),
+            'mime' => (string) $file['mime'],
+            'width' => (int) ($file['width'] ?? 0),
+            'height' => (int) ($file['height'] ?? 0),
+            'url' => '/media/' . (int) $file['id'],
+        ], $statement->fetchAll(PDO::FETCH_ASSOC));
+        Response::json(['files' => $files]);
     }
 
     public function mediaFile(array $data): void

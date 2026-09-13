@@ -66,7 +66,7 @@ Legenda: `[OK]` completo para o escopo atual; `[PARCIAL]` tarefa incompleta; `[A
 | Destaques/slides | CMS | Sim | [OK] | Sim | Concluído | P2 | Não | Novo modelo é mais aderente à marca. |
 | Depoimentos | CMS | Sim | [OK] | Sim | Concluído | P2 | Não | Ordenação, empresa, cargo e foto. |
 | FAQ/canais | CMS | Sim | [OK] | Sim | Concluído | P2 | Não | Canais e ordenação mantidos. |
-| Editor rico + imagens | CMS | Sim | [OK] | Sim | Concluído | P1 | Não | Organic Editor incorporado com biblioteca. |
+| Editor rico + imagens | CMS | Sim | [OK] | Sim | Concluído | P1 | Não | Moves Editor nativo integrado à biblioteca. |
 | SEO automático | Público/CMS | Parcial | [OK] | Sim | — | P1 | Não | Slug, meta, canonical contextual e OpenGraph. |
 | Preview editorial | CMS | Sim/parcial | [MELHORAR] | Igual | Sim | P2 | Não | Falta preview autenticado consistente antes da publicação. |
 | Autosave e revisão | CMS | Parcial | [AUSENTE] | Não | Sim | P2 | Não | Reduz perda de trabalho e risco editorial. |

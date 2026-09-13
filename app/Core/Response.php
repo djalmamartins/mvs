@@ -49,7 +49,7 @@ final class Response
         header(
             "Content-Security-Policy: default-src 'self'; "
             . "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
-            . "object-src 'none'; img-src 'self' data:; "
+            . "object-src 'none'; img-src 'self' data:; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; "
             . "style-src 'self'; script-src 'self'"
         );
 

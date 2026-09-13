@@ -174,4 +174,21 @@ final class CoreTest extends TestCase
         self::assertStringNotContainsString('<script', $html);
         self::assertStringNotContainsString('onerror', $html);
     }
+
+    public function testRichTextSanitizerRestrictsUrlsClassesAndEmbeds(): void
+    {
+        $html = HtmlSanitizer::clean('<div class="moves-embed evil"><iframe src="https://www.youtube-nocookie.com/embed/abc_123" onload="alert(1)" allowfullscreen></iframe></div><a href="javascript:alert(2)" target="_blank">ruim</a><a href="https://moves.com.br" target="_blank">bom</a><img src="data:image/svg+xml,bad"><custom><script>alert(3)</script><strong>seguro</strong></custom>');
+
+        self::assertStringContainsString('class="moves-embed"', $html);
+        self::assertStringContainsString('https://www.youtube-nocookie.com/embed/abc_123', $html);
+        self::assertStringContainsString('rel="noopener noreferrer"', $html);
+        self::assertStringContainsString('<strong>seguro</strong>', $html);
+        self::assertStringNotContainsString('javascript:', $html);
+        self::assertStringNotContainsString('data:image', $html);
+        self::assertStringNotContainsString('onload', $html);
+        self::assertStringNotContainsString('<script', $html);
+
+        $blocked = HtmlSanitizer::clean('<iframe src="https://evil.invalid/embed/1"></iframe>');
+        self::assertStringNotContainsString('<iframe', $blocked);
+    }
 }

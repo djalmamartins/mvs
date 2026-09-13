@@ -42,7 +42,7 @@ Os indicadores usam somente fontes existentes: usuários, saúde de `Diagnostics
 
 O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar e topbar brancas, realce roxo, marca MovesOS, busca global, cards compactos, perfil suspenso semântico, tema claro/escuro persistente, menu recolhível e rodapé de versão. O raio padrão é 6 px, controles têm 44 px e o texto funcional não fica abaixo de 14 px. O CSS autoritativo fica em `public/themes/admin/css/studio-reference.css`, com tokens em `design-system.css` e adaptação dos templates atuais isolada em `compat.css`.
 
-Todos os ícones do shell usam o sprite SVG local. O Organic Editor usa o sprite local do próprio componente; a fonte de ícones do ERP, emojis funcionais e dependências de CDN não fazem parte do Studio.
+Todos os ícones do shell usam o sprite SVG local. O Moves Editor é um componente nativo, sem CDN, fonte de ícones ou dependência de editor externo.
 
 ## Segurança e escopo
 

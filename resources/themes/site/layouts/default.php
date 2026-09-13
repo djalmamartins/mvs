@@ -33,6 +33,7 @@
     <?php if (!empty($schema) && is_array($schema)): ?><script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?></script><?php endif; ?>
     <link rel="icon" href="<?= $this->e($this->asset('images/brand/favicon.png')) ?>" type="image/png">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/app.css')) ?>">
+    <link rel="stylesheet" href="<?= $this->e($this->asset('css/moves-content.css')) ?>">
     <script src="<?= $this->e($this->asset('js/app.js')) ?>" defer></script>
 </head>
 <body>
