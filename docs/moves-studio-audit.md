@@ -33,11 +33,11 @@ Foram confirmadas checagens de permissão por módulo, CSRF em mutações recent
 | --- | --- | --- | --- | --- | --- |
 | Shell | Sidebar, topbar, responsividade | Completo | Sim | Preservar e lapidar | P0 |
 | Dashboard | KPIs, atalhos e feeds | Completo | Parcial | Consolidar só com dados reais | P0 |
-| Usuários | Lista, perfis, papéis e overrides | Completo | Lista segura | Preservar; evoluir depois | P0 |
-| Configurações | Site, temas, e-mail, pagamentos e integrações | Amplo | Nome da aplicação | Manter mínimo e separar domínios no futuro | P0 |
+| Usuários | Lista, perfis, papéis e overrides | Completo | Gestão segura de contas e papéis simples | Migrado sem endereço, foto ou overrides | P0 |
+| Configurações | Site, temas, e-mail, pagamentos e integrações | Amplo | Identidade, SEO, contato e redes | Migrado sem segredos ou infraestrutura | P0 |
 | Diagnóstico | Estado técnico | Integrado | Sim | Preservar | P0 |
-| Versões | Publicação e histórico por produto | Completo | Não | Simplificar para inventário informativo | P0 |
-| Log | Incidentes, filtros e mutações em lote | Completo | Logger JSONL | Reconstruir como leitura sanitizada | P0 |
+| Versões | Publicação e histórico por produto | Completo | Inventário e histórico seguro | Migrado sem deploy, tag ou rollback | P0 |
+| Log | Incidentes, filtros e mutações em lote | Completo | Leitura sanitizada e triagem separada | Migrado sem alterar o JSONL original | P0 |
 | Mídia | Biblioteca, upload, filtros, uso e picker | Completo | Não | Reconstruir com Storage após estudar API | P1 |
 | Artigos | CRUD, categorias, autor, SEO/capa/agendamento | Completo | Não | Reconstruir e integrar a `/conteudo` | P1 |
 | Páginas | CRUD editorial e publicação | Completo | Não | Reconstruir | P2 |
@@ -53,4 +53,4 @@ Foram confirmadas checagens de permissão por módulo, CSRF em mutações recent
 
 ## Decisões para o Moves
 
-Nesta rodada entram somente Dashboard consolidado, Versões informativa, Log somente leitura e pequenos padrões comuns. Permanecem oficiais `Auth`, `Access`, `Session`, `Csrf`, `LoginThrottle`, `PermissionMiddleware`, `Logger`, `Validator`, `Response`, CSP e headers. Não serão importados RBAC, banco CMS, updater, ações sobre logs ou módulos verticais do ERP.
+Nesta rodada foram concluídos Usuários, Configurações, Versões e Log com o shell visual atual. Permanecem oficiais `Auth`, `Access`, `Session`, `Csrf`, `LoginThrottle`, `PermissionMiddleware`, `Logger`, `Validator`, `Response`, CSP e headers. Não foram importados o RBAC complexo, campos secretos, updater, exclusão do histórico técnico ou módulos verticais do ERP. A triagem de logs vive em tabela separada e referencia somente fingerprints que ainda existem no JSONL sanitizado.

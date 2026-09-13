@@ -25,8 +25,10 @@ Os indicadores usam somente fontes existentes: quantidade real de usuários, res
 
 ## Gestão técnica
 
-- `/admin/versions` informa Moves, PHP, ambiente, banco, migrations, tema e presença do lock do Composer. Não executa atualização, release ou rollback.
-- `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL atual, aceita busca, nível e paginação, e reaplica sanitização de contexto. Não revela caminho do arquivo nem oferece mutações.
+- `/admin/users` permite pesquisar, filtrar, criar e editar contas, alterar estado e excluir contas que não tenham vínculos protegidos. O administrador primário e a sessão atual recebem proteções adicionais.
+- `/admin/settings` mantém somente identidade pública, SEO básico, contato e redes sociais. Credenciais SMTP, pagamentos e outros segredos continuam fora da interface.
+- `/admin/versions` informa o ambiente e registra um histórico semântico auditável por autor. O registro não executa deploy, atualização, tag ou rollback.
+- `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL sanitizado e permite classificar eventos existentes como aberto, resolvido ou ignorado. O conteúdo original permanece imutável e o caminho do arquivo não é revelado.
 
 ## Fundação visual
 
