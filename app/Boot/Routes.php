@@ -97,7 +97,7 @@ final class Routes
 
         $router->get(
             '/admin',
-            'UserController:index',
+            'StudioController:dashboard',
             'admin.home',
             [
                 AuthMiddleware::class,
