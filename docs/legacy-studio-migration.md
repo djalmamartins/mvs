@@ -11,11 +11,11 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 | 3 | Configurações | [CONCLUÍDO] | Opções públicas úteis, sem segredos |
 | 4 | Versões | [CONCLUÍDO] | Histórico semântico sem deploy automático |
 | 5 | Log | [CONCLUÍDO] | Triagem por estado sem alterar o log bruto |
-| 6 | Mídia | [PLANEJADO] | Migrar biblioteca, crop e associações com Storage |
-| 7 | Artigos | [PLANEJADO] | Migrar taxonomia, SEO, mídia e publicação |
-| 8 | Páginas | [PLANEJADO] | Migrar SEO, imagem, template e ordenação |
-| 9 | Destaques | [PLANEJADO] | Migrar período, CTA, imagem e ordenação |
-| 10 | Depoimentos | [PLANEJADO] | Migrar empresa, cargo, foto e ordenação |
+| 6 | Mídia | [CONCLUÍDO] | Biblioteca, crop derivado e associações com Storage |
+| 7 | Artigos | [CONCLUÍDO] | Taxonomia, SEO, mídia e publicação |
+| 8 | Páginas | [CONCLUÍDO] | SEO, imagem, template e ordenação |
+| 9 | Destaques | [CONCLUÍDO] | Período, CTA, imagem e ordenação |
+| 10 | Depoimentos | [CONCLUÍDO] | Empresa, cargo, foto e ordenação |
 | 11 | FAQ | [PLANEJADO] | Migrar categoria, resposta e ordenação |
 | 12 | Propostas | [PLANEJADO] | Migrar histórico, observações, resposta e conversão |
 | 13 | Notificações | [PLANEJADO] | Migrar destinatário, origem, badge e ações |
@@ -83,3 +83,36 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 ## Padrão visual aplicado aos quatro módulos
 
 Sidebar branca e off-canvas, item ativo roxo, topbar clara, fonte base de 16 px, auxiliares de ao menos 14 px, radius de 6 px, campos brancos com borda `#cbd5e1`, hover perceptível, foco com borda roxa e ring, labels visíveis, estados disabled legíveis, tabelas roláveis e ações acessíveis por teclado.
+
+## Mídia — [CONCLUÍDO]
+
+- Migrado: upload via `movescode/storage`, busca por nome/texto alternativo, dimensões, tamanho, origem de recorte e contagem de associações.
+- Crop: coordenadas validadas no servidor geram uma nova imagem derivada e preservam o original.
+- Associações: `studio_content.media_id` é chave estrangeira; mídia em uso não pode ser excluída.
+- Segurança: limite de 8 MB, MIME real validado pelo Storage, raiz canônica, IDs preparados, CSRF e saída por endpoint controlado.
+- Banco: migration `20260913_003_expand_studio_content.sql`.
+
+## Artigos — [CONCLUÍDO]
+
+- Migrado: categorias próprias, slug, resumo, corpo, mídia, vídeo, SEO, status e publicação.
+- Site: `/conteudo` lê categoria, imagem e texto alternativo; o detalhe usa metadados SEO e imagem associados.
+- Simplificado: HTML rico não foi liberado sem política de sanitização; o corpo continua armazenado e exibido como texto seguro.
+
+## Páginas — [CONCLUÍDO]
+
+- Migrado: slug, resumo, conteúdo, título/descrição SEO, imagem, templates `default`, `landing` e `wide`, status e ordenação.
+- Decisão: templates são uma allowlist de apresentação; não aceitam caminhos ou PHP informados pelo usuário.
+
+## Destaques — [CONCLUÍDO]
+
+- Migrado: título, texto, imagem, alinhamento, CTA interno/URL válida, início, fim, status e ordem.
+- Validação: período invertido é rejeitado e URLs arbitrárias fora dos formatos aceitos não são persistidas.
+
+## Depoimentos — [CONCLUÍDO]
+
+- Migrado: nome, depoimento, empresa, cargo, foto, status e ordem.
+- Simplificado: avaliação numérica não foi trazida por não ter consumidor comprovado no site atual.
+
+## Padrão visual da rodada editorial
+
+Os editores usam coluna principal para texto/SEO e painel lateral para publicação, mídia e atributos específicos. Em tablet e mobile as colunas viram uma sequência única; biblioteca, formulários de crop, tabelas e ações mantêm labels e foco visíveis.

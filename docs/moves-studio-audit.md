@@ -38,11 +38,11 @@ Foram confirmadas checagens de permissão por módulo, CSRF em mutações recent
 | Diagnóstico | Estado técnico | Integrado | Sim | Preservar | P0 |
 | Versões | Publicação e histórico por produto | Completo | Inventário e histórico seguro | Migrado sem deploy, tag ou rollback | P0 |
 | Log | Incidentes, filtros e mutações em lote | Completo | Leitura sanitizada e triagem separada | Migrado sem alterar o JSONL original | P0 |
-| Mídia | Biblioteca, upload, filtros, uso e picker | Completo | Não | Reconstruir com Storage após estudar API | P1 |
-| Artigos | CRUD, categorias, autor, SEO/capa/agendamento | Completo | Não | Reconstruir e integrar a `/conteudo` | P1 |
-| Páginas | CRUD editorial e publicação | Completo | Não | Reconstruir | P2 |
-| Destaques | CRUD de slides/banners | Completo | Não | Reconstruir com nomenclatura nova | P2 |
-| Depoimentos | CRUD, foto, avaliação e status | Completo | Não | Simplificar e reconstruir | P2 |
+| Mídia | Biblioteca, upload, filtros, uso e picker | Completo | Biblioteca, recorte e vínculos | Migrado com Storage e original preservado | P1 |
+| Artigos | CRUD, categorias, autor, SEO/capa/agendamento | Completo | Taxonomia, SEO, mídia e publicação | Migrado e integrado a `/conteudo` | P1 |
+| Páginas | CRUD editorial e publicação | Completo | SEO, imagem, template e ordem | Migrado com templates em allowlist | P2 |
+| Destaques | CRUD de slides/banners | Completo | Período, CTA, imagem e ordem | Migrado com validação de período/URL | P2 |
+| Depoimentos | CRUD, foto, avaliação e status | Completo | Empresa, cargo, foto e ordem | Migrado sem avaliação sem consumidor | P2 |
 | FAQ | Canais, perguntas, ordem e suporte | Completo | Não | Simplificar categorias/publicação | P2 |
 | Propostas | Pipeline, responsável, PDF e e-mail | Completo | Formulário público sem pipeline | Reconstruir a partir de `/contato` | P3 |
 | Notificações | Central, badge, destinatários e e-mail | Completo | Não | Reconstruir após propostas | P3 |

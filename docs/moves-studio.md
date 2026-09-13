@@ -29,6 +29,8 @@ Os indicadores usam somente fontes existentes: quantidade real de usuários, res
 - `/admin/settings` mantém somente identidade pública, SEO básico, contato e redes sociais. Credenciais SMTP, pagamentos e outros segredos continuam fora da interface.
 - `/admin/versions` informa o ambiente e registra um histórico semântico auditável por autor. O registro não executa deploy, atualização, tag ou rollback.
 - `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL sanitizado e permite classificar eventos existentes como aberto, resolvido ou ignorado. O conteúdo original permanece imutável e o caminho do arquivo não é revelado.
+- `/admin/media` mantém a biblioteca de imagens, texto alternativo, recortes derivados e associações protegidas com conteúdos.
+- `/admin/articles`, `/admin/pages`, `/admin/highlights` e `/admin/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação; artigos também alimentam `/conteudo`.
 
 ## Fundação visual
 
