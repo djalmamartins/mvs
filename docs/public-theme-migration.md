@@ -17,6 +17,8 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 | Serviços | `servicos.html` e seus assets/comportamento | Rota `/servicos` e `pages/servicos.php` no tema público | Integrar a página ao Moves sem alterar conteúdo ou visual |
 | Projetos | `projetos.html`, 24 apresentações e filtros | Rota `/projetos`, `pages/projetos.php` e assets locais | Preservar a galeria, filtros e atribuição sem shell duplicado |
 | Sobre | Seção institucional `#about` da Home (não existe `sobre.html` na referência) | Rota `/sobre` e `pages/sobre.php` | Publicar apenas o conteúdo institucional aprovado, sem inventar uma página nova |
+| Conteúdo | `conteudo.html` estático, com três guias | Rota `/conteudo` e índice editorial sem links quebrados | Criar a base pública do futuro blog em `/conteudo/{slug}` sem antecipar CMS ou páginas de artigo |
+| Contato | `contato.html` e preparação local de e-mail | Rota `/contato` e `pages/contato.php` | Manter um endereço simples e conhecido, com foco comercial expresso pelo CTA “Solicitar orçamento ↗” |
 
 ## Assets migrados
 
@@ -29,7 +31,7 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 
 ## SEO
 
-A Home, Serviços, Projetos e Sobre fornecem título e descrição próprios, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` e o caminho da página somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
+A Home, Serviços, Projetos, Sobre, Conteúdo e Contato fornecem título e descrição próprios, robots, Open Graph básico e Twitter Card. O canonical utiliza `APP_URL` e o caminho da página somente em produção; desenvolvimento permanece `noindex, nofollow` e não publica uma URL local como canônica.
 
 `movescode/seo` não está instalado e não foi adicionado nesta rodada. A API deve ser avaliada antes de uma eventual integração.
 
@@ -41,8 +43,8 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 
 ## Diferenças deliberadas
 
-- Conteúdo e Orçamento ainda não foram migrados. Para não criar links quebrados, seus links globais apontam temporariamente para `/#content` e `/#contact`; os destinos definitivos serão `/conteudo` e `/orcamento`.
-- `contato.html` permanece apenas como referência histórica. Seu conteúdo comercial será migrado futuramente para `resources/themes/site/pages/orcamento.php`, com `GET /orcamento`, nome público “Orçamento” e metadados comerciais — não para `/contato`.
+- Os três conteúdos reais do protótipo foram estruturados semanticamente como artigos. Como `/conteudo/{slug}` ainda não foi implementado, os cards informam “Em breve” sem publicar links quebrados.
+- O formulário de `/contato` prepara localmente uma mensagem e abre o cliente de e-mail; não envia dados ao servidor e não introduz backend improvisado.
 - A área “Privacidade” do rodapé estático não foi exposta porque sua rota ainda não foi implementada.
 - O CTA principal do header é “Solicitar orçamento ↗”; “Área do cliente” aponta para `/login` com tratamento visual secundário.
 
@@ -53,11 +55,29 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 | Início | `/` | ativo |
 | Serviços | `/servicos` | ativo |
 | Projetos | `/projetos` | ativo |
-| Conteúdo | `/conteudo` | temporariamente `/#content` |
-| Solicitar orçamento ↗ | `/orcamento` | temporariamente `/#contact` |
+| Conteúdo | `/conteudo` | ativo; base editorial/blog |
+| Solicitar orçamento ↗ | `/contato` | ativo; contato comercial |
 | Área do cliente | `/login` | ativo |
 
-Sobre está publicado em `/sobre`, mas intencionalmente não pertence à navbar principal; seu acesso institucional fica no footer. Não foram criados arquivos ou rotas vazias para Conteúdo e Orçamento.
+Sobre está publicado em `/sobre`, mas intencionalmente não pertence à navbar principal; seu acesso institucional fica no footer. A evolução editorial planejada é `GET /conteudo/{slug}`, sem banco, CRUD, editor ou CMS nesta etapa.
+
+## Roadmap após Conteúdo e Contato
+
+A evolução administrativa seguirá esta ordem, mantendo cada etapa pequena e testável:
+
+1. shell do Moves Studio;
+2. dashboard;
+3. usuários, configurações e log;
+4. mídia;
+5. artigos e leitura de `/conteudo` pelo banco;
+6. páginas;
+7. destaques;
+8. depoimentos;
+9. FAQ;
+10. propostas e envio de `/contato` ao Studio;
+11. relatórios e notificações.
+
+Esta sequência é planejamento, não funcionalidade antecipada nesta entrega.
 
 ## Responsividade e acessibilidade
 
