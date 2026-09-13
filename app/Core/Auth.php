@@ -75,9 +75,12 @@ final class Auth
         $user = (new User())
             ->findById($userId);
 
-        return $user instanceof User
-            ? $user
-            : null;
+        if (!$user instanceof User || (string) ($user->status ?? '') !== 'active') {
+            Session::remove(self::SESSION_KEY);
+            return null;
+        }
+
+        return $user;
     }
 
     /**

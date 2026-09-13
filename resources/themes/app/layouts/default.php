@@ -31,12 +31,13 @@
 </head>
 
 <body class="customer-body">
+<a class="customer-skip-link" href="#main">Pular para o conteúdo</a>
 <div class="customer-shell">
     <?php $this->insert('components/sidebar', ['currentPage' => $currentPage ?? null]); ?>
     <div class="customer-workspace">
         <?php $this->insert('components/topbar', ['title' => $title ?? 'Início']); ?>
         <?php $this->insert('components/flash'); ?>
-        <main id="main" class="customer-content"><?= $this->section('content') ?></main>
+        <main id="main" class="customer-content" tabindex="-1"><?= $this->section('content') ?></main>
     </div>
 </div>
 <script src="<?= $this->e($this->asset('js/app.js')) ?>" defer></script>

@@ -21,6 +21,7 @@ $messages = Flash::all();
 
             <div
                 class="moves-flash__message moves-flash__message--<?= $this->e($flash['type']) ?>"
+                role="<?= $flash['type'] === 'error' ? 'alert' : 'status' ?>"
             >
                 <?= $this->e($flash['message']) ?>
             </div>

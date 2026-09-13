@@ -24,7 +24,7 @@ Módulos futuros aparecem desabilitados, sem links ou rotas vazias: serviços, p
 
 ## Arquitetura e segurança
 
-Templates ficam em `resources/themes/app` e assets em `public/themes/app`. `AuthMiddleware` protege a área e envia `Cache-Control: private, no-store` e `Pragma: no-cache`. O layout declara `noindex, nofollow`. Dados do usuário são escapados na saída; logout permanece POST com CSRF.
+Templates ficam em `resources/themes/app` e assets em `public/themes/app`. `AuthMiddleware` protege a área e envia `Cache-Control: private, no-store` e `Pragma: no-cache`. O layout declara `noindex, nofollow`. Dados do usuário são escapados na saída; logout permanece POST com CSRF. `Auth::user()` também invalida imediatamente a autenticação quando a conta deixa de estar ativa, mesmo que o cookie de sessão ainda exista.
 
 Ainda não existe entidade `Client`. Nesta rodada não foram criados recursos pertencentes a clientes, portanto não há IDs de negócio expostos nem risco novo de IDOR. Antes de qualquer rota como `/app/projects/{id}`, deve ser introduzida uma relação explícita `clients ↔ users` e todas as consultas devem filtrar pela propriedade, retornando 404 para recursos de terceiros.
 

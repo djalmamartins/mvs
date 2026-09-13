@@ -168,6 +168,18 @@ try {
     $response = $request('/app');
     $check(str_contains($response['body'], 'Você não tem permissão'), 'redirect de permissão apresenta Flash');
 
+    $pdo->prepare("UPDATE users SET status='inactive' WHERE id=?")->execute([$id]);
+    $response = $request('/app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'sessão de conta desativada é invalidada imediatamente');
+    $pdo->prepare("UPDATE users SET status='active' WHERE id=?")->execute([$id]);
+    $login = $request('/login');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $login['body'], $match);
+    $request('/login', ['email' => $email, 'password' => $password, '_token' => $match[1] ?? '']);
+    $response = $request('/app');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
+    $token = $match[1] ?? '';
+    $check($response['status'] === 200 && $token !== '', 'conta reativada inicia nova sessão protegida');
+
     $response = $request('/logout', ['_token' => 'invalid-token']);
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
     $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');
