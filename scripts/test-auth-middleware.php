@@ -91,6 +91,12 @@ try {
     $sessionHeaders = $response['headers'];
     $response = $request('/studio');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /studio redirecionado para /login');
+    $legacyStudio = $request('/admin/articles?create=1');
+    $check(
+        $legacyStudio['status'] === 308
+        && $legacyStudio['location'] === $base . '/studio/articles?create=1',
+        'rota legada do Studio redireciona com query preservada'
+    );
     foreach (['/studio/versions', '/studio/logs'] as $protectedPath) {
         $response = $request($protectedPath);
         $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante não acessa ' . $protectedPath);
