@@ -10,6 +10,7 @@ use Moves\Core\Controller;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
 use Moves\Core\Logger;
+use Moves\Core\HtmlSanitizer;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Seo;
@@ -60,7 +61,8 @@ final class StudioModulesController extends Controller
             $title = mb_substr(trim(strip_tags((string) Request::post('title', ''))), 0, 180);
             $requestedSlug = trim((string) Request::post('slug', ''));
             $excerpt = mb_substr(trim(strip_tags((string) Request::post('excerpt', ''))), 0, 1000);
-            $content = mb_substr(trim(strip_tags((string) Request::post('content', ''))), 0, 50000);
+            $submittedContent = mb_substr(trim((string) Request::post('content', '')), 0, 50000);
+            $content = in_array($module, ['articles', 'pages'], true) ? HtmlSanitizer::clean($submittedContent) : trim(strip_tags($submittedContent));
             $status = in_array(Request::post('status'), ['draft', 'published', 'archived'], true)
                 ? (string) Request::post('status')
                 : 'draft';
@@ -144,6 +146,7 @@ final class StudioModulesController extends Controller
     public function media(): void
     {
         $pdo = Connection::getInstance();
+        $isEditorUpload = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest';
         if (Request::isMethod('POST')) {
             $this->validateCsrf();
             $action = (string) Request::post('action', 'upload');
@@ -180,9 +183,12 @@ final class StudioModulesController extends Controller
                 $info = getimagesize($path);
                 $statement = $pdo->prepare('INSERT INTO studio_media(name,path,mime,size,width,height,created_by) VALUES(?,?,?,?,?,?,?)');
                 $statement->execute([basename($path), $path, (string) ($info['mime'] ?? 'application/octet-stream'), filesize($path), $info[0] ?? null, $info[1] ?? null, Auth::user()?->id]);
+                $mediaId = (int) $pdo->lastInsertId();
+                if ($isEditorUpload) { Response::json(['id'=>$mediaId, 'url'=>'/media/'.$mediaId, 'name'=>basename($path), 'width'=>$info[0]??null, 'height'=>$info[1]??null]); }
                 Flash::set('success', 'Imagem enviada com segurança.');
             } catch (Throwable $exception) {
                 Logger::warning('Upload de mídia rejeitado.', ['reason' => $exception->getMessage()]);
+                if ($isEditorUpload) { Response::json(['error'=>$exception->getMessage()], 422); }
                 Flash::set('error', $exception->getMessage());
             }
             Response::to('/admin/media');

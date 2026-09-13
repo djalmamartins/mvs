@@ -10,6 +10,7 @@ use Moves\Core\Theme;
 use Moves\Core\Validator;
 use Moves\Core\Response;
 use Moves\Core\Seo;
+use Moves\Core\HtmlSanitizer;
 use PHPUnit\Framework\TestCase;
 use MovesCode\Router\Router;
 use MovesCode\View\Engine;
@@ -161,5 +162,16 @@ final class CoreTest extends TestCase
         self::assertSame('url-manual', $seo['slug']);
         self::assertSame('Título personalizado', $seo['title']);
         self::assertSame(160, mb_strlen($seo['description']));
+    }
+
+    public function testRichTextSanitizerKeepsFormattingAndRejectsExecutableMarkup(): void
+    {
+        $html = HtmlSanitizer::clean('<h2>Título</h2><p><strong>Texto</strong><script>alert(1)</script><img src="/media/7" onerror="alert(2)"></p>');
+
+        self::assertStringContainsString('<h2>Título</h2>', $html);
+        self::assertStringContainsString('<strong>Texto</strong>', $html);
+        self::assertStringContainsString('src="/media/7"', $html);
+        self::assertStringNotContainsString('<script', $html);
+        self::assertStringNotContainsString('onerror', $html);
     }
 }

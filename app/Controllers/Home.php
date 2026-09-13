@@ -13,6 +13,7 @@ use Moves\Core\Flash;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Seo;
+use Moves\Core\HtmlSanitizer;
 use Moves\Core\Validator;
 use PDO;
 
@@ -49,6 +50,7 @@ final class Home extends Controller
         if(!$page){http_response_code(404);echo $this->view->render('pages/error',['title'=>'Página não encontrada','code'=>404,'message'=>'Esta página não está disponível.']);return;}
         $title = ($page['seo_title'] ?: $page['title']).' — MOVES';
         $description = $page['seo_description'] ?: ($page['excerpt'] ?: $page['title']);
+        $page['rendered_content'] = HtmlSanitizer::clean((string)($page['content']??''));
         echo $this->view->render('pages/dynamic-page',['title'=>$title,'description'=>$description,'page'=>$page,...Seo::metadata('/pagina/'.$page['slug'],$title,$description,'website',$page['media_id'] ? (int)$page['media_id'] : null)]);
     }
 
@@ -105,6 +107,7 @@ final class Home extends Controller
         if (!$article) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
         $title = ($article['seo_title'] ?: $article['title']).' — MOVES';
         $description = $article['seo_description'] ?: ($article['excerpt'] ?: $article['title']);
+        $article['rendered_content'] = HtmlSanitizer::clean((string)($article['content']??''));
         echo $this->view->render('pages/article', ['title'=>$title,'description'=>$description,'article'=>$article,...Seo::metadata('/conteudo/'.$article['slug'],$title,$description,'article',$article['media_id'] ? (int)$article['media_id'] : null,$article['published_at'])]);
     }
 

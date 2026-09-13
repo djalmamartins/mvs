@@ -20,10 +20,12 @@
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/app.css')) ?>">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/studio-reference.css')) ?>">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/compat.css')) ?>">
+    <link rel="stylesheet" href="<?= $this->e($this->asset('vendor/organic-editor/organic-editor.min.css')) ?>">
     <script src="<?= $this->e($this->asset('js/app.js')) ?>" defer></script>
+    <script type="module" src="<?= $this->e($this->asset('js/editor.js')) ?>"></script>
 </head>
 
-<body class="studio-body studio-v2">
+<body class="studio-body studio-v2" data-editor-upload="/admin/media">
 <?php $this->insert('components/icon-sprite'); ?>
 <a class="studio-skip-link" href="#main-content">Ir para o conteúdo</a>
 <div class="studio-shell">
