@@ -40,7 +40,7 @@ As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, usa
 
 1. **Fundação — concluída:** shell, Dashboard, Usuários, Configurações e Diagnóstico.
 2. **Gestão técnica — concluída:** Dashboard consolidado, Versões informativa e Log seguro.
-3. **CMS base:** Mídia; Artigos; `/conteudo` e `/conteudo/{slug}` lendo do banco.
-4. **CMS institucional:** Páginas, Destaques, Depoimentos e FAQ.
-5. **Comercial:** propostas persistidas a partir de `/contato`; pipeline; notificações.
-6. **Relatórios:** métricas e estatísticas somente após existirem fontes confiáveis.
+3. **CMS base — concluída:** Mídia, Artigos, `/conteudo` e `/conteudo/{slug}` lendo do banco.
+4. **CMS institucional — concluída:** Páginas, Destaques, Depoimentos e FAQ.
+5. **Comercial — concluída:** propostas persistidas a partir de `/contato` e notificações.
+6. **Relatórios — concluída:** contagens reais dos módulos persistidos, sem métricas simuladas.
