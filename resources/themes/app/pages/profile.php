@@ -16,25 +16,9 @@ $this->layout(
     'layouts/default',
     [
         'title' => $title,
+        'currentPage' => 'profile',
     ]
 );
 ?>
 
-<section>
-    <h1>Meu perfil</h1>
-
-    <p>
-        <strong>Nome:</strong>
-        <?= $this->e($user->name) ?>
-    </p>
-
-    <p>
-        <strong>E-mail:</strong>
-        <?= $this->e($user->email) ?>
-    </p>
-
-    <p>
-        <strong>Status:</strong>
-        <?= $this->e($user->status) ?>
-    </p>
-</section>
+<section class="customer-page-heading"><div><p class="customer-eyebrow">CONTA</p><h2>Meu perfil</h2><p>Dados básicos da sua conta de acesso.</p></div></section><section class="customer-profile-card"><div class="customer-avatar" aria-hidden="true"><?= $this->e(strtoupper(substr((string)$user->name,0,1))) ?></div><dl><div><dt>Nome</dt><dd><?= $this->e($user->name) ?></dd></div><div><dt>E-mail</dt><dd><?= $this->e($user->email) ?></dd></div><div><dt>Status</dt><dd><span class="customer-status"><?= $this->e($user->status) ?></span></dd></div></dl></section>

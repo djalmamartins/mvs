@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Moves | Default Layout
+ * Moves | Customer Area Layout
  *
  * Define a estrutura HTML principal do tema padrão.
  *
@@ -18,7 +18,10 @@
             content="width=device-width, initial-scale=1.0"
     >
 
-    <title><?= $this->e($title ?? 'Moves') ?></title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#ffffff">
+    <title><?= $this->e($title ?? 'Início') ?> — Área do Cliente</title>
+    <link rel="icon" href="/themes/site/images/brand/favicon.png" type="image/png">
 
     <link
             rel="stylesheet"
@@ -26,15 +29,15 @@
     >
 </head>
 
-<body>
-
-<?php $this->insert('components/header', [
-    'title' => $title ?? 'Moves',
-]); ?>
-
-<?php $this->insert('components/flash'); ?>
-
-<?= $this->section('content') ?>
-
+<body class="customer-body">
+<div class="customer-shell">
+    <?php $this->insert('components/sidebar', ['currentPage' => $currentPage ?? null]); ?>
+    <div class="customer-workspace">
+        <?php $this->insert('components/topbar', ['title' => $title ?? 'Início']); ?>
+        <?php $this->insert('components/flash'); ?>
+        <main id="main" class="customer-content"><?= $this->section('content') ?></main>
+    </div>
+</div>
+<script src="<?= $this->e($this->asset('js/app.js')) ?>" defer></script>
 </body>
 </html>

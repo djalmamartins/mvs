@@ -8,6 +8,7 @@ use Moves\Core\Config;
 use Moves\Core\Controller;
 use Moves\Boot\Connection;
 use Moves\Core\Csrf;
+use Moves\Core\Auth;
 use Moves\Core\Flash;
 use Moves\Core\Request;
 use Moves\Core\Response;
@@ -106,9 +107,12 @@ final class Home extends Controller
      */
     public function app(): void
     {
+        $user = Auth::user();
         echo $this->view->render('pages/home', [
-            'title' => 'Minha aplicação',
-            'description' => 'Área autenticada do Moves.',
+            'title' => 'Início',
+            'description' => 'Acompanhe sua relação com a Moves.',
+            'user' => $user,
+            'summary' => ['services' => 0, 'projects' => 0, 'tickets' => 0, 'invoices' => 0],
         ]);
     }
 

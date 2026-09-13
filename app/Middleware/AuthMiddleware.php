@@ -24,6 +24,9 @@ final class AuthMiddleware implements MiddlewareInterface
             Response::to('/login');
         }
 
+        header('Cache-Control: private, no-store, max-age=0');
+        header('Pragma: no-cache');
+
         return $next();
     }
 }

@@ -143,7 +143,10 @@ try {
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'login válido redireciona para /app');
     $check($before !== curl_getinfo($client, CURLINFO_COOKIELIST), 'login regenera identificador da sessão');
     $response = $request('/app');
-    $check($response['status'] === 200 && str_contains($response['body'], 'Área autenticada do Moves'), 'usuário autenticado acessa /app');
+    $check($response['status'] === 200 && str_contains($response['body'], 'Área do Cliente'), 'usuário autenticado acessa /app');
+    $check(stripos($response['headers'], 'Cache-Control: private, no-store') !== false, 'área autenticada não permite cache público');
+    $profile = $request('/app/profile');
+    $check($profile['status'] === 200 && str_contains($profile['body'], $email), 'perfil pertence ao usuário autenticado');
     preg_match('/name="_token"\s+value="([^"]+)"/', $response['body'], $match);
     $token = $match[1] ?? '';
     $check($token !== '', 'sessão autenticada fornece novo token CSRF');
