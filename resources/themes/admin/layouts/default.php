@@ -24,6 +24,7 @@
 </head>
 
 <body class="studio-body studio-v2">
+<?php $this->insert('components/icon-sprite'); ?>
 <a class="studio-skip-link" href="#main-content">Ir para o conteúdo</a>
 <div class="studio-shell">
     <?php $this->insert('components/sidebar', ['currentPage' => $currentPage ?? null]); ?>
@@ -37,5 +38,6 @@
         <footer class="studio-footer"><span>Copyright © <?= date('Y') ?> MovesOS. Todos os direitos reservados.</span><a class="studio-footer-version" href="/admin/versions">Studio v1.0.0</a></footer>
     </div>
 </div>
+<a class="studio-help-fab" href="/contato" target="_blank" rel="noopener"><?= studio_icon('headphones') ?><span>Ajuda</span></a>
 </body>
 </html>
