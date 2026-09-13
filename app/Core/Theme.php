@@ -23,7 +23,7 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
-        if ($path === '/admin' || str_starts_with($path, '/admin/')) {
+        if ($path === '/studio' || str_starts_with($path, '/studio/')) {
             return 'admin';
         }
 

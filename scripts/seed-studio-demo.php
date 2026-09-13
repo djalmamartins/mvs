@@ -73,7 +73,7 @@ try {
     $notification = $pdo->prepare('SELECT id FROM notifications WHERE title=? AND source_type=? LIMIT 1');
     $notification->execute([$notificationTitle, 'demo']);
     if (!$notification->fetchColumn()) {
-        $pdo->prepare('INSERT INTO notifications(title,message,recipient_id,source_type,action_url,link) VALUES(?,?,?,?,?,?)')->execute([$notificationTitle,'Páginas, artigos, projetos e componentes foram cadastrados para validação.',null,'demo','/admin/projects','/admin/projects']);
+        $pdo->prepare('INSERT INTO notifications(title,message,recipient_id,source_type,action_url,link) VALUES(?,?,?,?,?,?)')->execute([$notificationTitle,'Páginas, artigos, projetos e componentes foram cadastrados para validação.',null,'demo','/studio/projects','/studio/projects']);
     }
 
     $pdo->commit();

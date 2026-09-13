@@ -46,7 +46,7 @@ final class SettingsController extends Controller
 
         if (!is_string($token) || !Csrf::validate($token)) {
             Flash::set('error', 'Token de segurança inválido.');
-            Response::to('/admin/settings');
+            Response::to('/studio/settings');
         }
 
         $input = static fn (string $key): string => (string) (Request::has($key) ? Request::post($key, '') : Settings::get($key, ''));
@@ -66,12 +66,12 @@ final class SettingsController extends Controller
             ->max('app_name', $values['app_name'], 100);
         if ($values['contact_email'] !== '' && filter_var($values['contact_email'], FILTER_VALIDATE_EMAIL) === false) {
             Flash::set('error', 'Informe um e-mail de contato válido.');
-            Response::to('/admin/settings');
+            Response::to('/studio/settings');
         }
         foreach (['social_instagram', 'social_linkedin'] as $urlKey) {
             if ($values[$urlKey] !== '' && filter_var($values[$urlKey], FILTER_VALIDATE_URL) === false) {
                 Flash::set('error', 'Informe URLs completas e válidas para as redes sociais.');
-                Response::to('/admin/settings');
+                Response::to('/studio/settings');
             }
         }
 
@@ -80,14 +80,14 @@ final class SettingsController extends Controller
                 Flash::set('error', $error);
             }
 
-            Response::to('/admin/settings');
+            Response::to('/studio/settings');
         }
 
         foreach ($values as $name => $value) {
-            if (!Settings::set($name, $value)) { Flash::set('error', 'Não foi possível salvar as configurações.'); Response::to('/admin/settings'); }
+            if (!Settings::set($name, $value)) { Flash::set('error', 'Não foi possível salvar as configurações.'); Response::to('/studio/settings'); }
         }
 
         Flash::set('success', 'Configurações atualizadas com sucesso.');
-        Response::to('/admin/settings');
+        Response::to('/studio/settings');
     }
 }

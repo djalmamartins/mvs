@@ -50,7 +50,7 @@ Capacidades invisíveis relevantes: fila de e-mail, worker periódico, agendamen
 | Core | Bootstrap modular, configuração por ambiente, conexão PDO, autenticação, RBAC, CSRF, validação, resposta segura, tema, logs, diagnóstico, storage e throttle de login. |
 | Banco | Usuários, configurações, tentativas de login, conteúdo, taxonomias, mídia, propostas/histórico, notificações, versões e estados de log. |
 
-O novo possui separação de superfícies mais clara (`/`, `/app`, `/admin`), menos acoplamento ao domínio antigo e controles de segurança mais uniformes. A amplitude transacional, porém, é muito menor.
+O novo possui separação de superfícies mais clara (`/`, `/app`, `/studio`), menos acoplamento ao domínio antigo e controles de segurança mais uniformes. A amplitude transacional, porém, é muito menor.
 
 ## Matriz funcional antigo × novo
 
@@ -181,7 +181,7 @@ No legado foram encontrados padrões que **não devem ser copiados**: logout por
 | Auth/middleware | 48 verificações, OK | Cobertura PHPUnit maior, arquitetura mista |
 | Configurações Studio | Script funcional, OK | Não comparável diretamente |
 | Diagnóstico | PHP/PDO/config/storage/banco, OK | Ferramentas de DB/deploy mais amplas |
-| HTTP | Público 200; `/app` e `/admin` redirecionam ao login | Público responde; áreas redirecionam aos logins |
+| HTTP | Público 200; `/app` e `/studio` redirecionam ao login | Público responde; áreas redirecionam aos logins |
 
 Ainda faltam CI, testes end-to-end, acessibilidade automatizada, teste de carga, teste de migration em banco limpo e ensaio de restore.
 

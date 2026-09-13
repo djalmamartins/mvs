@@ -44,11 +44,11 @@ final class StudioModulesController extends Controller
 
             if (in_array($module, ['articles', 'faq', 'projects'], true) && $action === 'category') {
                 $name = mb_substr(trim(strip_tags((string) Request::post('category_name', ''))), 0, 120);
-                if (mb_strlen($name) < 2) { Flash::set('error', 'Informe o nome da categoria.'); Response::to('/admin/' . $module); }
+                if (mb_strlen($name) < 2) { Flash::set('error', 'Informe o nome da categoria.'); Response::to('/studio/' . $module); }
                 $taxonomyType = match ($module) { 'articles' => 'article_category', 'projects' => 'project_category', default => 'faq_category' };
                 try { $pdo->prepare('INSERT INTO studio_taxonomies(type,name,slug) VALUES(?,?,?)')->execute([$taxonomyType, $name, $this->slug($name)]); Flash::set('success', 'Categoria criada.'); }
                 catch (Throwable $exception) { Flash::set('error', 'A categoria já existe ou não pôde ser criada.'); }
-                Response::to('/admin/' . $module);
+                Response::to('/studio/' . $module);
             }
 
             if ($action === 'delete') {
@@ -56,7 +56,7 @@ final class StudioModulesController extends Controller
                 $statement->execute([$id, $definition['type']]);
                 Flash::set('success', $definition['singular'] . ' excluído(a).');
                 Logger::info('Conteúdo do Studio excluído.', ['module' => $module, 'record_id' => $id]);
-                Response::to('/admin/' . $module);
+                Response::to('/studio/' . $module);
             }
 
             $title = mb_substr(trim(strip_tags((string) Request::post('title', ''))), 0, 180);
@@ -95,24 +95,24 @@ final class StudioModulesController extends Controller
 
             if ($mediaId !== null && !$this->mediaExists($mediaId)) { $mediaId = null; }
             if ($module === 'articles' && $categoryId !== null && !$this->taxonomyExists($categoryId, 'article_category')) { $categoryId = null; }
-            if ($module === 'articles' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/articles' . ($id ? '?edit=' . $id : '')); }
+            if ($module === 'articles' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/studio/articles' . ($id ? '?edit=' . $id : '')); }
             if ($module === 'projects' && $categoryId !== null && !$this->taxonomyExists($categoryId, 'project_category')) { $categoryId = null; }
-            if ($module === 'projects' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/projects' . ($id ? '?edit=' . $id : '')); }
+            if ($module === 'projects' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/studio/projects' . ($id ? '?edit=' . $id : '')); }
             if ($module === 'projects' && ($meta['project_url'] ?? '') !== '') {
                 $projectUrl = (string) $meta['project_url'];
                 $scheme = strtolower((string) parse_url($projectUrl, PHP_URL_SCHEME));
                 $isInternal = str_starts_with($projectUrl, '/') && !str_starts_with($projectUrl, '//');
                 $isExternal = filter_var($projectUrl, FILTER_VALIDATE_URL) !== false && in_array($scheme, ['http', 'https'], true);
-                if (!$isInternal && !$isExternal) { Flash::set('error', 'Informe uma URL HTTP(S) ou um caminho interno válido para o projeto.'); Response::to('/admin/projects' . ($id ? '?edit=' . $id : '')); }
+                if (!$isInternal && !$isExternal) { Flash::set('error', 'Informe uma URL HTTP(S) ou um caminho interno válido para o projeto.'); Response::to('/studio/projects' . ($id ? '?edit=' . $id : '')); }
             }
             if ($module === 'faq' && $categoryId !== null && !$this->taxonomyExists($categoryId, 'faq_category')) { $categoryId = null; }
-            if ($module === 'faq' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/admin/faq' . ($id ? '?edit=' . $id : '')); }
-            if ($startsAt && $endsAt && $startsAt > $endsAt) { Flash::set('error', 'O fim da exibição deve ocorrer depois do início.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
-            if (($meta['cta_url'] ?? '') !== '' && filter_var($meta['cta_url'], FILTER_VALIDATE_URL) === false && !str_starts_with((string) $meta['cta_url'], '/')) { Flash::set('error', 'Informe uma URL de CTA válida.'); Response::to('/admin/highlights' . ($id ? '?edit=' . $id : '')); }
+            if ($module === 'faq' && $categoryId === null) { Flash::set('error', 'Selecione uma categoria válida.'); Response::to('/studio/faq' . ($id ? '?edit=' . $id : '')); }
+            if ($startsAt && $endsAt && $startsAt > $endsAt) { Flash::set('error', 'O fim da exibição deve ocorrer depois do início.'); Response::to('/studio/highlights' . ($id ? '?edit=' . $id : '')); }
+            if (($meta['cta_url'] ?? '') !== '' && filter_var($meta['cta_url'], FILTER_VALIDATE_URL) === false && !str_starts_with((string) $meta['cta_url'], '/')) { Flash::set('error', 'Informe uma URL de CTA válida.'); Response::to('/studio/highlights' . ($id ? '?edit=' . $id : '')); }
 
             if (mb_strlen($title) < 3 || $slug === '') {
                 Flash::set('error', 'Informe um título válido.');
-                Response::to('/admin/' . $module . ($id ? '?edit=' . $id : ''));
+                Response::to('/studio/' . $module . ($id ? '?edit=' . $id : ''));
             }
 
             try {
@@ -126,11 +126,11 @@ final class StudioModulesController extends Controller
             } catch (Throwable $exception) {
                 Logger::exception($exception);
                 Flash::set('error', 'Não foi possível salvar. Verifique se o slug já está em uso.');
-                Response::to('/admin/' . $module . ($id ? '?edit=' . $id : ''));
+                Response::to('/studio/' . $module . ($id ? '?edit=' . $id : ''));
             }
 
             Flash::set('success', $definition['singular'] . ' salvo(a).');
-            Response::to('/admin/' . $module);
+            Response::to('/studio/' . $module);
         }
 
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
@@ -171,7 +171,7 @@ final class StudioModulesController extends Controller
                 $id = max(0, (int) Request::post('id', 0));
                 $usage = $pdo->prepare('SELECT COUNT(*) FROM studio_content WHERE media_id=?');
                 $usage->execute([$id]);
-                if ((int) $usage->fetchColumn() > 0) { Flash::set('error', 'A imagem está associada a conteúdo. Remova os vínculos antes de excluir.'); Response::to('/admin/media'); }
+                if ((int) $usage->fetchColumn() > 0) { Flash::set('error', 'A imagem está associada a conteúdo. Remova os vínculos antes de excluir.'); Response::to('/studio/media'); }
                 $statement = $pdo->prepare('SELECT path FROM studio_media WHERE id=?');
                 $statement->execute([$id]);
                 $path = $statement->fetchColumn();
@@ -180,18 +180,18 @@ final class StudioModulesController extends Controller
                 if ($root && $file && str_starts_with($file, $root . DIRECTORY_SEPARATOR)) { @unlink($file); }
                 $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$id]);
                 Flash::set('success', 'Arquivo removido.');
-                Response::to('/admin/media');
+                Response::to('/studio/media');
             }
             if ($action === 'metadata') {
                 $id = max(0, (int) Request::post('id', 0));
                 $alt = mb_substr(trim(strip_tags((string) Request::post('alt_text', ''))), 0, 255);
                 $pdo->prepare('UPDATE studio_media SET alt_text=? WHERE id=?')->execute([$alt ?: null, $id]);
                 Flash::set('success', 'Metadados da imagem atualizados.');
-                Response::to('/admin/media');
+                Response::to('/studio/media');
             }
             if ($action === 'crop') {
                 $this->cropMedia($pdo, max(0, (int) Request::post('id', 0)));
-                Response::to('/admin/media');
+                Response::to('/studio/media');
             }
             try {
                 $upload = $_FILES['image'] ?? [];
@@ -208,7 +208,7 @@ final class StudioModulesController extends Controller
                 if ($isEditorUpload) { Response::json(['error'=>$exception->getMessage()], 422); }
                 Flash::set('error', $exception->getMessage());
             }
-            Response::to('/admin/media');
+            Response::to('/studio/media');
         }
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
         $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
@@ -237,7 +237,7 @@ final class StudioModulesController extends Controller
 
     private function validateCsrf(): void
     {
-        if (!Csrf::validate(is_string(Request::post('_token')) ? Request::post('_token') : null)) { Flash::set('error', 'Sessão expirada.'); Response::to('/admin'); }
+        if (!Csrf::validate(is_string(Request::post('_token')) ? Request::post('_token') : null)) { Flash::set('error', 'Sessão expirada.'); Response::to('/studio'); }
     }
 
     private function slug(string $value): string

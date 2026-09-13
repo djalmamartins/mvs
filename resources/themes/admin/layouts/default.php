@@ -28,7 +28,7 @@
     <script type="module" src="<?= $this->e($this->asset('js/editor.js')) ?>"></script>
 </head>
 
-<body class="studio-body studio-v2" data-editor-upload="/admin/media">
+<body class="studio-body studio-v2" data-editor-upload="/studio/media">
 <?php $this->insert('components/icon-sprite'); ?>
 <a class="studio-skip-link" href="#main-content">Ir para o conteúdo</a>
 <div class="studio-shell">
@@ -40,7 +40,7 @@
         <main class="studio-content" id="main-content" tabindex="-1">
             <?= $this->section('content') ?>
         </main>
-        <footer class="studio-footer"><span>Copyright © <?= date('Y') ?> MovesOS. Todos os direitos reservados.</span><a class="studio-footer-version" href="/admin/versions">Studio v1.0.0</a></footer>
+        <footer class="studio-footer"><span>Copyright © <?= date('Y') ?> MovesOS. Todos os direitos reservados.</span><a class="studio-footer-version" href="/studio/versions">Studio v1.0.0</a></footer>
     </div>
 </div>
 <a class="studio-help-fab" href="/contato" target="_blank" rel="noopener"><?= studio_icon('headphones') ?><span>Ajuda</span></a>

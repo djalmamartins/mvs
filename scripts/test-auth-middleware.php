@@ -89,9 +89,9 @@ try {
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /app redirecionado para /login');
     $check($request('/app/status')['status'] === 302, 'visitante não acessa estado em tempo real');
     $sessionHeaders = $response['headers'];
-    $response = $request('/admin');
-    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /admin redirecionado para /login');
-    foreach (['/admin/versions', '/admin/logs'] as $protectedPath) {
+    $response = $request('/studio');
+    $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /studio redirecionado para /login');
+    foreach (['/studio/versions', '/studio/logs'] as $protectedPath) {
         $response = $request($protectedPath);
         $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante não acessa ' . $protectedPath);
     }
@@ -161,10 +161,10 @@ try {
     $response = $request('/login');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
-    $response = $request('/admin/users');
+    $response = $request('/studio/users');
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário sem permissão é redirecionado para /app');
-    $response = $request('/admin');
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário comum não acessa /admin');
+    $response = $request('/studio');
+    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário comum não acessa /studio');
     $response = $request('/app');
     $check(str_contains($response['body'], 'Você não tem permissão'), 'redirect de permissão apresenta Flash');
 

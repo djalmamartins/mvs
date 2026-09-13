@@ -99,7 +99,7 @@ final class Routes
         );
 
         $router->get(
-            '/admin/users',
+            '/studio/users',
             'UserController:index',
             'users.index',
             [
@@ -107,21 +107,21 @@ final class Routes
                 new PermissionMiddleware('users.manage'),
             ]
         );
-        $router->get('/admin/users/create', 'UserController:form', 'users.create', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
-        $router->get('/admin/users/edit/{id}', 'UserController:form', 'users.edit', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
-        $router->post('/admin/users/save', 'UserController:save', 'users.save', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
-        $router->post('/admin/users/action', 'UserController:action', 'users.action', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->get('/studio/users/create', 'UserController:form', 'users.create', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->get('/studio/users/edit/{id}', 'UserController:form', 'users.edit', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->post('/studio/users/save', 'UserController:save', 'users.save', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->post('/studio/users/action', 'UserController:action', 'users.action', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
 
         $router->get(
-            '/admin',
+            '/studio',
             'StudioController:dashboard',
-            'admin.home',
+            'studio.home',
             [
                 AuthMiddleware::class,
                 new PermissionMiddleware('studio.dashboard'),
             ]
         );
-        $router->get('/admin/search', 'StudioSearchController:index', 'admin.search', [AuthMiddleware::class, new PermissionMiddleware('studio.search')]);
+        $router->get('/studio/search', 'StudioSearchController:index', 'studio.search', [AuthMiddleware::class, new PermissionMiddleware('studio.search')]);
 
         $studioTechnicalMiddleware = [
             AuthMiddleware::class,
@@ -134,41 +134,41 @@ final class Routes
         ];
 
         $router->get(
-            '/admin/versions',
+            '/studio/versions',
             'StudioController:versions',
-            'admin.versions',
+            'studio.versions',
             $studioSettingsMiddleware
         );
-        $router->post('/admin/versions', 'StudioController:versions', 'admin.versions.release', $studioSettingsMiddleware);
+        $router->post('/studio/versions', 'StudioController:versions', 'studio.versions.release', $studioSettingsMiddleware);
 
         $router->get(
-            '/admin/logs',
+            '/studio/logs',
             'StudioController:logs',
-            'admin.logs',
+            'studio.logs',
             $studioTechnicalMiddleware
         );
-        $router->post('/admin/logs', 'StudioController:logs', 'admin.logs.action', $studioTechnicalMiddleware);
+        $router->post('/studio/logs', 'StudioController:logs', 'studio.logs.action', $studioTechnicalMiddleware);
 
         $studioContentMiddleware = [AuthMiddleware::class, new PermissionMiddleware('content.manage')];
         foreach (['pages', 'projects', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
-            $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioContentMiddleware);
-            $router->post('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module . '.save', $studioContentMiddleware);
+            $router->get('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module, $studioContentMiddleware);
+            $router->post('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module . '.save', $studioContentMiddleware);
         }
         $mediaMiddleware = [AuthMiddleware::class, new PermissionMiddleware('media.manage')];
         $proposalMiddleware = [AuthMiddleware::class, new PermissionMiddleware('proposals.manage')];
         $notificationMiddleware = [AuthMiddleware::class, new PermissionMiddleware('notifications.manage')];
         $reportMiddleware = [AuthMiddleware::class, new PermissionMiddleware('reports.view')];
-        $router->get('/admin/media', 'StudioModulesController:media', 'admin.media', $mediaMiddleware);
-        $router->post('/admin/media', 'StudioModulesController:media', 'admin.media.save', $mediaMiddleware);
-        $router->get('/admin/media/file/{id}', 'StudioModulesController:mediaFile', 'admin.media.file', $mediaMiddleware);
-        $router->get('/admin/proposals', 'StudioOperationsController:proposals', 'admin.proposals', $proposalMiddleware);
-        $router->post('/admin/proposals', 'StudioOperationsController:proposals', 'admin.proposals.save', $proposalMiddleware);
-        $router->get('/admin/notifications', 'StudioOperationsController:notifications', 'admin.notifications', $notificationMiddleware);
-        $router->post('/admin/notifications', 'StudioOperationsController:notifications', 'admin.notifications.read', $notificationMiddleware);
-        $router->get('/admin/reports', 'StudioOperationsController:reports', 'admin.reports', $reportMiddleware);
+        $router->get('/studio/media', 'StudioModulesController:media', 'studio.media', $mediaMiddleware);
+        $router->post('/studio/media', 'StudioModulesController:media', 'studio.media.save', $mediaMiddleware);
+        $router->get('/studio/media/file/{id}', 'StudioModulesController:mediaFile', 'studio.media.file', $mediaMiddleware);
+        $router->get('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals', $proposalMiddleware);
+        $router->post('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals.save', $proposalMiddleware);
+        $router->get('/studio/notifications', 'StudioOperationsController:notifications', 'studio.notifications', $notificationMiddleware);
+        $router->post('/studio/notifications', 'StudioOperationsController:notifications', 'studio.notifications.read', $notificationMiddleware);
+        $router->get('/studio/reports', 'StudioOperationsController:reports', 'studio.reports', $reportMiddleware);
 
         $router->get(
-            '/admin/users/page/{page}',
+            '/studio/users/page/{page}',
             'UserController:index',
             'users.page',
             [
@@ -183,21 +183,21 @@ final class Routes
         ];
 
         $router->get(
-            '/admin/settings',
+            '/studio/settings',
             'SettingsController:index',
             'settings.index',
             $settingsMiddleware
         );
 
         $router->post(
-            '/admin/settings',
+            '/studio/settings',
             'SettingsController:update',
             'settings.update',
             $settingsMiddleware
         );
 
         $router->get(
-            '/admin/diagnostics',
+            '/studio/diagnostics',
             'DiagnosticsController:index',
             'diagnostics.index',
             [
@@ -205,6 +205,21 @@ final class Routes
                 new PermissionMiddleware('diagnostics.view'),
             ]
         );
+
+        // Compatibility only: every legacy GET is permanently redirected to
+        // the canonical Studio route. Mutations remain exclusive to /studio.
+        foreach ([
+            '/admin', '/admin/search', '/admin/versions', '/admin/logs',
+            '/admin/pages', '/admin/projects', '/admin/articles', '/admin/highlights',
+            '/admin/testimonials', '/admin/faq', '/admin/media', '/admin/proposals',
+            '/admin/notifications', '/admin/reports', '/admin/settings',
+            '/admin/diagnostics', '/admin/users', '/admin/users/create',
+        ] as $legacyStudioRoute) {
+            $router->get($legacyStudioRoute, 'LegacyStudioController:redirect');
+        }
+        $router->get('/admin/users/edit/{id}', 'LegacyStudioController:redirect');
+        $router->get('/admin/users/page/{page}', 'LegacyStudioController:redirect');
+        $router->get('/admin/media/file/{id}', 'LegacyStudioController:redirect');
 
         $router->get(
             '/login',

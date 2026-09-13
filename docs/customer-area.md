@@ -2,7 +2,7 @@
 
 ## Visão
 
-A Área do Cliente (`/app`) é o ambiente privado de relacionamento entre a Moves e clientes autenticados. Ela não compartilha navegação nem terminologia interna com o Moves Studio (`/admin`) e não substitui o site público (`/`).
+A Área do Cliente (`/app`) é o ambiente privado de relacionamento entre a Moves e clientes autenticados. Ela não compartilha navegação nem terminologia interna com o Moves Studio (`/studio`) e não substitui o site público (`/`).
 
 ## Antes, depois e motivo
 

@@ -34,7 +34,7 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 
 ### Moves
 
-- Rota: `GET /admin`, protegida por `AuthMiddleware` e `PermissionMiddleware`.
+- Rota: `GET /studio`, protegida por `AuthMiddleware` e `PermissionMiddleware`.
 - Controller: `Moves\Controllers\StudioController::dashboard()`.
 - Fontes reais: `studio_content`, `studio_media`, `users`, `proposals`, `Diagnostics` e `Logger` sanitizado.
 - Funções migradas: contagem de páginas; artigos totais e publicados; usuários; propostas; atalhos de criação e configuração.
@@ -51,7 +51,7 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 - Segurança: `users.manage`, CSRF em toda mutação, senha com hash, proteção do ID 1, proteção contra desativar/excluir a própria sessão e tratamento de vínculos antes da exclusão.
 - Simplificado: papéis `admin` e `user` seguem o `Access` atual. Overrides, endereço, documento e foto foram adiados até existir necessidade de produto e modelo dedicado.
 - Descartado: logout GET e alteração hierárquica baseada em níveis opacos do ERP.
-- Rotas: `GET /admin/users`, `GET /admin/users/create`, `GET /admin/users/edit/{id}`, `POST /admin/users/save`, `POST /admin/users/action`.
+- Rotas: `GET /studio/users`, `GET /studio/users/create`, `GET /studio/users/edit/{id}`, `POST /studio/users/save`, `POST /studio/users/action`.
 
 ## Configurações — [CONCLUÍDO]
 
@@ -60,7 +60,7 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 - Segurança: `settings.manage`, CSRF, allowlist fixa, limites, sanitização, validação de e-mail e URL.
 - Adiado: arquivos de marca para a fase de Mídia e configurações que ainda não possuem consumidores.
 - Descartado: credenciais SMTP e caminhos de storage no banco; segredos e infraestrutura permanecem no ambiente.
-- Rotas: `GET|POST /admin/settings`.
+- Rotas: `GET|POST /studio/settings`.
 
 ## Versões — [CONCLUÍDO]
 
@@ -69,7 +69,7 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 - Segurança: `settings.manage`, CSRF, versão semântica, transação, unicidade e escaping.
 - Diferença deliberada: registrar uma versão não altera arquivos, Composer, tags Git, a tag `1.0.0` nem executa deploy/rollback.
 - Banco: migration `20260913_002_create_studio_management.sql`, tabela `studio_versions`.
-- Rotas: `GET|POST /admin/versions`.
+- Rotas: `GET|POST /studio/versions`.
 
 ## Log — [CONCLUÍDO]
 
@@ -78,7 +78,7 @@ O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcion
 - Segurança: arquivo JSONL original permanece imutável; contexto continua sanitizado; estados usam fingerprint SHA-256; mutações exigem `users.manage` e CSRF.
 - Descartado: exclusão do registro bruto e exibição de stack trace, caminho, token, sessão ou credenciais.
 - Banco: mesma migration, tabela `studio_log_states`, contendo apenas fingerprint, estado, operador e data.
-- Rotas: `GET|POST /admin/logs`.
+- Rotas: `GET|POST /studio/logs`.
 
 ## Padrão visual aplicado aos quatro módulos
 

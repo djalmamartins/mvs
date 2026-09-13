@@ -88,7 +88,7 @@ try {
     $token = $match[1] ?? '';
     $request('/login', ['email' => $email, 'password' => $password, '_token' => $token]);
 
-    $page = $request('/admin/settings');
+    $page = $request('/studio/settings');
     if ($page['status'] !== 200 || !str_contains($page['body'], 'name="app_name"')) {
         throw new RuntimeException('FAIL: formulário administrativo indisponível.');
     }
@@ -99,24 +99,24 @@ try {
         throw new RuntimeException('FAIL: formulário administrativo sem CSRF.');
     }
 
-    if ($request('/admin')['status'] !== 200) {
-        throw new RuntimeException('FAIL: admin não acessa /admin.');
+    if ($request('/studio')['status'] !== 200) {
+        throw new RuntimeException('FAIL: admin não acessa /studio.');
     }
 
-    $versions = $request('/admin/versions');
+    $versions = $request('/studio/versions');
     if ($versions['status'] !== 200 || !str_contains($versions['body'], 'Migrations disponíveis')) {
         throw new RuntimeException('FAIL: inventário de versões indisponível.');
     }
     preg_match('/name="_token"\s+value="([^"]+)"/', $versions['body'], $match);
     $versionToken = $match[1] ?? '';
     $testVersion = '99.0.' . random_int(1000, 9999);
-    $recorded = $request('/admin/versions', ['_token' => $versionToken, 'version' => $testVersion, 'name' => 'Teste automatizado', 'notes' => 'Registro temporário criado pelo teste HTTP.']);
+    $recorded = $request('/studio/versions', ['_token' => $versionToken, 'version' => $testVersion, 'name' => 'Teste automatizado', 'notes' => 'Registro temporário criado pelo teste HTTP.']);
     $versionId = (int) $pdo->query("SELECT id FROM studio_versions WHERE version=" . $pdo->quote($testVersion) . " LIMIT 1")->fetchColumn();
     if ($recorded['status'] !== 302 || $versionId < 1) {
         throw new RuntimeException('FAIL: histórico seguro de versões não foi persistido.');
     }
 
-    $logs = $request('/admin/logs');
+    $logs = $request('/studio/logs');
     if ($logs['status'] !== 200 || !str_contains($logs['body'], 'Contexto sanitizado')) {
         throw new RuntimeException('FAIL: leitura segura do log indisponível.');
     }
@@ -124,7 +124,7 @@ try {
     $logFingerprint = $match[1] ?? null;
     if ($logFingerprint !== null) {
         preg_match('/name="_token"\s+value="([^"]+)"/', $logs['body'], $match);
-        $triaged = $request('/admin/logs', ['_token' => $match[1] ?? '', 'fingerprint' => $logFingerprint, 'action' => 'resolved']);
+        $triaged = $request('/studio/logs', ['_token' => $match[1] ?? '', 'fingerprint' => $logFingerprint, 'action' => 'resolved']);
         $state = $pdo->prepare('SELECT status FROM studio_log_states WHERE fingerprint=?');
         $state->execute([$logFingerprint]);
         if ($triaged['status'] !== 302 || $state->fetchColumn() !== 'resolved') {
@@ -132,49 +132,49 @@ try {
         }
     }
 
-    $userForm = $request('/admin/users/create');
+    $userForm = $request('/studio/users/create');
     preg_match('/name="_token"\s+value="([^"]+)"/', $userForm['body'], $match);
     $managedEmail = 'managed-' . bin2hex(random_bytes(6)) . '@example.invalid';
-    $created = $request('/admin/users/save', ['_token' => $match[1] ?? '', 'name' => 'Usuário gerenciado', 'email' => $managedEmail, 'password' => 'Test1234!', 'role' => 'user', 'status' => 'active']);
+    $created = $request('/studio/users/save', ['_token' => $match[1] ?? '', 'name' => 'Usuário gerenciado', 'email' => $managedEmail, 'password' => 'Test1234!', 'role' => 'user', 'status' => 'active']);
     $managedUserId = (int) $pdo->query("SELECT id FROM users WHERE email=" . $pdo->quote($managedEmail) . " LIMIT 1")->fetchColumn();
     if ($created['status'] !== 302 || $managedUserId < 1) {
         throw new RuntimeException('FAIL: usuário administrativo não foi criado.');
     }
-    $deactivated = $request('/admin/users/action', ['_token' => $match[1] ?? '', 'id' => $managedUserId, 'action' => 'deactivate']);
+    $deactivated = $request('/studio/users/action', ['_token' => $match[1] ?? '', 'id' => $managedUserId, 'action' => 'deactivate']);
     $managedStatus = $pdo->query('SELECT status FROM users WHERE id=' . $managedUserId)->fetchColumn();
     if ($deactivated['status'] !== 302 || $managedStatus !== 'inactive') {
         throw new RuntimeException('FAIL: estado do usuário não foi alterado.');
     }
 
     foreach (['pages','projects','articles','media','highlights','testimonials','faq','proposals','notifications','reports'] as $module) {
-        $modulePage = $request('/admin/' . $module);
+        $modulePage = $request('/studio/' . $module);
         if ($modulePage['status'] !== 200) {
             throw new RuntimeException('FAIL: módulo Studio indisponível: ' . $module);
         }
     }
 
-    $articlesPage = $request('/admin/articles');
+    $articlesPage = $request('/studio/articles');
     preg_match('/name="_token"\s+value="([^"]+)"/', $articlesPage['body'], $match);
     $studioToken = $match[1] ?? '';
     $fixture = tempnam(sys_get_temp_dir(), 'moves-media-');
     $canvas = imagecreatetruecolor(80, 60); imagefill($canvas, 0, 0, imagecolorallocate($canvas, 104, 16, 159)); imagepng($canvas, $fixture);
-    $uploaded = $request('/admin/media', ['_token' => $studioToken, 'action' => 'upload', 'image' => new CURLFile($fixture, 'image/png', 'teste-midia.png')]);
+    $uploaded = $request('/studio/media', ['_token' => $studioToken, 'action' => 'upload', 'image' => new CURLFile($fixture, 'image/png', 'teste-midia.png')]);
     @unlink($fixture);
     $mediaRow = $pdo->query("SELECT id,path FROM studio_media WHERE name LIKE 'teste-midia%' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
     if ($uploaded['status'] !== 302 || !$mediaRow) { throw new RuntimeException('FAIL: upload seguro de mídia não foi persistido.'); }
     $mediaIds[] = (int) $mediaRow['id']; $mediaPaths[] = (string) $mediaRow['path'];
-    $cropped = $request('/admin/media', ['_token' => $studioToken, 'action' => 'crop', 'id' => $mediaRow['id'], 'crop_x' => 10, 'crop_y' => 10, 'crop_width' => 40, 'crop_height' => 30]);
+    $cropped = $request('/studio/media', ['_token' => $studioToken, 'action' => 'crop', 'id' => $mediaRow['id'], 'crop_x' => 10, 'crop_y' => 10, 'crop_width' => 40, 'crop_height' => 30]);
     $cropRow = $pdo->query('SELECT id,path FROM studio_media WHERE parent_id=' . (int) $mediaRow['id'] . ' ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
     if ($cropped['status'] !== 302 || !$cropRow) { throw new RuntimeException('FAIL: recorte derivado não foi criado.'); }
     $mediaIds[] = (int) $cropRow['id']; $mediaPaths[] = (string) $cropRow['path'];
     $categoryName = 'Categoria teste ' . bin2hex(random_bytes(3));
-    $request('/admin/articles', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $categoryName]);
+    $request('/studio/articles', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $categoryName]);
     $taxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($categoryName))->fetchColumn();
     $faqCategoryName = 'FAQ teste ' . bin2hex(random_bytes(3));
-    $request('/admin/faq', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $faqCategoryName]);
+    $request('/studio/faq', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $faqCategoryName]);
     $faqTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($faqCategoryName))->fetchColumn();
     $projectCategoryName = 'Projetos teste ' . bin2hex(random_bytes(3));
-    $request('/admin/projects', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $projectCategoryName]);
+    $request('/studio/projects', ['_token' => $studioToken, 'action' => 'category', 'category_name' => $projectCategoryName]);
     $projectTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($projectCategoryName))->fetchColumn();
     foreach (['articles' => 'Artigo', 'pages' => 'Página', 'projects' => 'Projeto', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
         $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
@@ -185,7 +185,7 @@ try {
         if ($module === 'projects') { $payload += ['category_id'=>$projectTaxonomyId,'client'=>'Cliente teste','kind'=>'Site institucional','project_url'=>'/contato','image'=>'images/portfolio/studio-alta.png','backdrop'=>'images/portfolio/studio-alta-bg.jpg']; }
         if ($module === 'highlights') { $payload += ['cta_label' => 'Saiba mais', 'cta_url' => '/contato', 'alignment' => 'center']; }
         if ($module === 'testimonials') { $payload += ['company' => 'Moves', 'job_title' => 'Cliente']; }
-        $saved = $request('/admin/' . $module, $payload);
+        $saved = $request('/studio/' . $module, $payload);
         $contentId = (int) $pdo->query('SELECT id FROM studio_content WHERE slug=' . $pdo->quote($slug))->fetchColumn();
         if ($saved['status'] !== 302 || $contentId < 1) { throw new RuntimeException('FAIL: conteúdo não persistido em ' . $module); }
         $contentIds[] = $contentId;
@@ -196,7 +196,7 @@ try {
             if ($publicArticle['status'] !== 200 || !str_contains($publicArticle['body'], $label . ' automatizado') || $publicMedia['status'] !== 200) { throw new RuntimeException('FAIL: artigo ou mídia publicada indisponível.'); }
         }
     }
-    $globalSearch = $request('/admin/search?q=automatizado');
+    $globalSearch = $request('/studio/search?q=automatizado');
     $publicPage = $request('/pagina/' . $createdSlugs['pages']);
     $publicFaq = $request('/faq');
     $publicHome = $request('/');
@@ -204,12 +204,12 @@ try {
     if ($globalSearch['status'] !== 200 || !str_contains($globalSearch['body'], 'Artigo automatizado') || !str_contains($globalSearch['body'], 'Projeto automatizado') || $publicPage['status'] !== 200 || !str_contains($publicPage['body'], 'Página automatizado') || !str_contains($publicFaq['body'], 'Pergunta automatizado') || !str_contains($publicProjects['body'], 'Projeto automatizado') || !str_contains($publicHome['body'], 'Destaque automatizado') || !str_contains($publicHome['body'], 'Depoimento automatizado') || !str_contains($publicHome['body'], 'Projeto automatizado')) { throw new RuntimeException('FAIL: integração pública ou busca global incompleta.'); }
 
     $notificationTitle = 'Notificação automatizada ' . bin2hex(random_bytes(3));
-    $notificationCreated = $request('/admin/notifications', ['_token'=>$studioToken,'action'=>'create','title'=>$notificationTitle,'message'=>'Mensagem completa para validar o cadastro de comunicação.','recipient_id'=>'','action_url'=>'/admin/projects']);
+    $notificationCreated = $request('/studio/notifications', ['_token'=>$studioToken,'action'=>'create','title'=>$notificationTitle,'message'=>'Mensagem completa para validar o cadastro de comunicação.','recipient_id'=>'','action_url'=>'/studio/projects']);
     $createdNotificationId = (int) $pdo->query('SELECT id FROM notifications WHERE title=' . $pdo->quote($notificationTitle))->fetchColumn();
     if ($notificationCreated['status'] !== 302 || $createdNotificationId < 1) { throw new RuntimeException('FAIL: cadastro de notificação não foi persistido.'); }
-    $request('/admin/notifications', ['_token'=>$studioToken,'id'=>$createdNotificationId,'action'=>'delete']);
+    $request('/studio/notifications', ['_token'=>$studioToken,'id'=>$createdNotificationId,'action'=>'delete']);
     if ($pdo->query('SELECT id FROM notifications WHERE id=' . $createdNotificationId)->fetchColumn()) { throw new RuntimeException('FAIL: notificação de teste não foi removida.'); }
-    $protectedDelete = $request('/admin/media', ['_token' => $studioToken, 'action' => 'delete', 'id' => $mediaRow['id']]);
+    $protectedDelete = $request('/studio/media', ['_token' => $studioToken, 'action' => 'delete', 'id' => $mediaRow['id']]);
     if ($protectedDelete['status'] !== 302 || !(bool) $pdo->query('SELECT 1 FROM studio_media WHERE id=' . (int) $mediaRow['id'])->fetchColumn()) { throw new RuntimeException('FAIL: mídia associada pôde ser excluída.'); }
 
     $contact = $request('/contato');
@@ -221,26 +221,26 @@ try {
         throw new RuntimeException('FAIL: proposta pública não foi persistida.');
     }
     $proposalId = (int) $pdo->query("SELECT id FROM proposals WHERE email='studio-test@example.invalid' ORDER BY id DESC LIMIT 1")->fetchColumn();
-    $proposalAction = $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'respond','note'=>'Resposta comercial registrada pelo teste automatizado.']);
-    $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'note','note'=>'Observação interna segura.']);
-    $request('/admin/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'convert','note'=>'Conversão validada.']);
+    $proposalAction = $request('/studio/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'respond','note'=>'Resposta comercial registrada pelo teste automatizado.']);
+    $request('/studio/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'note','note'=>'Observação interna segura.']);
+    $request('/studio/proposals', ['_token'=>$studioToken,'id'=>$proposalId,'action'=>'convert','note'=>'Conversão validada.']);
     $proposalState = $pdo->query('SELECT status FROM proposals WHERE id=' . $proposalId)->fetchColumn();
     $historyCount = (int) $pdo->query('SELECT COUNT(*) FROM proposal_history WHERE proposal_id=' . $proposalId)->fetchColumn();
     if ($proposalAction['status'] !== 302 || $proposalState !== 'won' || $historyCount !== 3) { throw new RuntimeException('FAIL: operação e histórico da proposta inválidos.'); }
     $notification = $pdo->query('SELECT id FROM notifications WHERE source_type=\'proposal\' AND source_id=' . $proposalId)->fetchColumn();
     if (!$notification) { throw new RuntimeException('FAIL: notificação não registrou origem da proposta.'); }
-    $request('/admin/notifications', ['_token'=>$studioToken,'id'=>(int)$notification,'action'=>'read']);
+    $request('/studio/notifications', ['_token'=>$studioToken,'id'=>(int)$notification,'action'=>'read']);
     if (!$pdo->query('SELECT read_at FROM notifications WHERE id=' . (int)$notification)->fetchColumn()) { throw new RuntimeException('FAIL: notificação não foi marcada como lida.'); }
-    $csv = $request('/admin/reports?format=csv');
+    $csv = $request('/studio/reports?format=csv');
     if ($csv['status'] !== 200 || !str_contains($csv['body'], 'Módulo;Total;Publicados')) { throw new RuntimeException('FAIL: exportação real de relatórios indisponível.'); }
 
-    $invalid = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
+    $invalid = $request('/studio/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
     if ($invalid['status'] !== 302 || Settings::get('app_name') !== $original) {
         throw new RuntimeException('FAIL: CSRF inválido alterou Settings.');
     }
 
-    $request('/admin/settings');
-    $updated = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => $token]);
+    $request('/studio/settings');
+    $updated = $request('/studio/settings', ['app_name' => 'Moves HTTP', '_token' => $token]);
     if ($updated['status'] !== 302 || Settings::get('app_name') !== 'Moves HTTP') {
         throw new RuntimeException('FAIL: Settings não foi persistido.');
     }

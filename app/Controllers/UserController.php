@@ -82,7 +82,7 @@ final class UserController extends Controller
             ['q' => $search, 'status' => $status, 'role' => $role],
             static fn (string $value): bool => $value !== ''
         ));
-        $pager = new Pager('/admin/users/page/{page}' . ($filterQuery === '' ? '' : '?' . $filterQuery));
+        $pager = new Pager('/studio/users/page/{page}' . ($filterQuery === '' ? '' : '?' . $filterQuery));
 
         $pager->pager(
             $total,
@@ -118,7 +118,7 @@ final class UserController extends Controller
             $statement = Connection::getInstance()->prepare('SELECT id,name,email,role,status,created_at FROM users WHERE id=?');
             $statement->execute([$id]);
             $user = $statement->fetch(PDO::FETCH_ASSOC) ?: null;
-            if ($user === null) { Response::to('/admin/users'); }
+            if ($user === null) { Response::to('/studio/users'); }
         }
         echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Novo usuário', 'user' => $user]);
     }
@@ -134,7 +134,7 @@ final class UserController extends Controller
         $password = (string) Request::post('password', '');
         if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($id === 0 && strlen($password) < 8) || ($password !== '' && strlen($password) < 8)) {
             Flash::set('error', 'Revise nome, e-mail e senha. A senha deve ter ao menos 8 caracteres.');
-            Response::to($id ? '/admin/users/edit/' . $id : '/admin/users/create');
+            Response::to($id ? '/studio/users/edit/' . $id : '/studio/users/create');
         }
         if ($id === 1) { $role = 'admin'; $status = 'active'; }
         try {
@@ -155,7 +155,7 @@ final class UserController extends Controller
             Logger::exception($exception);
             Flash::set('error', 'Não foi possível salvar. Verifique se o e-mail já está em uso.');
         }
-        Response::to('/admin/users');
+        Response::to('/studio/users');
     }
 
     public function action(): never
@@ -166,7 +166,7 @@ final class UserController extends Controller
         $actorId = (int) Auth::user()?->id;
         if ($id < 1 || !in_array($action, ['activate', 'deactivate', 'delete'], true) || (($id === 1 || $id === $actorId) && $action !== 'activate')) {
             Flash::set('error', 'Esta conta não pode receber a ação solicitada.');
-            Response::to('/admin/users');
+            Response::to('/studio/users');
         }
         try {
             $pdo = Connection::getInstance();
@@ -178,7 +178,7 @@ final class UserController extends Controller
             Logger::exception($exception);
             Flash::set('error', 'A conta possui vínculos e não pode ser excluída. Desative o acesso.');
         }
-        Response::to('/admin/users');
+        Response::to('/studio/users');
     }
 
     private function validateCsrf(): void
@@ -186,7 +186,7 @@ final class UserController extends Controller
         $token = Request::post('_token');
         if (!is_string($token) || !Csrf::validate($token)) {
             Flash::set('error', 'Token de segurança inválido.');
-            Response::to('/admin/users');
+            Response::to('/studio/users');
         }
     }
 }

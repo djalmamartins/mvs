@@ -66,13 +66,13 @@ final class StudioController extends Controller
     {
         $pdo = Connection::getInstance();
         if (Request::isMethod('POST')) {
-            $this->validateCsrf('/admin/versions');
+            $this->validateCsrf('/studio/versions');
             $version = trim((string) Request::post('version', ''));
             $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
             $notes = mb_substr(trim(strip_tags((string) Request::post('notes', ''))), 0, 4000);
             if (preg_match('/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/', $version) !== 1 || mb_strlen($name) < 3 || mb_strlen($notes) < 10) {
                 Flash::set('error', 'Informe uma versão semântica, um nome e notas com pelo menos 10 caracteres.');
-                Response::to('/admin/versions');
+                Response::to('/studio/versions');
             }
             try {
                 $pdo->beginTransaction();
@@ -87,7 +87,7 @@ final class StudioController extends Controller
                 Logger::exception($exception);
                 Flash::set('error', 'A versão já existe ou não pôde ser registrada.');
             }
-            Response::to('/admin/versions');
+            Response::to('/studio/versions');
         }
         $checks = Diagnostics::run();
         $migrations = glob(dirname(__DIR__, 2) . '/database/migrations/*.sql') ?: [];
@@ -112,24 +112,24 @@ final class StudioController extends Controller
     {
         $pdo = Connection::getInstance();
         if (Request::isMethod('POST')) {
-            $this->validateCsrf('/admin/logs');
+            $this->validateCsrf('/studio/logs');
             $fingerprint = (string) Request::post('fingerprint', '');
             $action = (string) Request::post('action', '');
             if (preg_match('/^[a-f0-9]{64}$/', $fingerprint) !== 1 || !in_array($action, ['open', 'resolved', 'ignored'], true)) {
                 Flash::set('error', 'Evento ou ação inválida.');
-                Response::to('/admin/logs');
+                Response::to('/studio/logs');
             }
             $knownEntries = (new LogReader())->read('', '', 1, 2000)['entries'];
             $knownFingerprints = array_column($knownEntries, 'fingerprint');
             if (!in_array($fingerprint, $knownFingerprints, true)) {
                 Flash::set('error', 'O evento não está mais disponível no histórico atual.');
-                Response::to('/admin/logs');
+                Response::to('/studio/logs');
             }
             $statement = $pdo->prepare('INSERT INTO studio_log_states(fingerprint,status,updated_by) VALUES(?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),updated_by=VALUES(updated_by)');
             $statement->execute([$fingerprint, $action, Auth::user()?->id]);
             Logger::info('Estado de evento técnico atualizado.', ['event_fingerprint' => $fingerprint, 'status' => $action, 'actor_id' => Auth::user()?->id]);
             Flash::set('success', 'Estado do evento atualizado.');
-            Response::to('/admin/logs');
+            Response::to('/studio/logs');
         }
         $search = (string) Request::get('q', '');
         $level = (string) Request::get('level', '');

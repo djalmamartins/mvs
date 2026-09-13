@@ -35,7 +35,7 @@ final class CoreTest extends TestCase
 
     public function testThemeFollowsRequestContext(): void
     {
-        $_SERVER['REQUEST_URI'] = '/admin/settings';
+        $_SERVER['REQUEST_URI'] = '/studio/settings';
         self::assertSame('admin', Theme::active());
 
         $_SERVER['REQUEST_URI'] = '/app/profile';

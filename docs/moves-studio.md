@@ -7,7 +7,7 @@ O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A m
 | Antigo | Novo | Motivo |
 | --- | --- | --- |
 | Header técnico “Moves Admin” | Sidebar e topbar do Moves Studio | Dar identidade e navegação escalável ao CMS |
-| `/admin` abria a listagem de usuários | `/admin` abre um dashboard com dados reais | Separar visão geral da gestão de usuários |
+| `/studio` abria a listagem de usuários | `/studio` abre um dashboard com dados reais | Separar visão geral da gestão de usuários |
 | Usuários, configurações e diagnóstico isolados | Telas preservadas dentro do mesmo shell | Manter funcionalidades e permissões existentes |
 
 ## Navegação
@@ -15,7 +15,7 @@ O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A m
 - Visão geral: Dashboard, Relatórios, Notificações e Propostas são funcionais.
 - Conteúdo: Páginas, Projetos, Artigos, Mídia, Destaques, Depoimentos e FAQ são funcionais.
 - Gestão: Usuários, Configurações, Versões informativa e Log somente leitura são funcionais.
-- Diagnóstico continua funcional em `/admin/diagnostics`, acessível pelo Dashboard e por Configurações.
+- Diagnóstico continua funcional em `/studio/diagnostics`, acessível pelo Dashboard e por Configurações.
 
 Todos os itens exibidos na navegação apontam para rotas existentes e protegidas.
 
@@ -25,18 +25,18 @@ Os indicadores usam somente fontes existentes: usuários, saúde de `Diagnostics
 
 ## Gestão técnica
 
-- `/admin/users` permite pesquisar, filtrar, criar e editar contas, alterar estado e excluir contas que não tenham vínculos protegidos. O administrador primário e a sessão atual recebem proteções adicionais.
-- `/admin/settings` mantém somente identidade pública, SEO básico, contato e redes sociais. Credenciais SMTP, pagamentos e outros segredos continuam fora da interface.
-- `/admin/versions` informa o ambiente e registra um histórico semântico auditável por autor. O registro não executa deploy, atualização, tag ou rollback.
-- `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL sanitizado e permite classificar eventos existentes como aberto, resolvido ou ignorado. O conteúdo original permanece imutável e o caminho do arquivo não é revelado.
-- `/admin/media` mantém a biblioteca de imagens, texto alternativo, recortes derivados e associações protegidas com conteúdos.
-- `/admin/articles`, `/admin/pages`, `/admin/projects`, `/admin/highlights` e `/admin/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação. Artigos alimentam `/conteudo`; projetos alimentam o componente de portfólio reutilizado na home e em `/projetos`.
-- `/admin/faq` organiza perguntas e respostas por categoria; `/admin/proposals` mantém pipeline e histórico; `/admin/notifications` oferece contador e ações por destinatário; `/admin/reports` agrega dados reais e exporta CSV.
-- `/admin/search` pesquisa conteúdo, usuários e propostas. Páginas publicadas usam `/pagina/{slug}`, FAQ usa `/faq`, e destaques/depoimentos publicados alimentam a página inicial respeitando ordem e período.
+- `/studio/users` permite pesquisar, filtrar, criar e editar contas, alterar estado e excluir contas que não tenham vínculos protegidos. O administrador primário e a sessão atual recebem proteções adicionais.
+- `/studio/settings` mantém somente identidade pública, SEO básico, contato e redes sociais. Credenciais SMTP, pagamentos e outros segredos continuam fora da interface.
+- `/studio/versions` informa o ambiente e registra um histórico semântico auditável por autor. O registro não executa deploy, atualização, tag ou rollback.
+- `/studio/logs` lê no máximo os 2.000 registros mais recentes do JSONL sanitizado e permite classificar eventos existentes como aberto, resolvido ou ignorado. O conteúdo original permanece imutável e o caminho do arquivo não é revelado.
+- `/studio/media` mantém a biblioteca de imagens, texto alternativo, recortes derivados e associações protegidas com conteúdos.
+- `/studio/articles`, `/studio/pages`, `/studio/projects`, `/studio/highlights` e `/studio/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação. Artigos alimentam `/conteudo`; projetos alimentam o componente de portfólio reutilizado na home e em `/projetos`.
+- `/studio/faq` organiza perguntas e respostas por categoria; `/studio/proposals` mantém pipeline e histórico; `/studio/notifications` oferece contador e ações por destinatário; `/studio/reports` agrega dados reais e exporta CSV.
+- `/studio/search` pesquisa conteúdo, usuários e propostas. Páginas publicadas usam `/pagina/{slug}`, FAQ usa `/faq`, e destaques/depoimentos publicados alimentam a página inicial respeitando ordem e período.
 
 ## Fundação visual
 
-O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar branca, realce roxo, marca MovesOS, busca no topo, cards compactos, perfil suspenso, tema claro/escuro persistente, menu recolhível e rodapé de versão. A camada foi adaptada às rotas `/admin` e aos dados atuais, sem importar controllers, consultas ou autenticação do sistema antigo. O CSS autoritativo da referência fica em `public/themes/admin/css/studio-reference.css`, com compatibilidade local isolada em `compat.css`.
+O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar branca, realce roxo, marca MovesOS, busca no topo, cards compactos, perfil suspenso, tema claro/escuro persistente, menu recolhível e rodapé de versão. A camada foi adaptada às rotas `/studio` e aos dados atuais, sem importar controllers, consultas ou autenticação do sistema antigo. O CSS autoritativo da referência fica em `public/themes/admin/css/studio-reference.css`, com compatibilidade local isolada em `compat.css`.
 
 ## Segurança e escopo
 

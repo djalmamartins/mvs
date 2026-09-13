@@ -27,7 +27,7 @@ Configure o servidor web para servir apenas `public/`. O arquivo `.env`, o códi
 
 O `.env` contém somente infraestrutura e segredos locais. Ele não é versionado. As chaves principais são `APP_ENV`, `APP_DEBUG`, `APP_URL`, `APP_TIMEZONE` e as opções `DB_*`.
 
-As configurações editáveis ficam na tabela `settings` e são acessadas por `Settings::get()`, `Settings::set()` ou pelo helper `setting()`. Nunca grave credenciais em Settings. Administradores podem editar o nome da aplicação em `/admin/settings`.
+As configurações editáveis ficam na tabela `settings` e são acessadas por `Settings::get()`, `Settings::set()` ou pelo helper `setting()`. Nunca grave credenciais em Settings. Administradores podem editar o nome da aplicação em `/studio/settings`.
 
 As migrations SQL ficam em `database/migrations/`. O runner cria o histórico, executa apenas arquivos pendentes em ordem e interrompe na primeira falha:
 
@@ -59,7 +59,7 @@ public/index.php → Environment → Application → Router → Middleware → C
 
 O contexto é resolvido pela URL, sem `APP_THEME` global:
 
-- `/admin` e `/admin/*`: `admin`
+- `/studio` e `/studio/*`: `admin`
 - `/app` e `/app/*`: `app`
 - demais rotas: `site`
 
@@ -125,7 +125,7 @@ composer validate --strict
 composer audit
 ```
 
-Os scripts HTTP e de banco usam o ambiente local configurado. O diagnóstico administrativo fica em `/admin/diagnostics` e nunca apresenta credenciais.
+Os scripts HTTP e de banco usam o ambiente local configurado. O diagnóstico administrativo fica em `/studio/diagnostics` e nunca apresenta credenciais.
 
 ## Produção
 
