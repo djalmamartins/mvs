@@ -12,18 +12,35 @@ As fundações visuais do Studio ficam em `public/themes/admin/css/design-system
 
 ## Ícones
 
-O sprite SVG e o helper `studio_icon()` continuam sendo a escolha padrão para componentes novos, pois permitem título acessível, controle de traço e dimensionamento consistente.
+O sprite SVG local e o helper `studio_icon()` são o único padrão de ícones do shell e dos módulos. Os ícones usam traço, alinhamento e escala comuns de 16, 18, 20 e 24 px. A fonte de ícones do ERP e os elementos `ion-icon` foram removidos.
 
-O arquivo `studio.woff` do ERP foi incorporado apenas como ponte de compatibilidade. Para usá-lo em uma tela migrada, combine `moves-font-icon` com um modificador semântico, por exemplo:
-
-```html
-<i class="moves-font-icon icon-article" aria-hidden="true"></i>
-```
-
-Os modificadores disponíveis cobrem dashboard, relatórios, notificações, páginas, artigos, mídia, destaques, comentários, usuários, configurações e ações comuns. A classe base é deliberadamente escopada dentro de `.studio-v2` para não colidir com o Organic Editor nem com bibliotecas externas.
+O Organic Editor usa seu próprio sprite SVG local, fornecido com o componente e permitido pela CSP. Botões somente com ícone devem manter `aria-label`; `title` é complementar, não substituto.
 
 ## Tokens
 
 Os tokens `--studio-*` representam cores, tipografia, escala de espaçamento, raios, sombras, dimensões estruturais e duração de movimentos. Componentes e módulos devem consumir esses tokens em vez de repetir valores literais.
 
+- base tipográfica: 16 px;
+- texto funcional e auxiliar: mínimo de 14 px;
+- controles: 44 px de altura mínima;
+- raio padrão: 6 px;
+- sidebar e topbar: superfícies brancas;
+- foco: anel roxo visível, sem depender apenas de cor.
+
 O design system respeita `prefers-reduced-motion`, reduzindo as durações sem remover feedback de estado.
+
+## Camadas CSS
+
+- `design-system.css`: fontes, tokens e preferências globais;
+- `studio-reference.css`: base, shell, navegação e componentes autoritativos;
+- `compat.css`: adaptação temporária dos templates já existentes, sem regras de negócio.
+
+O antigo `app.css` deixou de ser carregado e foi removido porque duplicava tokens, sidebar, topbar, forms e tabelas com outro padrão visual.
+
+## Interações
+
+`js/app.js` centraliza menu desktop/mobile, tema, perfil, Escape, fechamento de overlays e confirmações declarativas. `js/editor.js` integra upload e o Organic Editor sem CDN. Não são permitidos handlers inline em templates do Studio.
+
+## Rotas
+
+`/studio` é a base canônica. URLs GET antigas sob `/admin` respondem com redirect permanente `308`, preservando caminho e query string. Mutações só são registradas sob `/studio`.

@@ -12,6 +12,10 @@ O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A m
 
 ## Navegação
 
+- A rota oficial é `/studio`.
+- Bookmarks GET em `/admin` recebem redirect permanente para o equivalente em `/studio`, preservando a query string.
+- Não existem formulários ou mutações oficiais em `/admin`.
+
 - Visão geral: Dashboard, Relatórios, Notificações e Propostas são funcionais.
 - Conteúdo: Páginas, Projetos, Artigos, Mídia, Destaques, Depoimentos e FAQ são funcionais.
 - Gestão: Usuários, Configurações, Versões informativa e Log somente leitura são funcionais.
@@ -36,7 +40,9 @@ Os indicadores usam somente fontes existentes: usuários, saúde de `Diagnostics
 
 ## Fundação visual
 
-O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar branca, realce roxo, marca MovesOS, busca no topo, cards compactos, perfil suspenso, tema claro/escuro persistente, menu recolhível e rodapé de versão. A camada foi adaptada às rotas `/studio` e aos dados atuais, sem importar controllers, consultas ou autenticação do sistema antigo. O CSS autoritativo da referência fica em `public/themes/admin/css/studio-reference.css`, com compatibilidade local isolada em `compat.css`.
+O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar e topbar brancas, realce roxo, marca MovesOS, busca global, cards compactos, perfil suspenso semântico, tema claro/escuro persistente, menu recolhível e rodapé de versão. O raio padrão é 6 px, controles têm 44 px e o texto funcional não fica abaixo de 14 px. O CSS autoritativo fica em `public/themes/admin/css/studio-reference.css`, com tokens em `design-system.css` e adaptação dos templates atuais isolada em `compat.css`.
+
+Todos os ícones do shell usam o sprite SVG local. O Organic Editor usa o sprite local do próprio componente; a fonte de ícones do ERP, emojis funcionais e dependências de CDN não fazem parte do Studio.
 
 ## Segurança e escopo
 
