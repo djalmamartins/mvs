@@ -20,8 +20,8 @@
             <a href="/servicos">Serviços</a>
             <a href="/projetos">Projetos</a>
             <a href="/sobre">Sobre</a>
-            <a href="/#content">Conteúdo</a>
-            <a href="/#contact">Solicitar orçamento</a>
+            <a href="/conteudo">Conteúdo</a>
+            <a href="/contato">Solicitar orçamento</a>
         </nav>
     </div>
     <div class="footer-client">

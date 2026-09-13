@@ -68,4 +68,4 @@ $presentations = [
     <?php endforeach; ?>
 </div>
 
-<section class="cta"><div class="cta-inner"><div><p class="eyebrow">SEU PRÓXIMO MOVIMENTO</p><h2>Vamos tirar sua<br>ideia do papel?</h2><p>Conte seu desafio. Construímos o próximo passo juntos.</p></div><a class="button button-primary large" href="mailto:contato@moves.com.br?subject=Novo%20projeto">Conversar sobre meu projeto ↗</a></div></section>
+<section class="cta"><div class="cta-inner"><div><p class="eyebrow">SEU PRÓXIMO MOVIMENTO</p><h2>Vamos tirar sua<br>ideia do papel?</h2><p>Conte seu desafio. Construímos o próximo passo juntos.</p></div><a class="button button-primary large" href="/contato">Conversar sobre meu projeto ↗</a></div></section>

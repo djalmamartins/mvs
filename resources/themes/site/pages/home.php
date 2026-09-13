@@ -65,7 +65,7 @@ $this->layout('layouts/default', [
 <section class="section-shell about-editorial" id="about">
     <div class="about-manifesto">MAIS QUE PROJETOS.<br>CONSTRUÍMOS<br>PARCERIAS.<span></span></div>
     <div class="about-editorial-image"><img src="<?= $this->e($this->asset('images/home/team.jpg')) ?>" alt="Profissionais colaborando em um projeto digital" width="1400" height="2099" loading="lazy"></div>
-    <div class="about-editorial-copy"><p class="eyebrow">SOMOS A MOVES</p><h2>Uma equipe que conecta ideias e <span class="brand-gradient">ama</span> o que faz.</h2><p>Unimos estratégia, design e tecnologia para construir soluções com você, do primeiro desafio à próxima evolução.</p><a class="text-link" href="#contact">Converse com a Moves →</a></div>
+    <div class="about-editorial-copy"><p class="eyebrow">SOMOS A MOVES</p><h2>Uma equipe que conecta ideias e <span class="brand-gradient">ama</span> o que faz.</h2><p>Unimos estratégia, design e tecnologia para construir soluções com você, do primeiro desafio à próxima evolução.</p><a class="text-link" href="/contato">Converse com a Moves →</a></div>
 </section>
 
 <section class="section-shell block" id="content">
@@ -77,4 +77,4 @@ $this->layout('layouts/default', [
     </div>
 </section>
 
-<section class="cta" id="contact"><div class="cta-inner reveal"><div><p class="eyebrow">VAMOS CONVERSAR?</p><h2>Tem algo que precisa<br>sair do lugar?</h2><p>Vamos colocar sua ideia em movimento.</p></div><a href="mailto:contato@moves.com.br" class="button button-primary large">Solicitar orçamento <span aria-hidden="true">→</span></a></div></section>
+<section class="cta" id="contact"><div class="cta-inner reveal"><div><p class="eyebrow">VAMOS CONVERSAR?</p><h2>Tem algo que precisa<br>sair do lugar?</h2><p>Vamos colocar sua ideia em movimento.</p></div><a href="/contato" class="button button-primary large">Solicitar orçamento <span aria-hidden="true">→</span></a></div></section>
