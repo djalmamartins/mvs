@@ -46,16 +46,20 @@ final class StudioModulesController extends Controller
                 $name = mb_substr(trim(strip_tags((string) Request::post('category_name', ''))), 0, 120);
                 if (mb_strlen($name) < 2) { Flash::set('error', 'Informe o nome da categoria.'); Response::to('/studio/' . $module); }
                 $taxonomyType = match ($module) { 'articles' => 'article_category', 'projects' => 'project_category', default => 'faq_category' };
-                try { $pdo->prepare('INSERT INTO studio_taxonomies(type,name,slug) VALUES(?,?,?)')->execute([$taxonomyType, $name, $this->slug($name)]); Flash::set('success', 'Categoria criada.'); }
+                try { $pdo->prepare('INSERT INTO studio_taxonomies(type,name,slug) VALUES(?,?,?)')->execute([$taxonomyType, $name, $this->slug($name)]); Logger::info('Categoria de conteúdo criada.', ['action'=>'category_created','module'=>$module,'record_id'=>(int)$pdo->lastInsertId(),'actor_id'=>Auth::user()?->id]); Flash::set('success', 'Categoria criada.'); }
                 catch (Throwable $exception) { Flash::set('error', 'A categoria já existe ou não pôde ser criada.'); }
                 Response::to('/studio/' . $module);
+            }
+
+            if ($action === 'restore_revision' && in_array($module, ['articles', 'pages'], true)) {
+                $this->restoreRevision($pdo, $id, max(0, (int) Request::post('revision_id', 0)), $definition['type'], $module);
             }
 
             if ($action === 'delete') {
                 $statement = $pdo->prepare('DELETE FROM studio_content WHERE id = ? AND type = ?');
                 $statement->execute([$id, $definition['type']]);
                 Flash::set('success', $definition['singular'] . ' excluído(a).');
-                Logger::info('Conteúdo do Studio excluído.', ['module' => $module, 'record_id' => $id]);
+                Logger::info('Conteúdo do Studio excluído.', ['action'=>'deleted','module' => $module, 'record_id' => $id,'actor_id'=>Auth::user()?->id]);
                 Response::to('/studio/' . $module);
             }
 
@@ -116,13 +120,23 @@ final class StudioModulesController extends Controller
             }
 
             try {
+                $previousStatus = null;
+                if ($id > 0) {
+                    $statusStatement = $pdo->prepare('SELECT status FROM studio_content WHERE id=? AND type=?');
+                    $statusStatement->execute([$id, $definition['type']]);
+                    $previousStatus = $statusStatement->fetchColumn() ?: null;
+                }
                 if ($id > 0) {
                     $statement = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,starts_at=?,ends_at=?,published_at=? WHERE id=? AND type=?');
                     $statement->execute([$title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, $id, $definition['type']]);
                 } else {
                     $statement = $pdo->prepare('INSERT INTO studio_content(type,title,slug,excerpt,content,seo_title,seo_description,media_id,category_id,template,meta_json,status,position,starts_at,ends_at,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
                     $statement->execute([$definition['type'], $title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, Auth::user()?->id]);
+                    $id = (int) $pdo->lastInsertId();
                 }
+                if (in_array($module, ['articles', 'pages'], true)) { $this->recordRevision($pdo, $id, $definition['type'], $previousStatus === null ? 'created' : 'updated'); }
+                $auditAction = $previousStatus === null ? 'created' : ($previousStatus !== $status ? 'status_changed' : 'updated');
+                Logger::info('Conteúdo do Studio alterado.', ['action'=>$auditAction,'module'=>$module,'record_id'=>$id,'actor_id'=>Auth::user()?->id,'previous_status'=>$previousStatus,'status'=>$status]);
             } catch (Throwable $exception) {
                 Logger::exception($exception);
                 Flash::set('error', 'Não foi possível salvar. Verifique se o slug já está em uso.');
@@ -154,9 +168,22 @@ final class StudioModulesController extends Controller
         $categoryStatement = $pdo->prepare('SELECT id,name FROM studio_taxonomies WHERE type=? ORDER BY name'); $categoryStatement->execute([$taxonomyType]);
         $categories = $categoryStatement->fetchAll(PDO::FETCH_ASSOC);
         if ($edit) { $edit['meta'] = json_decode((string) ($edit['meta_json'] ?? ''), true) ?: []; }
+        $revisions = [];
+        $selectedRevision = null;
+        if ($edit && in_array($module, ['articles', 'pages'], true)) {
+            $revisionStatement = $pdo->prepare('SELECT r.id,r.revision_number,r.reason,r.title,r.slug,r.status,r.created_at,r.created_by,u.name author_name,LENGTH(r.content) content_size FROM studio_content_revisions r LEFT JOIN users u ON u.id=r.created_by WHERE r.content_id=? ORDER BY r.revision_number DESC LIMIT 30');
+            $revisionStatement->execute([(int) $edit['id']]);
+            $revisions = $revisionStatement->fetchAll(PDO::FETCH_ASSOC);
+            $revisionId = max(0, (int) Request::get('revision', 0));
+            if ($revisionId) {
+                $selectedStatement = $pdo->prepare('SELECT r.*,u.name author_name FROM studio_content_revisions r LEFT JOIN users u ON u.id=r.created_by WHERE r.id=? AND r.content_id=?');
+                $selectedStatement->execute([$revisionId, (int) $edit['id']]);
+                $selectedRevision = $selectedStatement->fetch(PDO::FETCH_ASSOC) ?: null;
+            }
+        }
         echo $this->view->render('pages/content-module', [
             'title' => $definition['title'], 'module' => $module, 'singular' => $definition['singular'],
-            'records' => $statement->fetchAll(PDO::FETCH_ASSOC), 'edit' => $edit, 'search' => $search, 'status' => $status, 'media' => $media, 'categories' => $categories,
+            'records' => $statement->fetchAll(PDO::FETCH_ASSOC), 'edit' => $edit, 'search' => $search, 'status' => $status, 'media' => $media, 'categories' => $categories, 'revisions' => $revisions, 'selectedRevision' => $selectedRevision,
         ]);
     }
 
@@ -179,6 +206,7 @@ final class StudioModulesController extends Controller
                 $file = is_string($path) ? realpath($path) : false;
                 if ($root && $file && str_starts_with($file, $root . DIRECTORY_SEPARATOR)) { @unlink($file); }
                 $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$id]);
+                Logger::info('Arquivo de mídia excluído.', ['action'=>'media_deleted','record_id'=>$id,'actor_id'=>Auth::user()?->id]);
                 Flash::set('success', 'Arquivo removido.');
                 Response::to('/studio/media');
             }
@@ -186,6 +214,7 @@ final class StudioModulesController extends Controller
                 $id = max(0, (int) Request::post('id', 0));
                 $alt = mb_substr(trim(strip_tags((string) Request::post('alt_text', ''))), 0, 255);
                 $pdo->prepare('UPDATE studio_media SET alt_text=? WHERE id=?')->execute([$alt ?: null, $id]);
+                Logger::info('Metadados de mídia alterados.', ['action'=>'media_metadata_updated','record_id'=>$id,'actor_id'=>Auth::user()?->id]);
                 Flash::set('success', 'Metadados da imagem atualizados.');
                 Response::to('/studio/media');
             }
@@ -201,6 +230,7 @@ final class StudioModulesController extends Controller
                 $statement = $pdo->prepare('INSERT INTO studio_media(name,path,mime,size,width,height,created_by) VALUES(?,?,?,?,?,?,?)');
                 $statement->execute([basename($path), $path, (string) ($info['mime'] ?? 'application/octet-stream'), filesize($path), $info[0] ?? null, $info[1] ?? null, Auth::user()?->id]);
                 $mediaId = (int) $pdo->lastInsertId();
+                Logger::info('Arquivo de mídia criado.', ['action'=>'media_uploaded','record_id'=>$mediaId,'mime'=>(string)($info['mime']??''),'size'=>(int)filesize($path),'actor_id'=>Auth::user()?->id]);
                 if ($isEditorUpload) { Response::json(['id'=>$mediaId, 'url'=>'/media/'.$mediaId, 'name'=>basename($path), 'width'=>$info[0]??null, 'height'=>$info[1]??null]); }
                 Flash::set('success', 'Imagem enviada com segurança.');
             } catch (Throwable $exception) {
@@ -287,6 +317,40 @@ final class StudioModulesController extends Controller
         return $timestamp === false ? null : date('Y-m-d H:i:s', $timestamp);
     }
 
+    private function recordRevision(PDO $pdo, int $contentId, string $type, string $reason): void
+    {
+        $statement = $pdo->prepare('SELECT * FROM studio_content WHERE id=? AND type=?');
+        $statement->execute([$contentId, $type]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!$row) { return; }
+        $numberStatement = $pdo->prepare('SELECT COALESCE(MAX(revision_number),0)+1 FROM studio_content_revisions WHERE content_id=? FOR UPDATE');
+        $numberStatement->execute([$contentId]);
+        $insert = $pdo->prepare('INSERT INTO studio_content_revisions(content_id,type,revision_number,reason,title,slug,excerpt,content,seo_title,seo_description,media_id,category_id,template,meta_json,status,position,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $insert->execute([$contentId,$type,(int)$numberStatement->fetchColumn(),$reason,$row['title'],$row['slug'],$row['excerpt'],$row['content'],$row['seo_title'],$row['seo_description'],$row['media_id'],$row['category_id'],$row['template'],$row['meta_json'],$row['status'],$row['position'],$row['published_at'],Auth::user()?->id]);
+    }
+
+    private function restoreRevision(PDO $pdo, int $contentId, int $revisionId, string $type, string $module): never
+    {
+        $statement = $pdo->prepare('SELECT * FROM studio_content_revisions WHERE id=? AND content_id=? AND type=?');
+        $statement->execute([$revisionId, $contentId, $type]);
+        $revision = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!$revision) { Flash::set('error', 'Revisão inválida ou indisponível.'); Response::to('/studio/' . $module . '?edit=' . $contentId); }
+        try {
+            $pdo->beginTransaction();
+            $update = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,published_at=? WHERE id=? AND type=?');
+            $update->execute([$revision['title'],$revision['slug'],$revision['excerpt'],$revision['content'],$revision['seo_title'],$revision['seo_description'],$revision['media_id'],$revision['category_id'],$revision['template'],$revision['meta_json'],$revision['status'],$revision['position'],$revision['published_at'],$contentId,$type]);
+            $this->recordRevision($pdo, $contentId, $type, 'restored');
+            $pdo->commit();
+            Logger::info('Revisão de conteúdo restaurada.', ['action'=>'revision_restored','module'=>$module,'record_id'=>$contentId,'revision_id'=>$revisionId,'actor_id'=>Auth::user()?->id]);
+            Flash::set('success', 'Revisão restaurada e registrada como uma nova versão.');
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            Logger::exception($exception);
+            Flash::set('error', 'Não foi possível restaurar a revisão.');
+        }
+        Response::to('/studio/' . $module . '?edit=' . $contentId);
+    }
+
     private function cropMedia(PDO $pdo, int $id): void
     {
         $statement = $pdo->prepare('SELECT * FROM studio_media WHERE id=?'); $statement->execute([$id]);
@@ -306,6 +370,7 @@ final class StudioModulesController extends Controller
         if (!$saved) { Flash::set('error', 'Não foi possível salvar o recorte.'); return; }
         $insert = $pdo->prepare('INSERT INTO studio_media(name,alt_text,path,mime,size,width,height,parent_id,crop_data,created_by) VALUES(?,?,?,?,?,?,?,?,?,?)');
         $insert->execute([basename($targetPath), $media['alt_text'], $targetPath, $media['mime'], filesize($targetPath), $cropWidth, $cropHeight, $id, json_encode(compact('x','y','cropWidth','cropHeight')), Auth::user()?->id]);
+        Logger::info('Derivação de mídia criada.', ['action'=>'media_cropped','record_id'=>(int)$pdo->lastInsertId(),'source_id'=>$id,'width'=>$cropWidth,'height'=>$cropHeight,'actor_id'=>Auth::user()?->id]);
         Flash::set('success', 'Recorte criado como nova imagem; o original foi preservado.');
     }
 }

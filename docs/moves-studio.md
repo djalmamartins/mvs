@@ -48,6 +48,8 @@ Todos os ícones do shell usam o sprite SVG local. O Moves Editor é um componen
 
 As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, com permissões separadas para dashboard, busca, conteúdo, mídia, propostas, notificações, relatórios, usuários, configurações, diagnóstico e log. CSRF cobre logout e toda mutação administrativa. O ZIP foi utilizado apenas como referência de apresentação; seu roteamento e código de negócio não foi executado nem incorporado.
 
+As mutações editoriais e de mídia possuem auditoria segura. Artigos e Páginas mantêm revisões persistidas, visualização e restauração não destrutiva. O Moves Editor próprio é a implementação oficial; referências anteriores a Organic Editor ou TinyMCE como engine vigente estão obsoletas.
+
 ## Roadmap
 
 1. **Fundação — concluída:** shell, Dashboard, Usuários, Configurações e Diagnóstico.

@@ -211,6 +211,14 @@ try {
             if ($publicArticle['status'] !== 200 || !str_contains($publicArticle['body'], $label . ' automatizado') || $publicMedia['status'] !== 200) { throw new RuntimeException('FAIL: artigo ou mídia publicada indisponível.'); }
         }
     }
+    $articleId = (int) $pdo->query('SELECT id FROM studio_content WHERE slug=' . $pdo->quote($createdSlugs['articles']))->fetchColumn();
+    $firstRevisionId = (int) $pdo->query('SELECT id FROM studio_content_revisions WHERE content_id=' . $articleId . ' ORDER BY revision_number LIMIT 1')->fetchColumn();
+    $editedArticle = $request('/studio/articles', ['_token'=>$studioToken,'action'=>'save','id'=>$articleId,'title'=>'Artigo revisado','slug'=>$createdSlugs['articles'],'excerpt'=>'Resumo da segunda revisão.','content'=>'<p>Segunda revisão segura.</p>','media_id'=>$mediaRow['id'],'category_id'=>$taxonomyId,'video'=>'','status'=>'draft','position'=>8,'seo_title'=>'Artigo revisado','seo_description'=>'Descrição da segunda revisão.']);
+    $restoredArticle = $request('/studio/articles', ['_token'=>$studioToken,'action'=>'restore_revision','id'=>$articleId,'revision_id'=>$firstRevisionId]);
+    $restoredRow = $pdo->query('SELECT title,status,content FROM studio_content WHERE id=' . $articleId)->fetch(PDO::FETCH_ASSOC);
+    $revisionCount = (int) $pdo->query('SELECT COUNT(*) FROM studio_content_revisions WHERE content_id=' . $articleId)->fetchColumn();
+    $historyPage = $request('/studio/articles?edit=' . $articleId . '&revision=' . $firstRevisionId);
+    if ($editedArticle['status'] !== 302 || $restoredArticle['status'] !== 302 || $revisionCount !== 3 || ($restoredRow['title']??'') !== 'Artigo automatizado' || ($restoredRow['status']??'') !== 'published' || !str_contains($historyPage['body'], 'Restaurar revisão')) { throw new RuntimeException('FAIL: histórico ou restauração editorial inválidos.'); }
     $globalSearch = $request('/studio/search?q=automatizado');
     $publicPage = $request('/pagina/' . $createdSlugs['pages']);
     $publicFaq = $request('/faq');

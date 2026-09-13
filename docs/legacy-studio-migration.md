@@ -1,5 +1,7 @@
 # Migração funcional do Studio legado
 
+> Atualização editorial: o Organic Editor foi totalmente removido. A proposta intermediária de TinyMCE também foi superada pela decisão posterior de manter o Moves Editor nativo, sem dependência ou licença externa. Artigos, Páginas, Projetos e FAQ usam a integração central atual; Artigos e Páginas possuem histórico restaurável.
+
 O Studio em `/Applications/XAMPP/xamppfiles/htdocs/erp` é a referência funcional. O Moves em `/Applications/XAMPP/xamppfiles/htdocs/mvs` permanece a referência de arquitetura, autenticação, autorização, persistência e segurança. Código legado não é copiado diretamente.
 
 ## Estado dos módulos

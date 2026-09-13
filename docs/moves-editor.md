@@ -2,7 +2,7 @@
 
 ## Objetivo e decisão
 
-O Moves Editor é o editor editorial oficial do Moves Studio. Ele é implementação própria do projeto, escrita em JavaScript do navegador e sem TinyMCE, Organic Editor, CDN, telemetria, chave ou licença externa. A decisão evita incompatibilidade entre a licença proprietária do Moves e a GPLv2+ exigida pela distribuição comunitária self-hosted do TinyMCE 8.
+O Moves Editor é o editor editorial oficial do Moves Studio. Ele é implementação própria do projeto, escrita em JavaScript do navegador e sem TinyMCE, Organic Editor, CDN, telemetria, chave ou licença externa. Esta é a decisão posterior e vigente: a proposta anterior de uma camada sobre TinyMCE foi substituída para evitar incompatibilidade entre a licença proprietária do Moves e a GPLv2+ da distribuição comunitária self-hosted.
 
 As responsabilidades permanecem separadas: Moves Editor edita; Moves Media armazena arquivos; Moves CMS persiste/publica; Moves SEO produz metadados; `HtmlSanitizer` aplica a política de segurança no servidor.
 
@@ -20,7 +20,11 @@ Um módulo ativa o componente apenas com `data-editor="moves"`. O layout recebe 
 
 Formatos sem H1; negrito, itálico, sublinhado e tachado; cores; alinhamentos; listas; recuos; citação; links; imagem; YouTube/Vimeo; tabela responsiva; linha; caracteres; código inline e bloco; limpeza; localizar/substituir; colar como texto; preview; HTML; fullscreen; ajuda; atalhos; spellcheck do navegador; palavras/caracteres; estado dirty; aviso ao sair; autosave temporário local com recuperação confirmada.
 
-O autosave local não é apresentado como rascunho persistido. O envio do formulário sincroniza o HTML no `textarea`; o status rascunho/publicado continua sendo salvo pelo CMS no banco.
+O autosave local não é apresentado como rascunho persistido. A chave inclui usuário, módulo e documento para impedir colisões entre edições. O envio do formulário sincroniza o HTML no `textarea`; o status rascunho/publicado continua sendo salvo pelo CMS no banco.
+
+## Auditoria e revisões
+
+Criação, edição, transição de status, exclusão, restauração, categorias e mutações de mídia geram eventos com ação, registro e autor, sem corpo editorial, credenciais ou tokens. Artigos e Páginas recebem snapshots versionados no banco a cada salvamento. A interface permite identificar data/autor, visualizar conteúdo e metadados básicos, comparar título/slug com o estado atual e restaurar uma revisão; a restauração cria uma nova revisão e não destrói o histórico.
 
 ## Mídia
 
@@ -36,4 +40,4 @@ Funcionalidades próprias futuras devem entrar como comandos encapsulados na cla
 
 ## Recursos não incluídos
 
-Não existem recursos premium: o editor não depende de produto comercial. Revisão colaborativa, comentários, histórico de revisões no banco, sugestões, verificador remoto de links, correção ortográfica em nuvem, importação DOCX, exportação PDF/Word e IA ficam para versões futuras e exigem arquitetura própria. A limpeza de conteúdo colado é local e deliberadamente mais conservadora que soluções comerciais especializadas.
+Não existem recursos premium: o editor não depende de produto comercial. Revisão colaborativa, comentários, sugestões, verificador remoto de links, correção ortográfica em nuvem, importação DOCX, exportação PDF/Word e IA ficam para versões futuras e exigem arquitetura própria. A limpeza de conteúdo colado é local e deliberadamente mais conservadora que soluções comerciais especializadas.

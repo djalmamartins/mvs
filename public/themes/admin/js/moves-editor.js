@@ -24,7 +24,9 @@
             this.options = options;
             this.id = textarea.id || `moves-editor-${instances.size + 1}`;
             this.textarea.id = this.id;
-            this.storageKey = `moves-editor:draft:${location.pathname}:${this.id}`;
+            const user = document.body.dataset.editorUser || 'anonymous';
+            const documentKey = textarea.dataset.editorDocument || `${location.pathname}:${this.id}`;
+            this.storageKey = `moves-editor:draft:${user}:${documentKey}`;
             this.dirty = false;
             this.savedRange = null;
             this.build();

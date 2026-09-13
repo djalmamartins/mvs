@@ -26,7 +26,7 @@
     <?php if (!empty($hasMovesEditor)): ?><link rel="stylesheet" href="<?= $this->e($this->asset('css/moves-editor.css')) ?>"><script src="<?= $this->e($this->asset('js/moves-editor.js')) ?>" defer></script><?php endif; ?>
 </head>
 
-<body class="studio-body studio-v2" data-editor-upload="/studio/media" data-editor-library="/studio/media/library">
+<body class="studio-body studio-v2" data-editor-upload="/studio/media" data-editor-library="/studio/media/library" data-editor-user="<?= (int)(\Moves\Core\Auth::user()?->id??0) ?>">
 <?php $this->insert('components/icon-sprite'); ?>
 <a class="studio-skip-link" href="#main-content">Ir para o conteúdo</a>
 <div class="studio-shell">
