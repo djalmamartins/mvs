@@ -20,8 +20,8 @@ $groups = [
     'Gestão' => [
         ['label' => 'Usuários', 'icon' => '◎', 'href' => '/admin/users', 'key' => 'users'],
         ['label' => 'Configurações', 'icon' => '⚙', 'href' => '/admin/settings', 'key' => 'settings'],
-        ['label' => 'Versões', 'icon' => '◫'],
-        ['label' => 'Log', 'icon' => '≡'],
+        ['label' => 'Versões', 'icon' => '◫', 'href' => '/admin/versions', 'key' => 'versions'],
+        ['label' => 'Log', 'icon' => '≡', 'href' => '/admin/logs', 'key' => 'logs'],
     ],
 ];
 ?>

@@ -91,6 +91,16 @@ try {
         throw new RuntimeException('FAIL: admin não acessa /admin.');
     }
 
+    $versions = $request('/admin/versions');
+    if ($versions['status'] !== 200 || !str_contains($versions['body'], 'Migrations disponíveis')) {
+        throw new RuntimeException('FAIL: inventário de versões indisponível.');
+    }
+
+    $logs = $request('/admin/logs');
+    if ($logs['status'] !== 200 || !str_contains($logs['body'], 'Contexto sanitizado')) {
+        throw new RuntimeException('FAIL: leitura segura do log indisponível.');
+    }
+
     $invalid = $request('/admin/settings', ['app_name' => 'Moves HTTP', '_token' => 'invalid']);
     if ($invalid['status'] !== 302 || Settings::get('app_name') !== $original) {
         throw new RuntimeException('FAIL: CSRF inválido alterou Settings.');

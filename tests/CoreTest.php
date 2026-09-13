@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Moves\Boot\Modules;
 use Moves\Controllers\ErrorController;
 use Moves\Core\Config;
+use Moves\Core\LogReader;
 use Moves\Core\Theme;
 use Moves\Core\Validator;
 use Moves\Core\Response;
@@ -118,5 +119,24 @@ final class CoreTest extends TestCase
         $output = (string) ob_get_clean();
 
         self::assertStringContainsString('development diagnostic', $output);
+    }
+
+    public function testLogReaderFiltersAndRedactsSensitiveContext(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'moves-log-');
+        self::assertIsString($file);
+        file_put_contents($file, implode(PHP_EOL, [
+            json_encode(['timestamp' => '2026-09-12T10:00:00-03:00', 'level' => 'info', 'message' => 'Login aceito', 'context' => ['user_id' => 7, 'token' => 'secret']]),
+            json_encode(['timestamp' => '2026-09-12T10:01:00-03:00', 'level' => 'error', 'message' => 'Falha controlada', 'context' => ['nested' => ['password' => 'secret'], 'file' => '/private/path']]),
+        ]) . PHP_EOL);
+
+        $result = (new LogReader($file))->read('Falha', 'error');
+        unlink($file);
+
+        self::assertSame(1, $result['total']);
+        self::assertSame('[REDACTED]', $result['entries'][0]['context']['nested']['password']);
+        self::assertSame('[REDACTED]', $result['entries'][0]['context']['file']);
+        self::assertStringNotContainsString('secret', json_encode($result));
+        self::assertStringNotContainsString('/private/path', json_encode($result));
     }
 }

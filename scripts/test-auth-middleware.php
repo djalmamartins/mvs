@@ -89,6 +89,10 @@ try {
     $sessionHeaders = $response['headers'];
     $response = $request('/admin');
     $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante em /admin redirecionado para /login');
+    foreach (['/admin/versions', '/admin/logs'] as $protectedPath) {
+        $response = $request($protectedPath);
+        $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante não acessa ' . $protectedPath);
+    }
     $check(str_contains($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');

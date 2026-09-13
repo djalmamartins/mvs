@@ -105,6 +105,25 @@ final class Routes
             ]
         );
 
+        $studioTechnicalMiddleware = [
+            AuthMiddleware::class,
+            new PermissionMiddleware('users.manage'),
+        ];
+
+        $router->get(
+            '/admin/versions',
+            'StudioController:versions',
+            'admin.versions',
+            $studioTechnicalMiddleware
+        );
+
+        $router->get(
+            '/admin/logs',
+            'StudioController:logs',
+            'admin.logs',
+            $studioTechnicalMiddleware
+        );
+
         $router->get(
             '/admin/users/page/{page}',
             'UserController:index',
