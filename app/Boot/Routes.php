@@ -57,6 +57,8 @@ final class Routes
 
         $router->get('/conteudo/{slug}', 'Home:article', 'site.article');
         $router->get('/media/{id}', 'StudioModulesController:mediaFile', 'site.media.file');
+        $router->get('/pagina/{slug}', 'Home:dynamicPage', 'site.dynamic.page');
+        $router->get('/faq', 'Home:faq', 'site.faq');
 
         $router->get(
             '/contato',
@@ -116,13 +118,14 @@ final class Routes
             'admin.home',
             [
                 AuthMiddleware::class,
-                new PermissionMiddleware('users.manage'),
+                new PermissionMiddleware('studio.dashboard'),
             ]
         );
+        $router->get('/admin/search', 'StudioSearchController:index', 'admin.search', [AuthMiddleware::class, new PermissionMiddleware('studio.search')]);
 
         $studioTechnicalMiddleware = [
             AuthMiddleware::class,
-            new PermissionMiddleware('users.manage'),
+            new PermissionMiddleware('logs.manage'),
         ];
 
         $studioSettingsMiddleware = [
@@ -146,18 +149,23 @@ final class Routes
         );
         $router->post('/admin/logs', 'StudioController:logs', 'admin.logs.action', $studioTechnicalMiddleware);
 
+        $studioContentMiddleware = [AuthMiddleware::class, new PermissionMiddleware('content.manage')];
         foreach (['pages', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
-            $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioTechnicalMiddleware);
-            $router->post('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module . '.save', $studioTechnicalMiddleware);
+            $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioContentMiddleware);
+            $router->post('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module . '.save', $studioContentMiddleware);
         }
-        $router->get('/admin/media', 'StudioModulesController:media', 'admin.media', $studioTechnicalMiddleware);
-        $router->post('/admin/media', 'StudioModulesController:media', 'admin.media.save', $studioTechnicalMiddleware);
-        $router->get('/admin/media/file/{id}', 'StudioModulesController:mediaFile', 'admin.media.file', $studioTechnicalMiddleware);
-        $router->get('/admin/proposals', 'StudioModulesController:proposals', 'admin.proposals', $studioTechnicalMiddleware);
-        $router->post('/admin/proposals', 'StudioModulesController:proposals', 'admin.proposals.save', $studioTechnicalMiddleware);
-        $router->get('/admin/notifications', 'StudioModulesController:notifications', 'admin.notifications', $studioTechnicalMiddleware);
-        $router->post('/admin/notifications', 'StudioModulesController:notifications', 'admin.notifications.read', $studioTechnicalMiddleware);
-        $router->get('/admin/reports', 'StudioModulesController:reports', 'admin.reports', $studioTechnicalMiddleware);
+        $mediaMiddleware = [AuthMiddleware::class, new PermissionMiddleware('media.manage')];
+        $proposalMiddleware = [AuthMiddleware::class, new PermissionMiddleware('proposals.manage')];
+        $notificationMiddleware = [AuthMiddleware::class, new PermissionMiddleware('notifications.manage')];
+        $reportMiddleware = [AuthMiddleware::class, new PermissionMiddleware('reports.view')];
+        $router->get('/admin/media', 'StudioModulesController:media', 'admin.media', $mediaMiddleware);
+        $router->post('/admin/media', 'StudioModulesController:media', 'admin.media.save', $mediaMiddleware);
+        $router->get('/admin/media/file/{id}', 'StudioModulesController:mediaFile', 'admin.media.file', $mediaMiddleware);
+        $router->get('/admin/proposals', 'StudioOperationsController:proposals', 'admin.proposals', $proposalMiddleware);
+        $router->post('/admin/proposals', 'StudioOperationsController:proposals', 'admin.proposals.save', $proposalMiddleware);
+        $router->get('/admin/notifications', 'StudioOperationsController:notifications', 'admin.notifications', $notificationMiddleware);
+        $router->post('/admin/notifications', 'StudioOperationsController:notifications', 'admin.notifications.read', $notificationMiddleware);
+        $router->get('/admin/reports', 'StudioOperationsController:reports', 'admin.reports', $reportMiddleware);
 
         $router->get(
             '/admin/users/page/{page}',

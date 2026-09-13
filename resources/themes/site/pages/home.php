@@ -2,6 +2,9 @@
 
 /** Moves | Public home page. */
 
+$highlights = $highlights ?? [];
+$testimonials = $testimonials ?? [];
+
 $this->layout('layouts/default', [
     'title' => $title,
     'description' => $description,
@@ -19,6 +22,8 @@ $this->layout('layouts/default', [
         <div><p class="eyebrow">MOVES · ESTRATÉGIA, DESIGN E TECNOLOGIA</p><h1>Sua próxima ideia.<br>Uma nova <span class="brand-gradient">presença digital.</span></h1><a class="hero-portfolio-link" href="#projects">EXPLORE AS POSSIBILIDADES <span aria-hidden="true">↗</span></a></div>
     </div>
 </section>
+
+<?php if($highlights!==[]):?><section class="section-shell block public-highlights" aria-label="Destaques"><?php foreach($highlights as $highlight):?><article class="public-highlight align-<?= $this->e($highlight['meta']['alignment']??'left') ?>"><?php if($highlight['media_id']):?><img src="/media/<?= (int)$highlight['media_id'] ?>" alt="<?= $this->e($highlight['alt_text']?:$highlight['title']) ?>"><?php endif;?><div><p class="eyebrow">DESTAQUE</p><h2><?= $this->e($highlight['title']) ?></h2><p><?= $this->e($highlight['excerpt']??'') ?></p><?php if(($highlight['meta']['cta_label']??'')&&($highlight['meta']['cta_url']??'')):?><a class="button button-primary" href="<?= $this->e($highlight['meta']['cta_url']) ?>"><?= $this->e($highlight['meta']['cta_label']) ?> ↗</a><?php endif;?></div></article><?php endforeach;?></section><?php endif;?>
 
 <section class="reference-overlap">
     <div><span class="reference-symbol" aria-hidden="true">↗</span><p>Design que conecta.<br>Tecnologia que faz acontecer.</p></div>
@@ -64,7 +69,7 @@ $this->layout('layouts/default', [
 
 <section class="section-shell about-editorial" id="about">
     <div class="about-manifesto">MAIS QUE PROJETOS.<br>CONSTRUÍMOS<br>PARCERIAS.<span></span></div>
-    <div class="about-editorial-image"><img src="<?= $this->e($this->asset('images/home/team.jpg')) ?>" alt="Profissionais colaborando em um projeto digital" width="1400" height="2099" loading="lazy"></div>
+    <div class="about-editorial-image"><img src="<?= $this->e($this->asset('images/home/team.png')) ?>" alt="Equipe Moves colaborando em um projeto digital" width="1671" height="941" loading="lazy"></div>
     <div class="about-editorial-copy"><p class="eyebrow">SOMOS A MOVES</p><h2>Uma equipe que conecta ideias e <span class="brand-gradient">ama</span> o que faz.</h2><p>Unimos estratégia, design e tecnologia para construir soluções com você, do primeiro desafio à próxima evolução.</p><a class="text-link" href="/contato">Converse com a Moves →</a></div>
 </section>
 
@@ -78,3 +83,4 @@ $this->layout('layouts/default', [
 </section>
 
 <section class="cta" id="contact"><div class="cta-inner reveal"><div><p class="eyebrow">VAMOS CONVERSAR?</p><h2>Tem algo que precisa<br>sair do lugar?</h2><p>Vamos colocar sua ideia em movimento.</p></div><a href="/contato" class="button button-primary large">Solicitar orçamento <span aria-hidden="true">→</span></a></div></section>
+<?php if($testimonials!==[]):?><section class="section-shell block public-testimonials"><div class="section-heading"><div><p class="eyebrow">DEPOIMENTOS</p><h2>Quem já colocou ideias em movimento.</h2></div></div><div><?php foreach($testimonials as $testimonial):?><blockquote><?php if($testimonial['media_id']):?><img src="/media/<?= (int)$testimonial['media_id'] ?>" alt="<?= $this->e($testimonial['alt_text']?:$testimonial['title']) ?>"><?php endif;?><p>“<?= $this->e($testimonial['excerpt']??'') ?>”</p><footer><strong><?= $this->e($testimonial['title']) ?></strong><span><?= $this->e(implode(' · ',array_filter([$testimonial['meta']['job_title']??'',$testimonial['meta']['company']??'']))) ?></span></footer></blockquote><?php endforeach;?></div></section><?php endif;?>

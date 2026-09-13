@@ -36,6 +36,14 @@ $checks = [
     'profile.view' => true,
     'users.manage' => true,
     'settings.manage' => true,
+    'studio.dashboard' => true,
+    'studio.search' => true,
+    'content.manage' => true,
+    'media.manage' => true,
+    'proposals.manage' => true,
+    'notifications.manage' => true,
+    'reports.view' => true,
+    'logs.manage' => true,
     'unknown.permission' => false,
 ];
 

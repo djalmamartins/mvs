@@ -26,6 +26,14 @@ final class Access
             'users.manage',
             'settings.manage',
             'diagnostics.view',
+            'studio.dashboard',
+            'studio.search',
+            'content.manage',
+            'media.manage',
+            'proposals.manage',
+            'notifications.manage',
+            'reports.view',
+            'logs.manage',
         ],
 
         'user' => [

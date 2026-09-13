@@ -10,7 +10,7 @@ $unreadNotifications = $user ? NotificationCounter::unreadFor((int) $user->id) :
 ?>
 <header class="studio-topbar studio-topbar-v2">
     <button class="studio-menu" type="button" aria-expanded="true" aria-controls="studio-sidebar" aria-label="Alternar menu"><span aria-hidden="true">☷</span></button>
-    <form class="studio-global-search" action="/admin/articles" method="get"><span aria-hidden="true">⌕</span><input type="search" name="q" value="<?= $this->e((string) ($_GET['q'] ?? '')) ?>" placeholder="Buscar páginas, artigos ou usuários..." aria-label="Buscar no conteúdo do Studio" autocomplete="off"></form>
+    <form class="studio-global-search" action="/admin/search" method="get"><span aria-hidden="true">⌕</span><input type="search" name="q" value="<?= $this->e((string) ($_GET['q'] ?? '')) ?>" placeholder="Buscar conteúdo, usuários ou propostas..." aria-label="Buscar no Studio" autocomplete="off"></form>
     <nav class="studio-header-actions" aria-label="Atalhos do painel">
         <button class="studio-theme-toggle" type="button" title="Alternar tema" aria-label="Ativar modo escuro" aria-pressed="false"><span aria-hidden="true">◐</span></button>
         <a class="studio-notification-link" href="/admin/notifications" title="Notificações" aria-label="Abrir notificações<?= $unreadNotifications ? ': '.$unreadNotifications.' não lidas' : '' ?>"><span aria-hidden="true">◉</span><?php if($unreadNotifications):?><b><?= min(99,$unreadNotifications) ?></b><?php endif;?></a>

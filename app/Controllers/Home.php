@@ -27,11 +27,32 @@ final class Home extends Controller
 {
     public function index(): void
     {
+        $pdo=Connection::getInstance();
+        $highlights=$pdo->query("SELECT c.*,m.alt_text FROM studio_content c LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='highlight' AND c.status='published' AND (c.starts_at IS NULL OR c.starts_at<=NOW()) AND (c.ends_at IS NULL OR c.ends_at>=NOW()) ORDER BY c.position,c.id DESC LIMIT 6")->fetchAll(PDO::FETCH_ASSOC);
+        $testimonials=$pdo->query("SELECT c.*,m.alt_text FROM studio_content c LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='testimonial' AND c.status='published' ORDER BY c.position,c.id DESC LIMIT 12")->fetchAll(PDO::FETCH_ASSOC);
+        foreach($highlights as &$highlight){$highlight['meta']=json_decode((string)($highlight['meta_json']??''),true)?:[];}unset($highlight);
+        foreach($testimonials as &$testimonial){$testimonial['meta']=json_decode((string)($testimonial['meta_json']??''),true)?:[];}unset($testimonial);
         echo $this->view->render('pages/home', [
             'title' => 'Estratégia, Design e Tecnologia — MOVES',
             'description' => 'Moves: sites, sistemas web, identidade visual e automação para colocar ideias em movimento.',
             ...$this->pageMetadata('/'),
+            'highlights'=>$highlights,
+            'testimonials'=>$testimonials,
         ]);
+    }
+
+    /** @param array<string,string> $data */
+    public function dynamicPage(array $data): void
+    {
+        $statement=Connection::getInstance()->prepare("SELECT c.*,m.alt_text FROM studio_content c LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='page' AND c.status='published' AND c.slug=? LIMIT 1");$statement->execute([$data['slug']??'']);$page=$statement->fetch(PDO::FETCH_ASSOC);
+        if(!$page){http_response_code(404);echo $this->view->render('pages/error',['title'=>'Página não encontrada','code'=>404,'message'=>'Esta página não está disponível.']);return;}
+        echo $this->view->render('pages/dynamic-page',['title'=>($page['seo_title']?:$page['title']).' — MOVES','description'=>$page['seo_description']?:($page['excerpt']?:$page['title']),'page'=>$page,...$this->pageMetadata('/pagina/'.$page['slug'])]);
+    }
+
+    public function faq(): void
+    {
+        $statement=Connection::getInstance()->query("SELECT c.title,c.content,t.name category_name FROM studio_content c LEFT JOIN studio_taxonomies t ON t.id=c.category_id WHERE c.type='faq' AND c.status='published' ORDER BY t.name,c.position,c.id");
+        echo $this->view->render('pages/faq',['title'=>'Perguntas frequentes — MOVES','description'=>'Respostas para perguntas frequentes sobre os serviços da Moves.','items'=>$statement->fetchAll(PDO::FETCH_ASSOC),...$this->pageMetadata('/faq')]);
     }
 
     public function services(): void

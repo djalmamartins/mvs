@@ -42,6 +42,7 @@ $taxonomyId = null;
 $faqTaxonomyId = null;
 $mediaIds = [];
 $mediaPaths = [];
+$createdSlugs = [];
 
 if ($client === false) {
     throw new RuntimeException('Não foi possível iniciar o cliente HTTP.');
@@ -173,7 +174,7 @@ try {
     $faqTaxonomyId = (int) $pdo->query('SELECT id FROM studio_taxonomies WHERE name=' . $pdo->quote($faqCategoryName))->fetchColumn();
     foreach (['articles' => 'Artigo', 'pages' => 'Página', 'highlights' => 'Destaque', 'testimonials' => 'Depoimento', 'faq' => 'Pergunta'] as $module => $label) {
         $slug = 'teste-' . $module . '-' . bin2hex(random_bytes(3));
-        $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => $module === 'articles' ? 'published' : 'draft', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
+        $payload = ['_token' => $studioToken, 'action' => 'save', 'title' => $label . ' automatizado', 'slug' => $slug, 'excerpt' => 'Conteúdo temporário para validar o módulo.', 'content' => 'Texto de validação funcional do conteúdo no Moves Studio.', 'media_id' => $mediaRow['id'], 'status' => 'published', 'position' => 7, 'seo_title' => $label . ' SEO', 'seo_description' => 'Descrição segura de teste.'];
         if ($module === 'articles') { $payload['category_id'] = $taxonomyId; $payload['video'] = ''; }
         if ($module === 'faq') { $payload['category_id'] = $faqTaxonomyId; }
         if ($module === 'pages') { $payload['template'] = 'landing'; }
@@ -183,12 +184,18 @@ try {
         $contentId = (int) $pdo->query('SELECT id FROM studio_content WHERE slug=' . $pdo->quote($slug))->fetchColumn();
         if ($saved['status'] !== 302 || $contentId < 1) { throw new RuntimeException('FAIL: conteúdo não persistido em ' . $module); }
         $contentIds[] = $contentId;
+        $createdSlugs[$module] = $slug;
         if ($module === 'articles') {
             $publicArticle = $request('/conteudo/' . $slug);
             $publicMedia = $request('/media/' . (int) $mediaRow['id']);
             if ($publicArticle['status'] !== 200 || !str_contains($publicArticle['body'], $label . ' automatizado') || $publicMedia['status'] !== 200) { throw new RuntimeException('FAIL: artigo ou mídia publicada indisponível.'); }
         }
     }
+    $globalSearch = $request('/admin/search?q=automatizado');
+    $publicPage = $request('/pagina/' . $createdSlugs['pages']);
+    $publicFaq = $request('/faq');
+    $publicHome = $request('/');
+    if ($globalSearch['status'] !== 200 || !str_contains($globalSearch['body'], 'Artigo automatizado') || $publicPage['status'] !== 200 || !str_contains($publicPage['body'], 'Página automatizado') || !str_contains($publicFaq['body'], 'Pergunta automatizado') || !str_contains($publicHome['body'], 'Destaque automatizado') || !str_contains($publicHome['body'], 'Depoimento automatizado')) { throw new RuntimeException('FAIL: integração pública ou busca global incompleta.'); }
     $protectedDelete = $request('/admin/media', ['_token' => $studioToken, 'action' => 'delete', 'id' => $mediaRow['id']]);
     if ($protectedDelete['status'] !== 302 || !(bool) $pdo->query('SELECT 1 FROM studio_media WHERE id=' . (int) $mediaRow['id'])->fetchColumn()) { throw new RuntimeException('FAIL: mídia associada pôde ser excluída.'); }
 
