@@ -12,6 +12,7 @@ use Moves\Core\Flash;
 use Moves\Core\Logger;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Core\Seo;
 use MovesCode\Storage\Image;
 use PDO;
 use Throwable;
@@ -57,7 +58,7 @@ final class StudioModulesController extends Controller
             }
 
             $title = mb_substr(trim(strip_tags((string) Request::post('title', ''))), 0, 180);
-            $slug = $this->slug((string) Request::post('slug', $title));
+            $requestedSlug = trim((string) Request::post('slug', ''));
             $excerpt = mb_substr(trim(strip_tags((string) Request::post('excerpt', ''))), 0, 1000);
             $content = mb_substr(trim(strip_tags((string) Request::post('content', ''))), 0, 50000);
             $status = in_array(Request::post('status'), ['draft', 'published', 'archived'], true)
@@ -66,6 +67,10 @@ final class StudioModulesController extends Controller
             $position = max(0, min(9999, (int) Request::post('position', 0)));
             $seoTitle = mb_substr(trim(strip_tags((string) Request::post('seo_title', ''))), 0, 160);
             $seoDescription = mb_substr(trim(strip_tags((string) Request::post('seo_description', ''))), 0, 320);
+            $automaticSeo = Seo::contentFields($title, $excerpt, $content, $requestedSlug, $seoTitle, $seoDescription);
+            $slug = $automaticSeo['slug'];
+            $seoTitle = $automaticSeo['title'];
+            $seoDescription = $automaticSeo['description'];
             $mediaId = max(0, (int) Request::post('media_id', 0)) ?: null;
             $categoryId = in_array($module, ['articles', 'faq'], true) ? (max(0, (int) Request::post('category_id', 0)) ?: null) : null;
             $template = $module === 'pages' && in_array(Request::post('template'), ['default', 'landing', 'wide'], true) ? (string) Request::post('template') : null;
@@ -214,8 +219,7 @@ final class StudioModulesController extends Controller
 
     private function slug(string $value): string
     {
-        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', mb_strtolower(trim($value)));
-        return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($ascii ?: $value)), '-');
+        return Seo::slug($value);
     }
 
     private function mediaExists(int $id): bool

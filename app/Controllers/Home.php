@@ -12,6 +12,7 @@ use Moves\Core\Auth;
 use Moves\Core\Flash;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Core\Seo;
 use Moves\Core\Validator;
 use PDO;
 
@@ -46,7 +47,9 @@ final class Home extends Controller
     {
         $statement=Connection::getInstance()->prepare("SELECT c.*,m.alt_text FROM studio_content c LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.type='page' AND c.status='published' AND c.slug=? LIMIT 1");$statement->execute([$data['slug']??'']);$page=$statement->fetch(PDO::FETCH_ASSOC);
         if(!$page){http_response_code(404);echo $this->view->render('pages/error',['title'=>'Página não encontrada','code'=>404,'message'=>'Esta página não está disponível.']);return;}
-        echo $this->view->render('pages/dynamic-page',['title'=>($page['seo_title']?:$page['title']).' — MOVES','description'=>$page['seo_description']?:($page['excerpt']?:$page['title']),'page'=>$page,...$this->pageMetadata('/pagina/'.$page['slug'])]);
+        $title = ($page['seo_title'] ?: $page['title']).' — MOVES';
+        $description = $page['seo_description'] ?: ($page['excerpt'] ?: $page['title']);
+        echo $this->view->render('pages/dynamic-page',['title'=>$title,'description'=>$description,'page'=>$page,...Seo::metadata('/pagina/'.$page['slug'],$title,$description,'website',$page['media_id'] ? (int)$page['media_id'] : null)]);
     }
 
     public function faq(): void
@@ -100,7 +103,9 @@ final class Home extends Controller
         $statement->execute([$data['slug'] ?? '']);
         $article = $statement->fetch(PDO::FETCH_ASSOC);
         if (!$article) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
-        echo $this->view->render('pages/article', ['title'=>($article['seo_title'] ?: $article['title']).' — MOVES','description'=>$article['seo_description'] ?: ($article['excerpt'] ?: $article['title']),'article'=>$article,...$this->pageMetadata('/conteudo/'.$article['slug'])]);
+        $title = ($article['seo_title'] ?: $article['title']).' — MOVES';
+        $description = $article['seo_description'] ?: ($article['excerpt'] ?: $article['title']);
+        echo $this->view->render('pages/article', ['title'=>$title,'description'=>$description,'article'=>$article,...Seo::metadata('/conteudo/'.$article['slug'],$title,$description,'article',$article['media_id'] ? (int)$article['media_id'] : null,$article['published_at'])]);
     }
 
     public function contact(): void

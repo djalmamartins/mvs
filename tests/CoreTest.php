@@ -9,6 +9,7 @@ use Moves\Core\LogReader;
 use Moves\Core\Theme;
 use Moves\Core\Validator;
 use Moves\Core\Response;
+use Moves\Core\Seo;
 use PHPUnit\Framework\TestCase;
 use MovesCode\Router\Router;
 use MovesCode\View\Engine;
@@ -138,5 +139,27 @@ final class CoreTest extends TestCase
         self::assertSame('[REDACTED]', $result['entries'][0]['context']['file']);
         self::assertStringNotContainsString('secret', json_encode($result));
         self::assertStringNotContainsString('/private/path', json_encode($result));
+    }
+
+    public function testSeoGeneratesEditorialFieldsAutomatically(): void
+    {
+        $seo = Seo::contentFields(
+            'Criação de Sites em Minas Gerais',
+            '',
+            '<p>Uma descrição clara para pessoas e mecanismos de busca.</p>'
+        );
+
+        self::assertSame('criacao-de-sites-em-minas-gerais', $seo['slug']);
+        self::assertSame('Criação de Sites em Minas Gerais', $seo['title']);
+        self::assertSame('Uma descrição clara para pessoas e mecanismos de busca.', $seo['description']);
+    }
+
+    public function testSeoPreservesManualOverridesWithinSafeLimits(): void
+    {
+        $seo = Seo::contentFields('Título original', 'Resumo', 'Conteúdo', 'url-manual', 'Título personalizado', str_repeat('a', 200));
+
+        self::assertSame('url-manual', $seo['slug']);
+        self::assertSame('Título personalizado', $seo['title']);
+        self::assertSame(160, mb_strlen($seo['description']));
     }
 }
