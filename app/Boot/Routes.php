@@ -104,6 +104,10 @@ final class Routes
                 new PermissionMiddleware('users.manage'),
             ]
         );
+        $router->get('/admin/users/create', 'UserController:form', 'users.create', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->get('/admin/users/edit/{id}', 'UserController:form', 'users.edit', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->post('/admin/users/save', 'UserController:save', 'users.save', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
+        $router->post('/admin/users/action', 'UserController:action', 'users.action', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
 
         $router->get(
             '/admin',
@@ -120,12 +124,18 @@ final class Routes
             new PermissionMiddleware('users.manage'),
         ];
 
+        $studioSettingsMiddleware = [
+            AuthMiddleware::class,
+            new PermissionMiddleware('settings.manage'),
+        ];
+
         $router->get(
             '/admin/versions',
             'StudioController:versions',
             'admin.versions',
-            $studioTechnicalMiddleware
+            $studioSettingsMiddleware
         );
+        $router->post('/admin/versions', 'StudioController:versions', 'admin.versions.release', $studioSettingsMiddleware);
 
         $router->get(
             '/admin/logs',
@@ -133,6 +143,7 @@ final class Routes
             'admin.logs',
             $studioTechnicalMiddleware
         );
+        $router->post('/admin/logs', 'StudioController:logs', 'admin.logs.action', $studioTechnicalMiddleware);
 
         foreach (['pages', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
             $router->get('/admin/' . $module, 'StudioModulesController:content', 'admin.' . $module, $studioTechnicalMiddleware);

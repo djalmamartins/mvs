@@ -33,6 +33,9 @@ $password = bin2hex(random_bytes(16));
 $original = Settings::get('app_name', 'Moves');
 $client = curl_init();
 $id = null;
+$managedUserId = null;
+$versionId = null;
+$logFingerprint = null;
 $proposalId = null;
 
 if ($client === false) {
@@ -96,10 +99,43 @@ try {
     if ($versions['status'] !== 200 || !str_contains($versions['body'], 'Migrations disponíveis')) {
         throw new RuntimeException('FAIL: inventário de versões indisponível.');
     }
+    preg_match('/name="_token"\s+value="([^"]+)"/', $versions['body'], $match);
+    $versionToken = $match[1] ?? '';
+    $testVersion = '99.0.' . random_int(1000, 9999);
+    $recorded = $request('/admin/versions', ['_token' => $versionToken, 'version' => $testVersion, 'name' => 'Teste automatizado', 'notes' => 'Registro temporário criado pelo teste HTTP.']);
+    $versionId = (int) $pdo->query("SELECT id FROM studio_versions WHERE version=" . $pdo->quote($testVersion) . " LIMIT 1")->fetchColumn();
+    if ($recorded['status'] !== 302 || $versionId < 1) {
+        throw new RuntimeException('FAIL: histórico seguro de versões não foi persistido.');
+    }
 
     $logs = $request('/admin/logs');
     if ($logs['status'] !== 200 || !str_contains($logs['body'], 'Contexto sanitizado')) {
         throw new RuntimeException('FAIL: leitura segura do log indisponível.');
+    }
+    preg_match('/name="fingerprint"\s+value="([a-f0-9]{64})"/', $logs['body'], $match);
+    $logFingerprint = $match[1] ?? null;
+    if ($logFingerprint !== null) {
+        preg_match('/name="_token"\s+value="([^"]+)"/', $logs['body'], $match);
+        $triaged = $request('/admin/logs', ['_token' => $match[1] ?? '', 'fingerprint' => $logFingerprint, 'action' => 'resolved']);
+        $state = $pdo->prepare('SELECT status FROM studio_log_states WHERE fingerprint=?');
+        $state->execute([$logFingerprint]);
+        if ($triaged['status'] !== 302 || $state->fetchColumn() !== 'resolved') {
+            throw new RuntimeException('FAIL: triagem segura do log não foi persistida.');
+        }
+    }
+
+    $userForm = $request('/admin/users/create');
+    preg_match('/name="_token"\s+value="([^"]+)"/', $userForm['body'], $match);
+    $managedEmail = 'managed-' . bin2hex(random_bytes(6)) . '@example.invalid';
+    $created = $request('/admin/users/save', ['_token' => $match[1] ?? '', 'name' => 'Usuário gerenciado', 'email' => $managedEmail, 'password' => 'Test1234!', 'role' => 'user', 'status' => 'active']);
+    $managedUserId = (int) $pdo->query("SELECT id FROM users WHERE email=" . $pdo->quote($managedEmail) . " LIMIT 1")->fetchColumn();
+    if ($created['status'] !== 302 || $managedUserId < 1) {
+        throw new RuntimeException('FAIL: usuário administrativo não foi criado.');
+    }
+    $deactivated = $request('/admin/users/action', ['_token' => $match[1] ?? '', 'id' => $managedUserId, 'action' => 'deactivate']);
+    $managedStatus = $pdo->query('SELECT status FROM users WHERE id=' . $managedUserId)->fetchColumn();
+    if ($deactivated['status'] !== 302 || $managedStatus !== 'inactive') {
+        throw new RuntimeException('FAIL: estado do usuário não foi alterado.');
     }
 
     foreach (['pages','articles','media','highlights','testimonials','faq','proposals','notifications','reports'] as $module) {
@@ -133,6 +169,16 @@ try {
     echo 'OK: Settings administrativo via HTTP.' . PHP_EOL;
 } finally {
     Settings::set('app_name', $original);
+    if ($logFingerprint !== null) {
+        $pdo->prepare('DELETE FROM studio_log_states WHERE fingerprint=?')->execute([$logFingerprint]);
+    }
+    if ($versionId !== null) {
+        $pdo->prepare('DELETE FROM studio_versions WHERE id=?')->execute([$versionId]);
+    }
+    $pdo->exec("UPDATE studio_versions SET status='current' WHERE product='studio' ORDER BY id DESC LIMIT 1");
+    if ($managedUserId !== null) {
+        $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$managedUserId]);
+    }
     if ($id !== null) {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
     }

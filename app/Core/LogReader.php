@@ -18,7 +18,7 @@ final class LogReader
     }
 
     /**
-     * @return array{entries: list<array{timestamp: string, level: string, message: string, context: array<mixed>}>, total: int, page: int, pages: int, perPage: int}
+     * @return array{entries: list<array{fingerprint: string, timestamp: string, level: string, message: string, context: array<mixed>}>, total: int, page: int, pages: int, perPage: int}
      */
     public function read(
         string $search = '',
@@ -31,7 +31,7 @@ final class LogReader
             ? $level
             : '';
         $page = max(1, $page);
-        $perPage = in_array($perPage, [10, 20, 50], true) ? $perPage : 20;
+        $perPage = in_array($perPage, [10, 20, 50, 2000], true) ? $perPage : 20;
         $records = [];
         $file = $this->logFile
             ?? dirname(__DIR__, 2) . '/storage/logs/moves.log';
@@ -63,6 +63,7 @@ final class LogReader
                     }
 
                     $records[] = [
+                        'fingerprint' => hash('sha256', (string) ($record['timestamp'] ?? '') . "\0" . $recordLevel . "\0" . $message),
                         'timestamp' => (string) ($record['timestamp'] ?? ''),
                         'level' => in_array($recordLevel, ['info', 'warning', 'error'], true)
                             ? $recordLevel
