@@ -20,7 +20,6 @@
     <link rel="preload" href="<?= $this->e($this->asset('fonts/GothamBookRegular.otf')) ?>" as="font" type="font/otf" crossorigin>
     <link rel="preload" href="<?= $this->e($this->asset('fonts/GothamMedium.otf')) ?>" as="font" type="font/otf" crossorigin>
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/design-system.css')) ?>">
-    <link rel="stylesheet" href="<?= $this->e($this->asset('css/app.css')) ?>">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/studio-reference.css')) ?>">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/compat.css')) ?>">
     <link rel="stylesheet" href="<?= $this->e($this->asset('vendor/organic-editor/organic-editor.min.css')) ?>">
