@@ -28,6 +28,10 @@ Os indicadores usam somente fontes existentes: quantidade real de usuários, res
 - `/admin/versions` informa Moves, PHP, ambiente, banco, migrations, tema e presença do lock do Composer. Não executa atualização, release ou rollback.
 - `/admin/logs` lê no máximo os 2.000 registros mais recentes do JSONL atual, aceita busca, nível e paginação, e reaplica sanitização de contexto. Não revela caminho do arquivo nem oferece mutações.
 
+## Fundação visual
+
+O Studio usa base clara com sidebar preta, superfícies brancas, tipografia de 16 px, textos auxiliares de no mínimo 14 px e raio padrão de 6 px. A marca MOVES e o favicon oficiais são compartilhados com o site. O redesign substitui a superfície escura e compacta por maior contraste, hierarquia e espaço para os módulos CMS.
+
 ## Segurança e escopo
 
 As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, usando as permissões atuais `users.manage`, `settings.manage` e `diagnostics.view`. CSRF do logout e de Configurações foi preservado. Nenhum CRUD editorial, banco adicional, leitura de logs, proposta, relatório ou notificação foi implementado nesta rodada.

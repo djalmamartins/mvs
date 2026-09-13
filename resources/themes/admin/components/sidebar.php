@@ -26,7 +26,7 @@ $groups = [
 ];
 ?>
 <aside class="studio-sidebar" id="studio-sidebar" aria-label="Navegação do Moves Studio">
-    <a class="studio-brand" href="/admin"><span class="studio-mark" aria-hidden="true">M</span><span>Moves <strong>Studio</strong></span></a>
+    <a class="studio-brand" href="/admin"><img src="/themes/site/images/brand/moves-logo.svg" alt="MOVES" width="116" height="17"><small>Studio</small></a>
     <nav>
         <?php foreach ($groups as $group => $items): ?>
             <section class="studio-nav-group" aria-labelledby="nav-<?= $this->e(strtolower(str_replace(' ', '-', $group))) ?>">
