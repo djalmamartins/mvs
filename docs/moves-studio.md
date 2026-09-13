@@ -12,12 +12,12 @@ O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A f
 
 ## Navegação
 
-- Visão geral: Dashboard consolidado é funcional; Relatórios, Notificações e Propostas estão visíveis e desabilitados.
-- Conteúdo: Páginas, Artigos, Mídia, Destaques, Depoimentos e FAQ estão visíveis e desabilitados.
+- Visão geral: Dashboard, Relatórios, Notificações e Propostas são funcionais.
+- Conteúdo: Páginas, Artigos, Mídia, Destaques, Depoimentos e FAQ são funcionais.
 - Gestão: Usuários, Configurações, Versões informativa e Log somente leitura são funcionais.
 - Diagnóstico continua funcional em `/admin/diagnostics`, acessível pelo Dashboard e por Configurações.
 
-Itens planejados são elementos sem link, identificados como “Em breve”. Nenhuma rota vazia ou destino 404 foi criado.
+Todos os itens exibidos na navegação apontam para rotas existentes e protegidas.
 
 ## Dashboard
 
@@ -30,11 +30,11 @@ Os indicadores usam somente fontes existentes: quantidade real de usuários, res
 
 ## Fundação visual
 
-O Studio usa base clara com sidebar preta, superfícies brancas, tipografia de 16 px, textos auxiliares de no mínimo 14 px e raio padrão de 6 px. A marca MOVES e o favicon oficiais são compartilhados com o site. O redesign substitui a superfície escura e compacta por maior contraste, hierarquia e espaço para os módulos CMS.
+O Studio usa a identidade visual do tema de referência fornecido em `studio.zip`: sidebar branca, realce roxo, marca MovesOS, busca no topo, cards compactos, perfil suspenso, tema claro/escuro persistente, menu recolhível e rodapé de versão. A camada foi adaptada às rotas `/admin` e aos dados atuais, sem importar controllers, consultas ou autenticação do sistema antigo. O CSS autoritativo da referência fica em `public/themes/admin/css/studio-reference.css`, com compatibilidade local isolada em `compat.css`.
 
 ## Segurança e escopo
 
-As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, usando as permissões atuais `users.manage`, `settings.manage` e `diagnostics.view`. CSRF do logout e de Configurações foi preservado. Nenhum CRUD editorial, banco adicional, leitura de logs, proposta, relatório ou notificação foi implementado nesta rodada.
+As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, usando as permissões atuais `users.manage`, `settings.manage` e `diagnostics.view`. CSRF do logout, configurações e módulos mutáveis foi preservado. O ZIP foi utilizado apenas como referência de apresentação; seu roteamento e código de negócio não foram executados nem incorporados.
 
 ## Roadmap
 

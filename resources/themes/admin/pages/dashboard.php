@@ -7,16 +7,17 @@ declare(strict_types=1);
 $this->layout('layouts/default', ['title' => $title, 'currentPage' => 'dashboard']);
 $totalChecks = count($checks);
 ?>
-<section class="studio-page-heading">
-    <div><p class="studio-eyebrow">VISÃO GERAL</p><h2>Olá, bem-vindo ao Studio.</h2><p>Acompanhe o que já está ativo e prepare os próximos movimentos da plataforma.</p></div>
-    <a class="studio-button" href="/admin/diagnostics">Ver saúde do sistema</a>
+<section class="studio-page-head studio-dashboard-head">
+    <div><p class="studio-eyebrow">Visão geral</p><h1 class="studio-page-title">Olá, bem-vindo ao Studio!</h1><p class="studio-page-description">Aqui está o resumo do seu site hoje.</p></div>
+    <div class="actions"><a class="studio-btn outline" href="/" target="_blank" rel="noopener"><span aria-hidden="true">◎</span> Visualizar site</a></div>
 </section>
-<section class="studio-metrics studio-metrics-four" aria-label="Indicadores atuais">
-    <article><span class="metric-icon" aria-hidden="true">◎</span><div><small>USUÁRIOS CADASTRADOS</small><strong><?= $this->e((string) $userCount) ?></strong><a href="/admin/users">Gerenciar usuários →</a></div></article>
-    <article><span class="metric-icon healthy" aria-hidden="true">✓</span><div><small>SAÚDE DA APLICAÇÃO</small><strong><?= $this->e((string) $healthyChecks) ?>/<?= $this->e((string) $totalChecks) ?></strong><a href="/admin/diagnostics">Abrir diagnóstico →</a></div></article>
-    <article><span class="metric-icon" aria-hidden="true">⚙</span><div><small>APLICAÇÃO</small><strong class="metric-name"><?= $this->e($appName) ?></strong><a href="/admin/settings">Editar configuração →</a></div></article>
-    <article><span class="metric-icon" aria-hidden="true">◫</span><div><small>AMBIENTE</small><strong class="metric-name"><?= $this->e($environment) ?></strong><a href="/admin/versions">Moves <?= $this->e($version) ?> →</a></div></article>
+<section class="studio-dashboard-kpis" aria-label="Indicadores atuais">
+    <a class="studio-panel" href="/admin/pages"><i aria-hidden="true">▤</i><div><span>Páginas</span><strong><?= $this->e((string) $contentCounts['page']) ?></strong><small>conteúdos cadastrados</small></div></a>
+    <a class="studio-panel" href="/admin/articles"><i aria-hidden="true">¶</i><div><span>Artigos</span><strong><?= $this->e((string) $contentCounts['article']) ?></strong><small>registros editoriais</small></div></a>
+    <a class="studio-panel" href="/admin/users"><i aria-hidden="true">◎</i><div><span>Usuários</span><strong><?= $this->e((string) $userCount) ?></strong><small>contas cadastradas</small></div></a>
+    <a class="studio-panel" href="/admin/diagnostics"><i aria-hidden="true">✓</i><div><span>Saúde</span><strong><?= $this->e((string) $healthyChecks) ?>/<?= $this->e((string) $totalChecks) ?></strong><small>verificações aprovadas</small></div></a>
 </section>
+<section class="studio-dashboard-actions studio-panel-body"><p class="studio-eyebrow">Ações rápidas</p><div class="studio-actions"><a class="studio-btn primary" href="/admin/pages#editor">Nova página</a><a class="studio-btn" href="/admin/articles#editor">Novo artigo</a><a class="studio-btn" href="/admin/highlights#editor">Novo destaque</a><a class="studio-btn" href="/admin/faq">Perguntas frequentes</a><a class="studio-btn" href="/admin/proposals">Propostas recebidas</a><a class="studio-btn" href="/admin/settings">Configurações</a></div></section>
 <section class="studio-panel-grid">
     <article class="studio-panel"><div class="studio-panel-heading"><div><p class="studio-eyebrow">CONTEÚDO</p><h2>CMS</h2></div><span class="studio-badge">Ativo</span></div><p>Conteúdo editorial e biblioteca de mídia conectados ao banco.</p><ul class="studio-module-list"><li><a href="/admin/pages">Páginas</a><small><?= $this->e((string)$contentCounts['page']) ?> registro(s)</small></li><li><a href="/admin/articles">Artigos</a><small><?= $this->e((string)$contentCounts['article']) ?> registro(s)</small></li><li><a href="/admin/media">Mídia</a><small><?= $this->e((string)$contentCounts['media']) ?> arquivo(s)</small></li></ul></article>
     <article class="studio-panel"><div class="studio-panel-heading"><div><p class="studio-eyebrow">ACESSOS RÁPIDOS</p><h2>Ferramentas ativas</h2></div></div><div class="studio-quick-links"><a href="/admin/users"><span aria-hidden="true">◎</span><div><strong>Usuários</strong><small>Listagem e permissões atuais</small></div><b aria-hidden="true">→</b></a><a href="/admin/settings"><span aria-hidden="true">⚙</span><div><strong>Configurações</strong><small>Nome da aplicação</small></div><b aria-hidden="true">→</b></a><a href="/admin/diagnostics"><span aria-hidden="true">✓</span><div><strong>Diagnóstico</strong><small>Ambiente e dependências</small></div><b aria-hidden="true">→</b></a><a href="/admin/logs"><span aria-hidden="true">≡</span><div><strong>Log</strong><small>Atividade técnica sanitizada</small></div><b aria-hidden="true">→</b></a></div></article>

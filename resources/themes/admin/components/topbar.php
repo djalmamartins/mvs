@@ -6,14 +6,13 @@ use Moves\Core\Auth;
 
 $user = Auth::user();
 ?>
-<header class="studio-topbar">
-    <div class="studio-topbar-title">
-        <button class="studio-menu-toggle" type="button" aria-expanded="false" aria-controls="studio-sidebar"><span aria-hidden="true">☰</span><span class="sr-only">Abrir menu</span></button>
-        <div><span>Moves Studio</span><h1><?= $this->e($title) ?></h1></div>
-    </div>
-    <div class="studio-topbar-actions">
-        <a href="/" target="_blank" rel="noopener">Visualizar site ↗</a>
-        <?php if ($user !== null): ?><span class="studio-user"><span aria-hidden="true"><?= $this->e(strtoupper(substr((string) $user->name, 0, 1))) ?></span><?= $this->e((string) $user->name) ?></span><?php endif; ?>
-        <form method="post" action="/logout"><?= $this->csrf() ?><button type="submit">Sair</button></form>
-    </div>
+<header class="studio-topbar studio-topbar-v2">
+    <button class="studio-menu" type="button" aria-expanded="true" aria-controls="studio-sidebar" aria-label="Alternar menu"><span aria-hidden="true">☷</span></button>
+    <form class="studio-global-search" action="/admin/articles" method="get"><span aria-hidden="true">⌕</span><input type="search" name="q" value="<?= $this->e((string) ($_GET['q'] ?? '')) ?>" placeholder="Buscar páginas, artigos ou usuários..." aria-label="Buscar no conteúdo do Studio" autocomplete="off"></form>
+    <nav class="studio-header-actions" aria-label="Atalhos do painel">
+        <button class="studio-theme-toggle" type="button" title="Alternar tema" aria-label="Ativar modo escuro" aria-pressed="false"><span aria-hidden="true">◐</span></button>
+        <a href="/admin/notifications" title="Notificações" aria-label="Abrir notificações"><span aria-hidden="true">◉</span></a>
+        <a href="/" target="_blank" rel="noopener" title="Visualizar site" aria-label="Visualizar site"><span aria-hidden="true">◎</span></a>
+        <?php if ($user !== null): ?><div class="studio-header-profile" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false"><span class="studio-profile-avatar" aria-hidden="true"><?= $this->e(strtoupper(substr((string) $user->name, 0, 1))) ?></span><span><strong><?= $this->e((string) $user->name) ?></strong><small>Administrador</small></span><b aria-hidden="true">⌄</b><div class="studio-profile-menu" role="menu"><header><span class="studio-profile-avatar" aria-hidden="true"><?= $this->e(strtoupper(substr((string) $user->name, 0, 1))) ?></span><strong><?= $this->e((string) $user->name) ?></strong><small><?= $this->e((string) $user->email) ?></small></header><nav><a role="menuitem" href="/admin/users"><span>Usuários<small>Contas e permissões</small></span></a><a role="menuitem" href="/admin/settings"><span>Configurações<small>Preferências do MovesOS</small></span></a></nav><footer><form method="post" action="/logout"><?= $this->csrf() ?><button type="submit">Sair</button></form><small>ID #<?= $this->e((string) $user->id) ?></small></footer></div></div><?php endif; ?>
+    </nav>
 </header>

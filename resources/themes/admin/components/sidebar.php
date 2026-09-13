@@ -26,20 +26,14 @@ $groups = [
 ];
 ?>
 <aside class="studio-sidebar" id="studio-sidebar" aria-label="Navegação do Moves Studio">
-    <a class="studio-brand" href="/admin"><img src="/themes/site/images/brand/moves-logo.svg" alt="MOVES" width="116" height="17"><small>Studio</small></a>
-    <nav>
+    <a class="studio-brand-v2" href="/admin"><img src="/themes/admin/images/studio-logo.svg" alt=""><span>MOVES<small>OS</small></span></a>
+    <nav class="studio-nav-v2">
         <?php foreach ($groups as $group => $items): ?>
-            <section class="studio-nav-group" aria-labelledby="nav-<?= $this->e(strtolower(str_replace(' ', '-', $group))) ?>">
-                <h2 id="nav-<?= $this->e(strtolower(str_replace(' ', '-', $group))) ?>"><?= $this->e($group) ?></h2>
-                <?php foreach ($items as $item): ?>
-                    <?php if (isset($item['href'])): ?>
-                        <a href="<?= $this->e($item['href']) ?>"<?= ($currentPage ?? null) === $item['key'] ? ' class="active" aria-current="page"' : '' ?>><span aria-hidden="true"><?= $this->e($item['icon']) ?></span><?= $this->e($item['label']) ?></a>
-                    <?php else: ?>
-                        <span class="studio-nav-disabled" aria-disabled="true" title="Módulo ainda não iniciado"><span aria-hidden="true"><?= $this->e($item['icon']) ?></span><?= $this->e($item['label']) ?><small>Em breve</small></span>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </section>
+            <small><?= $this->e(mb_strtoupper($group, 'UTF-8')) ?></small>
+            <?php foreach ($items as $item): ?>
+                <a href="<?= $this->e($item['href']) ?>"<?= ($currentPage ?? null) === $item['key'] ? ' class="active" aria-current="page"' : '' ?> title="<?= $this->e($item['label']) ?>"><i class="studio-nav-icon" aria-hidden="true"><?= $this->e($item['icon']) ?></i><span><?= $this->e($item['label']) ?></span></a>
+            <?php endforeach; ?>
         <?php endforeach; ?>
     </nav>
+    <div class="studio-sidebar-footer"><a href="/" target="_blank" rel="noopener"><i aria-hidden="true">↗</i><span>Visualizar site</span></a></div>
 </aside>
-<button class="studio-backdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button>
