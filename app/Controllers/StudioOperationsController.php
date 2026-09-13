@@ -28,7 +28,40 @@ final class StudioOperationsController extends Controller
     }
     public function notifications(): void
     {
-        $pdo=Connection::getInstance();$actorId=(int)Auth::user()?->id;if(Request::isMethod('POST')){$this->validateCsrf();$action=(string)Request::post('action','read');$id=max(0,(int)Request::post('id',0));if($action==='read_all'){$pdo->prepare('UPDATE notifications SET read_at=NOW() WHERE recipient_id IS NULL OR recipient_id=?')->execute([$actorId]);}elseif(in_array($action,['read','unread','delete'],true)){$sql=$action==='delete'?'DELETE FROM notifications WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)':'UPDATE notifications SET read_at='.($action==='read'?'NOW()':'NULL').' WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)';$pdo->prepare($sql)->execute([$id,$actorId]);}else{Flash::set('error','Ação inválida.');Response::to('/admin/notifications');}Response::to('/admin/notifications');}$statement=$pdo->prepare('SELECT * FROM notifications WHERE recipient_id IS NULL OR recipient_id=? ORDER BY id DESC LIMIT 200');$statement->execute([$actorId]);$records=$statement->fetchAll(PDO::FETCH_ASSOC);echo $this->view->render('pages/notifications',['title'=>'Notificações','records'=>$records,'unread'=>count(array_filter($records,static fn(array $row):bool=>$row['read_at']===null))]);
+        $pdo = Connection::getInstance();
+        $actorId = (int) Auth::user()?->id;
+        if (Request::isMethod('POST')) {
+            $this->validateCsrf();
+            $action = (string) Request::post('action', 'read');
+            $id = max(0, (int) Request::post('id', 0));
+            if ($action === 'create') {
+                $title = mb_substr(trim(strip_tags((string) Request::post('title', ''))), 0, 180);
+                $message = mb_substr(trim(strip_tags((string) Request::post('message', ''))), 0, 5000);
+                $recipientId = max(0, (int) Request::post('recipient_id', 0)) ?: null;
+                $actionUrl = mb_substr(trim((string) Request::post('action_url', '')), 0, 500);
+                if (mb_strlen($title) < 3 || mb_strlen($message) < 5) { Flash::set('error', 'Informe um título e uma mensagem válidos.'); Response::to('/admin/notifications'); }
+                if ($actionUrl !== '' && !str_starts_with($actionUrl, '/')) { Flash::set('error', 'O link da notificação deve ser interno.'); Response::to('/admin/notifications'); }
+                if ($recipientId !== null) {
+                    $recipient = $pdo->prepare('SELECT 1 FROM users WHERE id=? AND status=1');
+                    $recipient->execute([$recipientId]);
+                    if (!$recipient->fetchColumn()) { $recipientId = null; }
+                }
+                $pdo->prepare('INSERT INTO notifications(title,message,recipient_id,source_type,action_url,link) VALUES(?,?,?,?,?,?)')->execute([$title, $message, $recipientId, 'studio', $actionUrl ?: null, $actionUrl ?: null]);
+                Logger::info('Comunicação criada no Studio.', ['recipient_id' => $recipientId, 'author_id' => $actorId]);
+                Flash::set('success', 'Comunicação enviada.');
+            } elseif ($action === 'read_all') {
+                $pdo->prepare('UPDATE notifications SET read_at=NOW() WHERE recipient_id IS NULL OR recipient_id=?')->execute([$actorId]);
+            } elseif (in_array($action, ['read', 'unread', 'delete'], true)) {
+                $sql = $action === 'delete' ? 'DELETE FROM notifications WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)' : 'UPDATE notifications SET read_at='.($action === 'read' ? 'NOW()' : 'NULL').' WHERE id=? AND (recipient_id IS NULL OR recipient_id=?)';
+                $pdo->prepare($sql)->execute([$id, $actorId]);
+            } else { Flash::set('error', 'Ação inválida.'); }
+            Response::to('/admin/notifications');
+        }
+        $statement = $pdo->prepare('SELECT * FROM notifications WHERE recipient_id IS NULL OR recipient_id=? ORDER BY id DESC LIMIT 200');
+        $statement->execute([$actorId]);
+        $records = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $users = $pdo->query('SELECT id,name FROM users WHERE status=1 ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+        echo $this->view->render('pages/notifications', ['title'=>'Notificações', 'records'=>$records, 'users'=>$users, 'unread'=>count(array_filter($records, static fn(array $row): bool => $row['read_at'] === null))]);
     }
     public function reports(): void
     {
