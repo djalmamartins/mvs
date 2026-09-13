@@ -17,17 +17,18 @@ $this->layout(
     'layouts/default',
     [
         'title' => $title,
+        'currentPage' => 'users',
     ]
 );
 ?>
 
-<section>
-    <h1>Usuários</h1>
+<section class="studio-page">
+    <header class="studio-page-heading"><div><p class="studio-eyebrow">GESTÃO</p><h2>Usuários</h2><p>Contas cadastradas e seus níveis de acesso atuais.</p></div></header>
 
     <?php if ($users === []): ?>
         <p>Nenhum usuário cadastrado.</p>
     <?php else: ?>
-        <table>
+        <div class="studio-table-wrap"><table>
             <thead>
             <tr>
                 <th>Nome</th>
@@ -47,7 +48,7 @@ $this->layout(
                 </tr>
             <?php endforeach; ?>
             </tbody>
-        </table>
+        </table></div>
         <?php if ($pagination !== null): ?>
             <?= $pagination ?>
         <?php endif; ?>

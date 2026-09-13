@@ -10,16 +10,14 @@ declare(strict_types=1);
  * @author Djalma Martins
  */
 
-$this->layout('layouts/default', ['title' => $title]);
+$this->layout('layouts/default', ['title' => $title, 'currentPage' => 'settings']);
 ?>
-
-<main>
-    <h1><?= $this->e($title) ?></h1>
-
-    <form method="post" action="/admin/settings">
+<section class="studio-page">
+    <header class="studio-page-heading"><div><p class="studio-eyebrow">GESTÃO</p><h2><?= $this->e($title) ?></h2><p>Ajustes persistidos da aplicação.</p></div><a class="studio-button secondary" href="/admin/diagnostics">Sistema / Diagnóstico</a></header>
+    <form class="studio-form-card" method="post" action="/admin/settings">
         <?= $this->csrf() ?>
 
-        <div>
+        <div class="studio-field">
             <label for="app_name">Nome da aplicação</label>
             <input
                 type="text"
@@ -34,4 +32,4 @@ $this->layout('layouts/default', ['title' => $title]);
 
         <button type="submit">Salvar configurações</button>
     </form>
-</main>
+</section>
