@@ -143,3 +143,11 @@ Os editores usam coluna principal para texto/SEO e painel lateral para publicaç
 ## Banco da rodada operacional
 
 A migration `20260913_004_complete_studio_operations.sql` adiciona responsável/resposta/conversão às propostas, histórico imutável de ações e metadados de destinatário/origem às notificações.
+
+## Encerramento da migração — [CONCLUÍDO]
+
+- Busca global reconstruída para conteúdo, usuários e propostas.
+- Páginas, FAQ, destaques e depoimentos publicados integrados ao tema público; período e ordenação são respeitados.
+- Permissões administrativas separadas por domínio, sem reutilizar `users.manage` como autorização genérica.
+- Funções secundárias fora do escopo ou sem infraestrutura segura estão classificadas como `[DESCARTADO]` em `moves-studio-audit.md`.
+- Nenhum módulo aprovado permanece como `[PLANEJADO]` ou `[EM MIGRAÇÃO]`.

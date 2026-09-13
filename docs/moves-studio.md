@@ -1,6 +1,6 @@
 # Moves Studio
 
-O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A fundação e a primeira consolidação técnica estão prontas, sem antecipar CRUDs editoriais nem alterar a fundação de segurança. A auditoria funcional do antecessor está em `docs/moves-studio-audit.md`.
+O Moves Studio é o CMS e painel administrativo oficial da plataforma Moves. A migração funcional aprovada foi concluída sobre a fundação atual de segurança e persistência. A auditoria funcional do antecessor está em `docs/moves-studio-audit.md`.
 
 ## Antigo x novo
 
@@ -21,7 +21,7 @@ Todos os itens exibidos na navegação apontam para rotas existentes e protegida
 
 ## Dashboard
 
-Os indicadores usam somente fontes existentes: quantidade real de usuários, resultado real de `Diagnostics::run()`, ambiente, versão declarada, nome persistido e eventos recentes do Logger. Os módulos de CMS declaram honestamente “Não iniciado”. Não há métricas simuladas.
+Os indicadores usam somente fontes existentes: usuários, saúde de `Diagnostics::run()`, ambiente, versão, propostas, conteúdo persistido e eventos recentes do Logger. Todos os atalhos do CMS apontam para módulos funcionais. Não há métricas simuladas.
 
 ## Gestão técnica
 
@@ -32,6 +32,7 @@ Os indicadores usam somente fontes existentes: quantidade real de usuários, res
 - `/admin/media` mantém a biblioteca de imagens, texto alternativo, recortes derivados e associações protegidas com conteúdos.
 - `/admin/articles`, `/admin/pages`, `/admin/highlights` e `/admin/testimonials` oferecem editores específicos com mídia, SEO, status e ordenação; artigos também alimentam `/conteudo`.
 - `/admin/faq` organiza perguntas e respostas por categoria; `/admin/proposals` mantém pipeline e histórico; `/admin/notifications` oferece contador e ações por destinatário; `/admin/reports` agrega dados reais e exporta CSV.
+- `/admin/search` pesquisa conteúdo, usuários e propostas. Páginas publicadas usam `/pagina/{slug}`, FAQ usa `/faq`, e destaques/depoimentos publicados alimentam a página inicial respeitando ordem e período.
 
 ## Fundação visual
 
@@ -39,7 +40,7 @@ O Studio usa a identidade visual do tema de referência fornecido em `studio.zip
 
 ## Segurança e escopo
 
-As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, usando as permissões atuais `users.manage`, `settings.manage` e `diagnostics.view`. CSRF do logout, configurações e módulos mutáveis foi preservado. O ZIP foi utilizado apenas como referência de apresentação; seu roteamento e código de negócio não foram executados nem incorporados.
+As rotas continuam protegidas por `AuthMiddleware` e `PermissionMiddleware`, com permissões separadas para dashboard, busca, conteúdo, mídia, propostas, notificações, relatórios, usuários, configurações, diagnóstico e log. CSRF cobre logout e toda mutação administrativa. O ZIP foi utilizado apenas como referência de apresentação; seu roteamento e código de negócio não foi executado nem incorporado.
 
 ## Roadmap
 

@@ -47,10 +47,24 @@ Foram confirmadas checagens de permissão por módulo, CSRF em mutações recent
 | Propostas | Pipeline, responsável, PDF e e-mail | Completo | Pipeline, histórico, resposta e conversão | Migrado sem PDF/e-mail sem infraestrutura | P3 |
 | Notificações | Central, badge, destinatários e e-mail | Completo | Destino, origem, badge e ações | Migrado com links internos | P3 |
 | Relatórios | Acessos, conteúdo e usuários | Parcial/real | Conteúdo e pipeline persistidos | Migrado somente com métricas verificáveis | P4 |
-| Busca global | Conteúdo, usuários e propostas | Completo | Não | Adiar até haver módulos pesquisáveis | P4 |
+| Busca global | Conteúdo, usuários e propostas | Completo | Busca unificada | Migrado após os módulos se tornarem pesquisáveis | P4 |
 | Agenda/suporte/tickets | Operação e Help Desk | Completo | Não | Descartar do escopo CMS | Fora |
 | Eventos/resultados/associações | Módulos verticais antigos | Legado paralelo | Não | Descartar do produto atual | Fora |
 
 ## Decisões para o Moves
 
-Nesta rodada foram concluídos Usuários, Configurações, Versões e Log com o shell visual atual. Permanecem oficiais `Auth`, `Access`, `Session`, `Csrf`, `LoginThrottle`, `PermissionMiddleware`, `Logger`, `Validator`, `Response`, CSP e headers. Não foram importados o RBAC complexo, campos secretos, updater, exclusão do histórico técnico ou módulos verticais do ERP. A triagem de logs vive em tabela separada e referencia somente fingerprints que ainda existem no JSONL sanitizado.
+A migração funcional aprovada está concluída no shell visual atual. Permanecem oficiais `Auth`, `Access`, `Session`, `Csrf`, `LoginThrottle`, `PermissionMiddleware`, `Logger`, `Validator`, `Response`, CSP e headers. Não foram importados o RBAC complexo, campos secretos, updater, exclusão do histórico técnico ou módulos verticais do ERP. A triagem de logs vive em tabela separada e referencia somente fingerprints que ainda existem no JSONL sanitizado.
+
+## Funcionalidades secundárias
+
+| Função | Estado | Decisão |
+| --- | --- | --- |
+| Busca global | [CONCLUÍDO] | Conteúdo, usuários e propostas com resultados escapados e links internos |
+| Consumo público de páginas | [CONCLUÍDO] | Rota por slug, SEO, template em allowlist e mídia controlada |
+| Destaques na home | [CONCLUÍDO] | Somente publicados e dentro do período configurado |
+| Depoimentos na home | [CONCLUÍDO] | Somente publicados, ordenados e com foto opcional |
+| FAQ público | [CONCLUÍDO] | Categorias, pergunta e resposta em acordeões nativos |
+| Editor HTML rico | [DESCARTADO] | Exige política de sanitização que o produto não possui; texto seguro atende o escopo atual |
+| PDF/e-mail de propostas | [DESCARTADO] | Não existe fila/transporte oficial configurado no Moves |
+| Presença online e visitas | [DESCARTADO] | Não existe telemetria consentida e persistida |
+| Agenda, Help Desk e CRM | [DESCARTADO] | Fora do escopo Studio aprovado |
