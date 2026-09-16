@@ -11,3 +11,6 @@
 !/storage/uploads/.gitkeep
 .idea/
 graphify-out/
+
+# Temporary development files
+tmp/

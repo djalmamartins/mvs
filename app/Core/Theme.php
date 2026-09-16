@@ -23,8 +23,18 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
-        if ($path === '/studio' || str_starts_with($path, '/studio/')) {
-            return 'admin';
+        $adminPrefixes = [
+            '/studio',
+            '/day',
+            '/talk',
+            '/support',
+            '/erp',
+        ];
+
+        foreach ($adminPrefixes as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+                return 'admin';
+            }
         }
 
         if ($path === '/app' || str_starts_with($path, '/app/')) {

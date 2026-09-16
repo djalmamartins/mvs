@@ -98,6 +98,35 @@ final class Routes
             ]
         );
 
+        // Moves Platform products
+        $router->get(
+            '/day',
+            'PlatformController:day',
+            'platform.day',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/talk',
+            'PlatformController:talk',
+            'platform.talk',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/support',
+            'PlatformController:support',
+            'platform.support',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/erp',
+            'PlatformController:erp',
+            'platform.erp',
+            AuthMiddleware::class
+        );
+
         $router->get(
             '/studio/users',
             'UserController:index',
@@ -107,6 +136,7 @@ final class Routes
                 new PermissionMiddleware('users.manage'),
             ]
         );
+
         $router->get('/studio/users/create', 'UserController:form', 'users.create', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
         $router->get('/studio/users/edit/{id}', 'UserController:form', 'users.edit', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
         $router->post('/studio/users/save', 'UserController:save', 'users.save', [AuthMiddleware::class, new PermissionMiddleware('users.manage')]);
