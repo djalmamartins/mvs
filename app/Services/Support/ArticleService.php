@@ -77,6 +77,78 @@ final class ArticleService
         return $article;
     }
 
+    public function update(
+        int $id,
+        string $title,
+        ?int $productId = null,
+        ?int $categoryId = null,
+        ?string $excerpt = null,
+        ?string $content = null,
+        string $status = 'draft',
+        ?int $authorId = null,
+        ?int $updatedBy = null
+    ): Article {
+        $article = $this->find($id);
+
+        if (!$article instanceof Article) {
+            throw new RuntimeException('Artigo não encontrado.');
+        }
+
+        $title = trim($title);
+
+        if ($title === '') {
+            throw new RuntimeException('Informe o título do artigo.');
+        }
+
+        if (!in_array($status, ['draft', 'published', 'archived'], true)) {
+            throw new RuntimeException('Status do artigo inválido.');
+        }
+
+        $this->validateProduct($productId);
+        $this->validateCategory($categoryId, $productId);
+        $this->validateAuthor($authorId);
+        $this->validateAuthor($updatedBy);
+
+        $pdo = \Moves\Boot\Connection::getInstance();
+
+        try {
+            $pdo->beginTransaction();
+
+            $this->createRevision($id, $updatedBy);
+
+            $article->product_id = $productId;
+            $article->category_id = $categoryId;
+            $article->title = $title;
+            $article->slug = $this->uniqueSlug($title, $id);
+            $article->excerpt = $this->nullableText($excerpt);
+            $article->content = $this->nullableText($content);
+            $article->status = $status;
+            $article->author_id = $authorId;
+
+            if ($status === 'published' && $article->published_at === null) {
+                $article->published_at = date('Y-m-d H:i:s');
+            } elseif ($status !== 'published') {
+                $article->published_at = null;
+            }
+
+            if (!$article->save()) {
+                throw new RuntimeException(
+                    $article->message()->getText()
+                    ?: 'Não foi possível atualizar o artigo.'
+                );
+            }
+
+            $pdo->commit();
+
+            return $article;
+        } catch (\Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $exception;
+        }
+    }
     /**
      * @return ArticleRevision[]
      */
@@ -183,13 +255,15 @@ final class ArticleService
         }
     }
 
-    private function uniqueSlug(string $value): string
-    {
+    private function uniqueSlug(
+        string $value,
+        ?int $ignoreId = null
+    ): string {
         $base = $this->slug($value);
         $slug = $base;
         $suffix = 2;
 
-        while ($this->slugExists($slug)) {
+        while ($this->slugExists($slug, $ignoreId)) {
             $slug = $base . '-' . $suffix;
             $suffix++;
         }
@@ -197,13 +271,20 @@ final class ArticleService
         return $slug;
     }
 
-    private function slugExists(string $slug): bool
-    {
+    private function slugExists(
+        string $slug,
+        ?int $ignoreId = null
+    ): bool {
+        $terms = 'slug = :slug';
+        $params = ['slug' => $slug];
+
+        if ($ignoreId !== null) {
+            $terms .= ' AND id != :ignore_id';
+            $params['ignore_id'] = $ignoreId;
+        }
+
         return (new Article())
-            ->find(
-                'slug = :slug',
-                ['slug' => $slug]
-            )
+            ->find($terms, $params)
             ->count() > 0;
     }
 
