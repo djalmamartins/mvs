@@ -117,7 +117,7 @@ final class CategoryService
 
         $this->validatePosition($position);
         $this->validateProduct($productId);
-        $this->validateParent($parentId, $productId);
+        $this->validateParent($parentId, $productId, $id);
 
         $category->product_id = $productId;
         $category->parent_id = $parentId;
@@ -172,26 +172,50 @@ final class CategoryService
 
     private function validateParent(
         ?int $parentId,
-        ?int $productId
+        ?int $productId,
+        ?int $categoryId = null
     ): void {
         if ($parentId === null) {
             return;
         }
 
-        $parent = $this->find($parentId);
+        $visited = [];
+        $currentId = $parentId;
 
-        if (!$parent instanceof Category) {
-            throw new RuntimeException('Categoria pai não encontrada.');
-        }
+        while ($currentId !== null) {
+            if (isset($visited[$currentId])) {
+                throw new RuntimeException(
+                    'A hierarquia de categorias contém um ciclo.'
+                );
+            }
 
-        $parentProductId = $parent->product_id !== null
-            ? (int) $parent->product_id
-            : null;
+            $visited[$currentId] = true;
 
-        if ($parentProductId !== $productId) {
-            throw new RuntimeException(
-                'A categoria pai deve pertencer ao mesmo produto.'
-            );
+            if ($categoryId !== null && $currentId === $categoryId) {
+                throw new RuntimeException(
+                    'A hierarquia de categorias contém um ciclo.'
+                );
+            }
+
+            $parent = $this->find($currentId);
+
+            if (!$parent instanceof Category) {
+                throw new RuntimeException('Categoria pai não encontrada.');
+            }
+
+            $parentProductId = $parent->product_id !== null
+                ? (int) $parent->product_id
+                : null;
+
+            if ($parentProductId !== $productId) {
+                throw new RuntimeException(
+                    'A categoria pai deve pertencer ao mesmo produto.'
+                );
+            }
+
+            $currentId = $parent->parent_id !== null
+                ? (int) $parent->parent_id
+                : null;
         }
     }
 

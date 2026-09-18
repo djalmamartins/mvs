@@ -676,4 +676,103 @@ $this->layout('layouts/default', [
 
 </div>
 
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
+<script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
+
+<dialog
+    class="support-modal"
+    data-knowledge-dialog="product"
+    aria-labelledby="article-product-modal-title"
+>
+    <form
+        method="post"
+        action="/support/products/save"
+        data-knowledge-form
+    >
+        <?= $this->csrf() ?>
+        <input type="hidden" name="id" value="0">
+        <input type="hidden" name="response" value="json">
+        <h2 id="article-product-modal-title">Novo produto</h2>
+        <p class="support-modal-error" data-modal-error role="alert"></p>
+        <label class="studio-field">
+            <span>Nome</span>
+            <input name="name" maxlength="150" required>
+        </label>
+        <label class="studio-field">
+            <span>Descrição</span>
+            <textarea name="description" rows="4"></textarea>
+        </label>
+        <input type="hidden" name="status" value="active">
+        <footer class="support-modal-actions">
+            <button class="studio-btn" type="button" data-knowledge-close>
+                Cancelar
+            </button>
+            <button class="studio-btn primary" type="submit">
+                Salvar produto
+            </button>
+        </footer>
+    </form>
+</dialog>
+
+<dialog
+    class="support-modal"
+    data-knowledge-dialog="category"
+    aria-labelledby="article-category-modal-title"
+>
+    <form
+        method="post"
+        action="/support/categories/save"
+        data-knowledge-form
+    >
+        <?= $this->csrf() ?>
+        <input type="hidden" name="id" value="0">
+        <input type="hidden" name="response" value="json">
+        <h2 id="article-category-modal-title">Nova categoria</h2>
+        <p class="support-modal-error" data-modal-error role="alert"></p>
+        <label class="studio-field">
+            <span>Produto</span>
+            <select name="product_id" data-modal-product required>
+                <option value="">Selecione um produto</option>
+                <?php foreach (($products ?? []) as $product): ?>
+                    <option value="<?= (int) $product->id ?>">
+                        <?= $this->e((string) $product->name) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="studio-field">
+            <span>Categoria pai</span>
+            <select name="parent_id" data-modal-parent>
+                <option value="">Sem categoria pai</option>
+                <?php foreach (($categories ?? []) as $parent): ?>
+                    <option
+                        value="<?= (int) $parent->id ?>"
+                        data-product-id="<?= (int) ($parent->product_id ?? 0) ?>"
+                    >
+                        <?= $this->e((string) $parent->name) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="studio-field">
+            <span>Nome</span>
+            <input name="name" maxlength="150" required>
+        </label>
+        <label class="studio-field">
+            <span>Descrição</span>
+            <textarea name="description" rows="3"></textarea>
+        </label>
+        <input type="hidden" name="position" value="0">
+        <input type="hidden" name="status" value="active">
+        <footer class="support-modal-actions">
+            <button class="studio-btn" type="button" data-knowledge-close>
+                Cancelar
+            </button>
+            <button class="studio-btn primary" type="submit">
+                Salvar categoria
+            </button>
+        </footer>
+    </form>
+</dialog>
+
 <script src="/themes/admin/js/support-article-form.js?v=2026091701"></script>

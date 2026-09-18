@@ -1,0 +1,15 @@
+<?php
+declare(strict_types=1);
+$this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte', 'activeProduct' => 'support', 'currentPage' => 'tags']);
+?>
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
+<script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
+<section class="studio-page support-knowledge-page" data-knowledge-page="tags">
+    <header class="studio-page-heading"><div><p class="studio-eyebrow">BASE DE CONHECIMENTO</p><h2>Tags</h2><p>Organize e reutilize marcadores nos artigos.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="tag">Nova tag</button></header>
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles">Artigos</a><a href="/support/categories">Categorias</a><a href="/support/products">Produtos</a><a class="active" href="/support/tags">Tags</a></nav>
+    <form class="studio-filter-bar" method="get"><label><span>Buscar</span><input type="search" name="q" value="<?= $this->e($search) ?>" placeholder="Nome ou slug"></label><button class="studio-btn" type="submit">Filtrar</button><a class="studio-btn" href="/support/tags">Limpar</a></form>
+    <div class="studio-table-wrap"><table><thead><tr><th>Nome</th><th>Slug</th><th>Artigos</th><th>Criada em</th><th>Ações</th></tr></thead><tbody>
+    <?php if ($tags === []): ?><tr><td colspan="5" class="studio-empty">Nenhuma tag encontrada.</td></tr><?php endif; ?>
+    <?php foreach ($tags as $tag): ?><tr><td><strong><?= $this->e((string) $tag->name) ?></strong></td><td>/<?= $this->e((string) $tag->slug) ?></td><td><?= (int) ($articleCounts[(int) $tag->id] ?? 0) ?></td><td><?= $this->e((string) ($tag->created_at ?? '—')) ?></td><td><button class="studio-icon-action" type="button" title="Editar" data-knowledge-edit="tag" data-id="<?= (int) $tag->id ?>" data-name="<?= $this->e((string) $tag->name) ?>">✎</button><form class="support-inline-form" method="post" action="/support/tags/delete" data-confirm-submit="Excluir esta tag?"><?= $this->csrf() ?><input type="hidden" name="id" value="<?= (int) $tag->id ?>"><button class="studio-icon-action danger" type="submit" title="Excluir">×</button></form></td></tr><?php endforeach; ?></tbody></table></div>
+    <dialog class="support-modal" data-knowledge-dialog="tag" aria-labelledby="tag-modal-title"><form method="post" action="/support/tags/save" data-knowledge-form data-reload-on-success><?= $this->csrf() ?><input type="hidden" name="id" value="0"><input type="hidden" name="response" value="json"><h2 id="tag-modal-title">Nova tag</h2><p class="support-modal-error" data-modal-error role="alert"></p><label class="studio-field"><span>Nome</span><input name="name" maxlength="100" required></label><footer class="support-modal-actions"><button class="studio-btn" type="button" data-knowledge-close>Cancelar</button><button class="studio-btn primary" type="submit">Salvar tag</button></footer></form></dialog>
+</section>

@@ -150,6 +150,69 @@ final class Routes
         );
 
         $router->get(
+            '/support/products',
+            'SupportKnowledgeController:products',
+            'support.products',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/products/save',
+            'SupportKnowledgeController:productSave',
+            'support.products.save',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/products/delete',
+            'SupportKnowledgeController:productDelete',
+            'support.products.delete',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/support/categories',
+            'SupportKnowledgeController:categories',
+            'support.categories',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/categories/save',
+            'SupportKnowledgeController:categorySave',
+            'support.categories.save',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/categories/delete',
+            'SupportKnowledgeController:categoryDelete',
+            'support.categories.delete',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/support/tags',
+            'SupportKnowledgeController:tags',
+            'support.tags',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/tags/save',
+            'SupportKnowledgeController:tagSave',
+            'support.tags.save',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/tags/delete',
+            'SupportKnowledgeController:tagDelete',
+            'support.tags.delete',
+            AuthMiddleware::class
+        );
+
+        $router->get(
             '/erp',
             'PlatformController:erp',
             'platform.erp',

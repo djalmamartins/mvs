@@ -39,6 +39,12 @@ if ($activeProduct === 'support') {
                 'href'  => '/support/products',
                 'key'   => 'products',
             ],
+              [
+                  'label' => 'Tags',
+                  'icon'  => 'icon-pricetag-outline',
+                  'href'  => '/support/tags',
+                  'key'   => 'tags',
+              ],
             [
                 'label' => 'Rascunhos',
                 'icon'  => 'icon-document-text-outline',

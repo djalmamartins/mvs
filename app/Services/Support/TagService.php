@@ -86,6 +86,33 @@ final class TagService
         return $this->create($name);
     }
 
+    public function update(int $id, string $name): Tag
+    {
+        $tag = $this->find($id);
+
+        if (!$tag instanceof Tag) {
+            throw new RuntimeException('Tag não encontrada.');
+        }
+
+        $name = $this->normalizeName($name);
+
+        if ($name === '') {
+            throw new RuntimeException('Informe o nome da tag.');
+        }
+
+        $tag->name = $name;
+        $tag->slug = $this->uniqueSlug($name, $id);
+
+        if (!$tag->save()) {
+            throw new RuntimeException(
+                $tag->message()->getText()
+                ?: 'Não foi possível atualizar a tag.'
+            );
+        }
+
+        return $tag;
+    }
+
     /**
      * Sincroniza as tags de um artigo.
      *
