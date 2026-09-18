@@ -5,8 +5,8 @@ $this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte',
 <link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
 <script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="tags">
-    <header class="studio-page-heading"><div><p class="studio-eyebrow">BASE DE CONHECIMENTO</p><h2>Tags</h2><p>Organize e reutilize marcadores nos artigos.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="tag">Nova tag</button></header>
-    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles">Artigos</a><a href="/support/categories">Categorias</a><a href="/support/products">Produtos</a><a class="active" href="/support/tags">Tags</a></nav>
+    <header class="knowledge-header"><div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Base de conhecimento</h1><p>Crie e gerencie conteúdos para ajudar seus usuários.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="tag"><?= studio_icon('tag') ?> Nova tag</button></header>
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><?= studio_icon('newspaper') ?> Artigos</a><a href="/support/categories"><?= studio_icon('archive') ?> Categorias</a><a href="/support/products"><?= studio_icon('briefcase') ?> Produtos</a><a class="active" href="/support/tags"><?= studio_icon('tag') ?> Tags</a><span class="knowledge-tab-muted"><?= studio_icon('trash') ?> Lixeira</span></nav>
     <form class="studio-filter-bar" method="get"><label><span>Buscar</span><input type="search" name="q" value="<?= $this->e($search) ?>" placeholder="Nome ou slug"></label><button class="studio-btn" type="submit">Filtrar</button><a class="studio-btn" href="/support/tags">Limpar</a></form>
     <div class="studio-table-wrap"><table><thead><tr><th>Nome</th><th>Slug</th><th>Artigos</th><th>Criada em</th><th>Ações</th></tr></thead><tbody>
     <?php if ($tags === []): ?><tr><td colspan="5" class="studio-empty">Nenhuma tag encontrada.</td></tr><?php endif; ?>

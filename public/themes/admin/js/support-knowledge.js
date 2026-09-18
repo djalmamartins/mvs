@@ -92,6 +92,82 @@
         select.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
+    const initArticleDrawer = () => {
+        const drawer = document.querySelector('[data-knowledge-drawer]');
+        const dataNode = document.querySelector('[data-knowledge-article-data]');
+        if (!drawer || !dataNode) return;
+
+        let articles = {};
+        try { articles = JSON.parse(dataNode.textContent || '{}'); } catch (error) { return; }
+        const backdrop = document.querySelector('[data-knowledge-drawer] + .knowledge-drawer-backdrop');
+        const close = () => {
+            drawer.classList.remove('is-open');
+            backdrop?.classList.remove('is-open');
+            drawer.setAttribute('aria-hidden', 'true');
+        };
+        const setText = (selector, value) => {
+            const element = drawer.querySelector(selector);
+            if (element) element.textContent = value || '—';
+        };
+        const renderHistory = (revisions) => {
+            const target = drawer.querySelector('[data-drawer-history]');
+            if (!target) return;
+            target.innerHTML = revisions?.length
+                ? revisions.map((revision) => `<article class="knowledge-history-item"><strong>${escapeHtml(revision.title)}</strong><span>${escapeHtml(revision.created_at)}</span></article>`).join('')
+                : '<p class="knowledge-note">Nenhuma revisão registrada.</p>';
+        };
+        const open = (id) => {
+            const article = articles[String(id)];
+            if (!article) return;
+            setText('[data-drawer-title]', article.title);
+            setText('[data-drawer-excerpt]', article.excerpt);
+            setText('[data-drawer-category]', article.category);
+            setText('[data-drawer-product]', article.product);
+            setText('[data-drawer-tags]', article.tags?.join(', '));
+            setText('[data-drawer-author]', article.author);
+            setText('[data-drawer-created]', article.created_at);
+            setText('[data-drawer-updated]', article.updated_at);
+            setText('[data-drawer-reading]', article.reading_time ? `${article.reading_time} min` : '—');
+            setText('[data-drawer-focus]', article.focus_keyword);
+            setText('[data-drawer-meta-title]', article.meta_title);
+            setText('[data-drawer-meta-description]', article.meta_description);
+            setText('[data-drawer-canonical]', article.canonical_url);
+            setText('[data-drawer-index]', article.robots_index ? 'Permitida' : 'Bloqueada');
+            setText('[data-drawer-follow]', article.robots_follow ? 'Permitido' : 'Bloqueado');
+            const status = drawer.querySelector('[data-drawer-status]');
+            if (status) status.innerHTML = `<span class="studio-status studio-status-${article.status === 'published' ? 'success' : article.status === 'draft' ? 'warning' : 'neutral'}">${escapeHtml({published: 'Publicado', draft: 'Rascunho', archived: 'Arquivado'}[article.status] || article.status)}</span>`;
+            const content = drawer.querySelector('[data-drawer-content]');
+            if (content) content.innerHTML = article.content || '<p class="knowledge-note">Este artigo ainda não possui conteúdo.</p>';
+            renderHistory(article.revisions);
+            const edit = drawer.querySelector('[data-drawer-edit]');
+            if (edit) edit.href = `/support/articles/${encodeURIComponent(article.slug)}/edit`;
+            drawer.querySelectorAll('[data-drawer-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.drawerPanel !== 'overview'));
+            drawer.querySelectorAll('[data-drawer-tab]').forEach((tab) => tab.classList.toggle('active', tab.dataset.drawerTab === 'overview'));
+            drawer.classList.add('is-open');
+            backdrop?.classList.add('is-open');
+            drawer.setAttribute('aria-hidden', 'false');
+        };
+        drawer.querySelectorAll('[data-drawer-tab]').forEach((tab) => tab.addEventListener('click', () => {
+            drawer.querySelectorAll('[data-drawer-tab]').forEach((item) => item.classList.toggle('active', item === tab));
+            drawer.querySelectorAll('[data-drawer-panel]').forEach((panel) => panel.classList.toggle('is-hidden', panel.dataset.drawerPanel !== tab.dataset.drawerTab));
+        }));
+        document.querySelectorAll('[data-knowledge-open-drawer]').forEach((button) => button.addEventListener('click', () => open(button.dataset.knowledgeOpenDrawer)));
+        document.querySelectorAll('[data-knowledge-close-drawer]').forEach((button) => button.addEventListener('click', close));
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+    };
+
+    const escapeHtml = (value) => String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+
+    const initContextMenus = () => {
+        document.querySelectorAll('[data-knowledge-menu]').forEach((button) => button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const menu = document.querySelector(`[data-knowledge-menu-panel="${button.dataset.knowledgeMenu}"]`);
+            document.querySelectorAll('.knowledge-context-menu.is-open').forEach((item) => item.classList.remove('is-open'));
+            menu?.classList.toggle('is-open');
+        }));
+        document.addEventListener('click', () => document.querySelectorAll('.knowledge-context-menu.is-open').forEach((item) => item.classList.remove('is-open')));
+    };
+
     const init = () => {
         document.querySelectorAll('[data-knowledge-dialog]').forEach(initModal);
         document.querySelectorAll('[data-knowledge-open]').forEach((button) => {
@@ -127,6 +203,8 @@
         document.querySelectorAll('[data-modal-product]').forEach((select) => {
             select.addEventListener('change', () => filterParents(select.closest('dialog')));
         });
+        initArticleDrawer();
+        initContextMenus();
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

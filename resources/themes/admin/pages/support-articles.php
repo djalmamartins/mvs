@@ -1,236 +1,25 @@
 <?php
-
 declare(strict_types=1);
-
-$this->layout('layouts/default', [
-    'title' => $title,
-    'productName' => 'Suporte',
-    'activeProduct' => 'support',
-    'currentPage' => 'articles',
-]);
-
+$this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte', 'activeProduct' => 'support', 'currentPage' => 'articles']);
+$statusLabels = ['draft' => 'Rascunho', 'published' => 'Publicado', 'archived' => 'Arquivado'];
+$statusTones = ['draft' => 'warning', 'published' => 'success', 'archived' => 'neutral'];
 $productNames = [];
-
-foreach ($products as $product) {
-    $productNames[(int) $product->id] = (string) $product->name;
-}
-
+foreach ($products as $product) { $productNames[(int) $product->id] = (string) $product->name; }
 $categoryNames = [];
-
-foreach ($categories as $category) {
-    $categoryNames[(int) $category->id] = (string) $category->name;
-}
-
-$statusLabels = [
-    'draft' => 'Rascunho',
-    'published' => 'Publicado',
-    'archived' => 'Arquivado',
-];
-
-$statusTones = [
-    'draft' => 'warning',
-    'published' => 'success',
-    'archived' => 'neutral',
-];
+foreach ($categories as $category) { $categoryNames[(int) $category->id] = (string) $category->name; }
+$detailJson = json_encode($articleDetails ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 ?>
-
-<section class="studio-page">
-
-    <header class="studio-page-heading">
-        <div>
-            <p class="studio-eyebrow">BASE DE CONHECIMENTO</p>
-            <h2>Artigos</h2>
-            <p>
-                Crie, organize e publique conteúdos de ajuda para
-                os produtos da plataforma Moves.
-            </p>
-        </div>
-
-        <a
-            class="studio-btn primary"
-            href="/support/articles/create"
-        >
-            Novo artigo
-        </a>
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
+<script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
+<section class="studio-page support-knowledge-page support-articles-workspace" data-knowledge-page="articles">
+    <header class="knowledge-header">
+        <div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Base de conhecimento</h1><p>Crie e gerencie conteúdos para ajudar seus usuários.</p></div>
+        <div class="knowledge-header-actions"><button class="studio-btn" type="button" disabled title="Importação ainda não disponível"><?= studio_icon('upload') ?> Importar artigos</button><a class="studio-btn primary" href="/support/articles/create"><?= studio_icon('copy') ?> Novo artigo</a></div>
     </header>
-
-    <form
-        class="studio-filter-bar"
-        method="get"
-        action="/support/articles"
-    >
-        <label>
-            <span>Buscar</span>
-
-            <input
-                type="search"
-                name="q"
-                value="<?= $this->e((string) $search) ?>"
-                placeholder="Título ou conteúdo"
-            >
-        </label>
-
-        <label>
-            <span>Status</span>
-
-            <select name="status">
-                <option value="">Todos</option>
-
-                <?php foreach ($statusLabels as $value => $label): ?>
-                    <option
-                        value="<?= $this->e($value) ?>"
-                        <?= $status === $value ? ' selected' : '' ?>
-                    >
-                        <?= $this->e($label) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <label>
-            <span>Produto</span>
-
-            <select name="product">
-                <option value="0">Todos</option>
-
-                <?php foreach ($products as $product): ?>
-                    <option
-                        value="<?= (int) $product->id ?>"
-                        <?= $productId === (int) $product->id
-                            ? ' selected'
-                            : '' ?>
-                    >
-                        <?= $this->e((string) $product->name) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <label>
-            <span>Categoria</span>
-
-            <select name="category">
-                <option value="0">Todas</option>
-
-                <?php foreach ($categories as $category): ?>
-                    <option
-                        value="<?= (int) $category->id ?>"
-                        <?= $categoryId === (int) $category->id
-                            ? ' selected'
-                            : '' ?>
-                    >
-                        <?= $this->e((string) $category->name) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-
-        <button type="submit">
-            Filtrar
-        </button>
-
-        <a href="/support/articles">
-            Limpar
-        </a>
-    </form>
-
-    <div class="studio-table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Artigo</th>
-                    <th>Produto</th>
-                    <th>Categoria</th>
-                    <th>Status</th>
-                    <th>Atualizado</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <?php if ($articles === []): ?>
-                    <tr>
-                        <td
-                            colspan="6"
-                            class="studio-empty"
-                        >
-                            Nenhum artigo encontrado.
-                        </td>
-                    </tr>
-                <?php endif; ?>
-
-                <?php foreach ($articles as $article): ?>
-                    <?php
-                    $articleStatus = (string) $article->status;
-                    $tone = $statusTones[$articleStatus] ?? 'neutral';
-                    ?>
-
-                    <tr>
-                        <td>
-                            <strong>
-                                <?= $this->e((string) $article->title) ?>
-                            </strong>
-
-                            <?php if (
-                                trim((string) $article->excerpt) !== ''
-                            ): ?>
-                                <small>
-                                    <?= $this->e(
-                                        (string) $article->excerpt
-                                    ) ?>
-                                </small>
-                            <?php endif; ?>
-                        </td>
-
-                        <td>
-                            <?= $this->e(
-                                $productNames[
-                                    (int) $article->product_id
-                                ] ?? '—'
-                            ) ?>
-                        </td>
-
-                        <td>
-                            <?= $this->e(
-                                $categoryNames[
-                                    (int) $article->category_id
-                                ] ?? '—'
-                            ) ?>
-                        </td>
-
-                        <td>
-                            <span
-                                class="studio-status studio-status-<?= $this->e($tone) ?>"
-                            >
-                                <?= $this->e(
-                                    $statusLabels[$articleStatus]
-                                    ?? $articleStatus
-                                ) ?>
-                            </span>
-                        </td>
-
-                        <td>
-                            <?= $this->e(
-                                (string) (
-                                    $article->updated_at ?? '—'
-                                )
-                            ) ?>
-                        </td>
-
-                        <td>
-                            <a
-                                class="studio-icon-action"
-                                href="/support/articles/<?= $this->e(rawurlencode((string) $article->slug)) ?>/edit"
-                                title="Editar"
-                                aria-label="Editar <?= $this->e((string) $article->title) ?>"
-                            >
-                                <i class="icon-pencil-outline" aria-hidden="true"></i>
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a class="active" href="/support/articles"><?= studio_icon('newspaper') ?> Artigos</a><a href="/support/categories"><?= studio_icon('archive') ?> Categorias</a><a href="/support/products"><?= studio_icon('briefcase') ?> Produtos</a><a href="/support/tags"><?= studio_icon('tag') ?> Tags</a><span class="knowledge-tab-muted"><?= studio_icon('trash') ?> Lixeira</span></nav>
+    <div class="knowledge-toolbar"><form class="knowledge-filters" method="get" action="/support/articles"><label class="knowledge-search"><span class="sr-only">Buscar artigos</span><?= studio_icon('search') ?><input type="search" name="q" value="<?= $this->e((string) $search) ?>" placeholder="Buscar artigos..."></label><label><span class="sr-only">Categoria</span><select name="category"><option value="0">Todas as categorias</option><?php foreach ($categories as $category): ?><option value="<?= (int) $category->id ?>"<?= $categoryId === (int) $category->id ? ' selected' : '' ?>><?= $this->e((string) $category->name) ?></option><?php endforeach; ?></select></label><label><span class="sr-only">Produto</span><select name="product"><option value="0">Todos os produtos</option><?php foreach ($products as $product): ?><option value="<?= (int) $product->id ?>"<?= $productId === (int) $product->id ? ' selected' : '' ?>><?= $this->e((string) $product->name) ?></option><?php endforeach; ?></select></label><label><span class="sr-only">Status</span><select name="status"><option value="">Todos os status</option><?php foreach ($statusLabels as $value => $label): ?><option value="<?= $value ?>"<?= $status === $value ? ' selected' : '' ?>><?= $label ?></option><?php endforeach; ?></select></label><button class="studio-btn" type="submit">Filtrar</button></form><div class="knowledge-view-toggle" aria-label="Visualização"><button class="is-active" type="button" aria-label="Visualização em lista"><?= studio_icon('file-text') ?></button><button type="button" disabled aria-label="Visualização em grade"><?= studio_icon('dashboard') ?></button></div></div>
+    <div class="knowledge-table-meta"><span><?= count($articles) ?> artigo(s)</span><span>Dados reais do Support</span></div>
+    <div class="studio-table-wrap knowledge-table-wrap"><table><thead><tr><th class="knowledge-check"><span class="sr-only">Selecionar</span></th><th>Artigo</th><th>Categoria</th><th>Produto</th><th>Status</th><th>Atualizado em</th><th class="knowledge-actions-cell">Ações</th></tr></thead><tbody><?php if ($articles === []): ?><tr><td colspan="7"><div class="knowledge-empty"><?= studio_icon('newspaper') ?><strong>Nenhum artigo encontrado</strong><span>Ajuste os filtros ou crie o primeiro artigo da base.</span><a class="studio-btn primary" href="/support/articles/create"><?= studio_icon('plus') ?> Novo artigo</a></div></td></tr><?php endif; ?><?php foreach ($articles as $article): ?><?php $articleId = (int) $article->id; $articleStatus = (string) $article->status; ?><tr data-article-row data-article-id="<?= $articleId ?>"><td class="knowledge-check"><input type="checkbox" aria-label="Selecionar <?= $this->e((string) $article->title) ?>"></td><td><button class="knowledge-title-button" type="button" data-knowledge-open-drawer="<?= $articleId ?>"><strong><?= $this->e((string) $article->title) ?></strong><small><?= $this->e((string) ($article->excerpt ?? '')) ?></small></button></td><td><span class="knowledge-category-badge"><?= $this->e($categoryNames[(int) ($article->category_id ?? 0)] ?? 'Sem categoria') ?></span></td><td><?= $this->e($productNames[(int) ($article->product_id ?? 0)] ?? 'Sem produto') ?></td><td><span class="studio-status studio-status-<?= $statusTones[$articleStatus] ?? 'neutral' ?>"><?= $this->e($statusLabels[$articleStatus] ?? $articleStatus) ?></span></td><td><?= $this->e((string) ($article->updated_at ?? '—')) ?></td><td class="knowledge-actions-cell"><button class="knowledge-more" type="button" aria-label="Ações do artigo" data-knowledge-menu="<?= $articleId ?>">•••</button><div class="knowledge-context-menu" data-knowledge-menu-panel="<?= $articleId ?>"><a href="/support/articles/<?= $this->e(rawurlencode((string) $article->slug)) ?>/edit"><?= studio_icon('pencil') ?> Editar</a></div></td></tr><?php endforeach; ?></tbody></table></div>
+    <footer class="knowledge-pagination"><span>Mostrando <?= count($articles) ?> de <?= count($articles) ?> artigos</span><span class="knowledge-page-numbers"><button disabled aria-label="Página anterior">‹</button><button class="active">1</button><button disabled aria-label="Próxima página">›</button></span></footer>
+    <aside class="knowledge-drawer" data-knowledge-drawer aria-hidden="true"><div class="knowledge-drawer-header"><div><span class="studio-eyebrow">DETALHES DO ARTIGO</span><h2 data-drawer-title>Artigo</h2></div><button class="knowledge-drawer-close" type="button" data-knowledge-close-drawer aria-label="Fechar painel">×</button></div><div class="knowledge-drawer-status" data-drawer-status></div><nav class="knowledge-drawer-tabs" role="tablist"><button class="active" type="button" data-drawer-tab="overview">Visão geral</button><button type="button" data-drawer-tab="content">Conteúdo</button><button type="button" data-drawer-tab="seo">SEO</button><button type="button" data-drawer-tab="history">Histórico</button></nav><div class="knowledge-drawer-body"><section data-drawer-panel="overview"><p class="knowledge-drawer-excerpt" data-drawer-excerpt></p><a class="studio-btn primary" data-drawer-edit href="#"><?= studio_icon('pencil') ?> Editar artigo</a><dl class="knowledge-facts"><div><dt>Categoria</dt><dd data-drawer-category>—</dd></div><div><dt>Produto</dt><dd data-drawer-product>—</dd></div><div><dt>Tags</dt><dd data-drawer-tags>—</dd></div><div><dt>Autor</dt><dd data-drawer-author>—</dd></div><div><dt>Criado em</dt><dd data-drawer-created>—</dd></div><div><dt>Atualizado em</dt><dd data-drawer-updated>—</dd></div><div><dt>Leitura</dt><dd data-drawer-reading>—</dd></div></dl></section><section class="is-hidden" data-drawer-panel="content"><div class="moves-content knowledge-drawer-content" data-drawer-content></div></section><section class="is-hidden" data-drawer-panel="seo"><dl class="knowledge-facts"><div><dt>Palavra-chave</dt><dd data-drawer-focus>—</dd></div><div><dt>Título SEO</dt><dd data-drawer-meta-title>—</dd></div><div><dt>Meta description</dt><dd data-drawer-meta-description>—</dd></div><div><dt>Canonical</dt><dd data-drawer-canonical>—</dd></div><div><dt>Indexação</dt><dd data-drawer-index>—</dd></div><div><dt>Follow</dt><dd data-drawer-follow>—</dd></div></dl></section><section class="is-hidden" data-drawer-panel="history"><p class="knowledge-note">As revisões registram título, resumo e conteúdo disponíveis no histórico. Não representam restauração completa do artigo.</p><div data-drawer-history></div></section></div></aside><div class="knowledge-drawer-backdrop" data-knowledge-close-drawer></div><script type="application/json" data-knowledge-article-data><?= $detailJson ?></script>
 </section>

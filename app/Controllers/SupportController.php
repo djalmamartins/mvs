@@ -8,6 +8,7 @@ use Moves\Core\Auth;
 use Moves\Core\Controller;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
+use Moves\Core\HtmlSanitizer;
 use Moves\Core\Logger;
 use Moves\Core\Request;
 use Moves\Core\Response;
@@ -25,6 +26,18 @@ final class SupportController extends Controller
         $articleService = new ArticleService();
         $productService = new ProductService();
         $categoryService = new CategoryService();
+        $products = $productService->all();
+        $categories = $categoryService->all();
+        $productNames = [];
+        $categoryNames = [];
+
+        foreach ($products as $product) {
+            $productNames[(int) $product->id] = (string) $product->name;
+        }
+
+        foreach ($categories as $category) {
+            $categoryNames[(int) $category->id] = (string) $category->name;
+        }
 
         $search = mb_substr(
             trim(strip_tags((string) Request::get('q', ''))),
@@ -71,18 +84,68 @@ final class SupportController extends Controller
             }
         ));
 
+        $tagService = new TagService();
+        $articleDetails = [];
+
+        foreach ($articles as $article) {
+            $articleId = (int) $article->id;
+            $author = $article->author_id !== null
+                ? (new User())->findById((int) $article->author_id)
+                : null;
+
+            $articleDetails[$articleId] = [
+                'id' => $articleId,
+                'title' => (string) $article->title,
+                'slug' => (string) $article->slug,
+                'excerpt' => (string) ($article->excerpt ?? ''),
+                'content' => HtmlSanitizer::clean(
+                    (string) ($article->content ?? '')
+                ),
+                'status' => (string) $article->status,
+                'product' => $productNames[(int) $article->product_id] ?? '—',
+                'category' => $categoryNames[(int) $article->category_id] ?? '—',
+                'tags' => array_map(
+                    static fn ($tag): string => (string) $tag->name,
+                    $tagService->forArticle($articleId)
+                ),
+                'author' => $author?->name ?? '—',
+                'created_at' => (string) ($article->created_at ?? '—'),
+                'updated_at' => (string) ($article->updated_at ?? '—'),
+                'reading_time' => (int) ($article->reading_time ?? 0),
+                'meta_title' => (string) ($article->meta_title ?? ''),
+                'meta_description' => (string) ($article->meta_description ?? ''),
+                'focus_keyword' => (string) ($article->focus_keyword ?? ''),
+                'canonical_url' => (string) ($article->canonical_url ?? ''),
+                'robots_index' => (bool) ($article->robots_index ?? false),
+                'robots_follow' => (bool) ($article->robots_follow ?? false),
+                'revisions' => array_map(
+                    static function ($revision): array {
+                        return [
+                            'title' => (string) $revision->title,
+                            'created_at' => (string) $revision->created_at,
+                            'content' => HtmlSanitizer::clean(
+                                (string) ($revision->content ?? '')
+                            ),
+                        ];
+                    },
+                    $articleService->revisions($articleId)
+                ),
+            ];
+        }
+
         echo $this->view->render('pages/support-articles', [
             'title' => 'Artigos',
             'productName' => 'Suporte',
             'activeProduct' => 'support',
             'currentPage' => 'articles',
             'articles' => $articles,
-            'products' => $productService->all(),
-            'categories' => $categoryService->all(),
+            'products' => $products,
+            'categories' => $categories,
             'search' => $search,
             'status' => $status,
             'productId' => $productId,
             'categoryId' => $categoryId,
+            'articleDetails' => $articleDetails,
         ]);
     }
 
