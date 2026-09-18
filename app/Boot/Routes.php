@@ -120,6 +120,35 @@ final class Routes
             AuthMiddleware::class
         );
 
+        // Moves Support | Base de conhecimento
+        $router->get(
+            '/support/articles',
+            'SupportController:articles',
+            'support.articles',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/support/articles/create',
+            'SupportController:articleForm',
+            'support.articles.create',
+            AuthMiddleware::class
+        );
+
+        $router->get(
+            '/support/articles/{slug}/edit',
+            'SupportController:articleForm',
+            'support.articles.edit',
+            AuthMiddleware::class
+        );
+
+        $router->post(
+            '/support/articles/save',
+            'SupportController:articleSave',
+            'support.articles.save',
+            AuthMiddleware::class
+        );
+
         $router->get(
             '/erp',
             'PlatformController:erp',

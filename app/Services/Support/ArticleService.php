@@ -9,6 +9,8 @@ use Moves\Models\Support\ArticleRevision;
 use Moves\Models\Support\Category;
 use Moves\Models\Support\Product;
 use Moves\Models\User;
+use Moves\Boot\Connection;
+use PDO;
 use RuntimeException;
 
 /**
@@ -36,65 +38,48 @@ final class ArticleService
         return (new Article())->findById($id);
     }
 
+    public function findBySlug(string $slug): ?Article
+    {
+        $slug = trim($slug);
+
+        if ($slug === '') {
+            return null;
+        }
+
+        $record = (new Article())
+            ->find(
+                'slug = :slug',
+                ['slug' => $slug]
+            )
+            ->fetch();
+
+        return $record instanceof Article
+            ? $record
+            : null;
+    }
+
+    /**
+     * @param string[] $tags
+     */
     public function create(
         string $title,
         ?int $productId = null,
         ?int $categoryId = null,
         ?string $excerpt = null,
         ?string $content = null,
-        ?int $authorId = null
-    ): Article {
-        $title = trim($title);
-
-        if ($title === '') {
-            throw new RuntimeException(
-                'Informe o título do artigo.'
-            );
-        }
-
-        $this->validateProduct($productId);
-        $this->validateCategory($categoryId, $productId);
-        $this->validateAuthor($authorId);
-
-        $article = new Article();
-        $article->product_id = $productId;
-        $article->category_id = $categoryId;
-        $article->title = $title;
-        $article->slug = $this->uniqueSlug($title);
-        $article->excerpt = $this->nullableText($excerpt);
-        $article->content = $this->nullableText($content);
-        $article->status = 'draft';
-        $article->author_id = $authorId;
-        $article->published_at = null;
-
-        if (!$article->save()) {
-            throw new RuntimeException(
-                $article->message()->getText()
-                ?: 'Não foi possível criar o artigo.'
-            );
-        }
-
-        return $article;
-    }
-
-    public function update(
-        int $id,
-        string $title,
-        ?int $productId = null,
-        ?int $categoryId = null,
-        ?string $excerpt = null,
-        ?string $content = null,
-        string $status = 'draft',
         ?int $authorId = null,
-        ?int $updatedBy = null
+        ?string $slug = null,
+        ?int $coverMediaId = null,
+        ?string $metaTitle = null,
+        ?string $metaDescription = null,
+        ?string $focusKeyword = null,
+        ?string $canonicalUrl = null,
+        bool $robotsIndex = true,
+        bool $robotsFollow = true,
+        array $tags = [],
+        string $status = 'draft'
     ): Article {
-        $article = $this->find($id);
-
-        if (!$article instanceof Article) {
-            throw new RuntimeException('Artigo não encontrado.');
-        }
-
-        $title = trim($title);
+        $title = $this->cleanText($title, 255);
 
         if ($title === '') {
             throw new RuntimeException('Informe o título do artigo.');
@@ -107,36 +92,61 @@ final class ArticleService
         $this->validateProduct($productId);
         $this->validateCategory($categoryId, $productId);
         $this->validateAuthor($authorId);
-        $this->validateAuthor($updatedBy);
+        $this->validateMedia($coverMediaId);
 
-        $pdo = \Moves\Boot\Connection::getInstance();
+        $slug = $this->uniqueSlug(
+            $slug !== null && trim($slug) !== ''
+                ? $slug
+                : $title
+        );
+
+        $content = $this->nullableText($content);
+        [$wordCount, $readingTime] = $this->contentMetrics($content);
+
+        $article = new Article();
+        $article->product_id = $productId;
+        $article->category_id = $categoryId;
+        $article->title = $title;
+        $article->slug = $slug;
+        $article->excerpt = $this->nullableText($excerpt);
+        $article->content = $content;
+        $article->cover_media_id = $coverMediaId;
+        $article->meta_title = $this->nullableLimited($metaTitle, 255);
+        $article->meta_description = $this->nullableLimited(
+            $metaDescription,
+            320
+        );
+        $article->focus_keyword = $this->nullableLimited(
+            $focusKeyword,
+            150
+        );
+        $article->canonical_url = $this->normalizeCanonical($canonicalUrl);
+        $article->robots_index = $robotsIndex ? 1 : 0;
+        $article->robots_follow = $robotsFollow ? 1 : 0;
+        $article->word_count = $wordCount;
+        $article->reading_time = $readingTime;
+        $article->status = $status;
+        $article->author_id = $authorId;
+        $article->published_at = $status === 'published'
+            ? date('Y-m-d H:i:s')
+            : null;
+
+        $pdo = Connection::getInstance();
 
         try {
             $pdo->beginTransaction();
 
-            $this->createRevision($id, $updatedBy);
-
-            $article->product_id = $productId;
-            $article->category_id = $categoryId;
-            $article->title = $title;
-            $article->slug = $this->uniqueSlug($title, $id);
-            $article->excerpt = $this->nullableText($excerpt);
-            $article->content = $this->nullableText($content);
-            $article->status = $status;
-            $article->author_id = $authorId;
-
-            if ($status === 'published' && $article->published_at === null) {
-                $article->published_at = date('Y-m-d H:i:s');
-            } elseif ($status !== 'published') {
-                $article->published_at = null;
-            }
-
             if (!$article->save()) {
                 throw new RuntimeException(
                     $article->message()->getText()
-                    ?: 'Não foi possível atualizar o artigo.'
+                    ?: 'Não foi possível criar o artigo.'
                 );
             }
+
+            (new TagService())->syncArticle(
+                (int) $article->id,
+                $tags
+            );
 
             $pdo->commit();
 
@@ -149,6 +159,146 @@ final class ArticleService
             throw $exception;
         }
     }
+
+    /**
+     * @param string[] $tags
+     */
+    public function update(
+        int $id,
+        string $title,
+        ?int $productId = null,
+        ?int $categoryId = null,
+        ?string $excerpt = null,
+        ?string $content = null,
+        string $status = 'draft',
+        ?int $authorId = null,
+        ?int $updatedBy = null,
+        ?string $slug = null,
+        ?int $coverMediaId = null,
+        ?string $metaTitle = null,
+        ?string $metaDescription = null,
+        ?string $focusKeyword = null,
+        ?string $canonicalUrl = null,
+        bool $robotsIndex = true,
+        bool $robotsFollow = true,
+        array $tags = []
+    ): Article {
+        $article = $this->find($id);
+
+        if (!$article instanceof Article) {
+            throw new RuntimeException('Artigo não encontrado.');
+        }
+
+        $title = $this->cleanText($title, 255);
+
+        if ($title === '') {
+            throw new RuntimeException('Informe o título do artigo.');
+        }
+
+        if (!in_array(
+            $status,
+            ['draft', 'published', 'archived'],
+            true
+        )) {
+            throw new RuntimeException('Status do artigo inválido.');
+        }
+
+        $this->validateProduct($productId);
+        $this->validateCategory($categoryId, $productId);
+        $this->validateAuthor($authorId);
+        $this->validateAuthor($updatedBy);
+        $this->validateMedia($coverMediaId);
+
+        /*
+         * URL estável:
+         * sem slug informado, preservamos o atual.
+         * Só alteramos quando o usuário realmente editar o slug.
+         */
+        $requestedSlug = $slug !== null && trim($slug) !== ''
+            ? $slug
+            : (string) $article->slug;
+
+        $requestedSlug = $this->uniqueSlug(
+            $requestedSlug,
+            $id
+        );
+
+        $content = $this->nullableText($content);
+        [$wordCount, $readingTime] = $this->contentMetrics($content);
+
+        $excerpt = $this->nullableText($excerpt);
+        $hasContentChange = (string) $article->title !== $title
+            || (string) ($article->excerpt ?? '') !== (string) ($excerpt ?? '')
+            || (string) ($article->content ?? '') !== (string) ($content ?? '');
+
+        $pdo = Connection::getInstance();
+
+        try {
+            $pdo->beginTransaction();
+
+            if ($hasContentChange) {
+                $this->createRevision($id, $updatedBy);
+            }
+
+            $article->product_id = $productId;
+            $article->category_id = $categoryId;
+            $article->title = $title;
+            $article->slug = $requestedSlug;
+            $article->excerpt = $excerpt;
+            $article->content = $content;
+            $article->cover_media_id = $coverMediaId;
+            $article->meta_title = $this->nullableLimited(
+                $metaTitle,
+                255
+            );
+            $article->meta_description = $this->nullableLimited(
+                $metaDescription,
+                320
+            );
+            $article->focus_keyword = $this->nullableLimited(
+                $focusKeyword,
+                150
+            );
+            $article->canonical_url = $this->normalizeCanonical(
+                $canonicalUrl
+            );
+            $article->robots_index = $robotsIndex ? 1 : 0;
+            $article->robots_follow = $robotsFollow ? 1 : 0;
+            $article->word_count = $wordCount;
+            $article->reading_time = $readingTime;
+            $article->status = $status;
+            $article->author_id = $authorId;
+
+            if (
+                $status === 'published'
+                && $article->published_at === null
+            ) {
+                $article->published_at = date('Y-m-d H:i:s');
+            } elseif ($status !== 'published') {
+                $article->published_at = null;
+            }
+
+            if (!$article->save()) {
+                throw new RuntimeException(
+                    $article->message()->getText()
+                    ?: 'Não foi possível atualizar o artigo.'
+                );
+            }
+
+            (new TagService())->syncArticle($id, $tags);
+
+            $pdo->commit();
+
+            return $article;
+        } catch (\Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $exception;
+        }
+    }
+
     /**
      * @return ArticleRevision[]
      */
@@ -200,6 +350,111 @@ final class ArticleService
         }
 
         return $revision;
+    }
+
+    private function validateMedia(?int $mediaId): void
+    {
+        if ($mediaId === null) {
+            return;
+        }
+
+        $statement = Connection::getInstance()->prepare(
+            'SELECT 1
+               FROM studio_media
+              WHERE id = ?
+              LIMIT 1'
+        );
+
+        $statement->execute([$mediaId]);
+
+        if (!$statement->fetchColumn()) {
+            throw new RuntimeException(
+                'A imagem de capa selecionada não foi encontrada.'
+            );
+        }
+    }
+
+    /**
+     * @return array{0:int,1:int}
+     */
+    private function contentMetrics(?string $html): array
+    {
+        if ($html === null || trim($html) === '') {
+            return [0, 0];
+        }
+
+        $text = html_entity_decode(
+            strip_tags($html),
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        );
+
+        $text = preg_replace('/\s+/u', ' ', trim($text)) ?? '';
+
+        if ($text === '') {
+            return [0, 0];
+        }
+
+        preg_match_all(
+            '/[\p{L}\p{N}]+(?:[\'’\-][\p{L}\p{N}]+)*/u',
+            $text,
+            $matches
+        );
+
+        $wordCount = count($matches[0]);
+
+        /*
+         * Referência editorial do Moves:
+         * aproximadamente 200 palavras por minuto.
+         */
+        $readingTime = $wordCount > 0
+            ? max(1, (int) ceil($wordCount / 200))
+            : 0;
+
+        return [$wordCount, $readingTime];
+    }
+
+    private function normalizeCanonical(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (
+            filter_var($url, FILTER_VALIDATE_URL) === false
+            || !preg_match('#^https?://#i', $url)
+        ) {
+            throw new RuntimeException(
+                'Informe uma URL canonical válida.'
+            );
+        }
+
+        return mb_substr($url, 0, 500);
+    }
+
+    private function nullableLimited(
+        ?string $value,
+        int $length
+    ): ?string {
+        $value = trim(strip_tags((string) $value));
+
+        if ($value === '') {
+            return null;
+        }
+
+        return mb_substr($value, 0, $length);
+    }
+
+    private function cleanText(
+        string $value,
+        int $length
+    ): string {
+        $value = trim(strip_tags($value));
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return mb_substr($value, 0, $length);
     }
 
     private function validateProduct(?int $productId): void
