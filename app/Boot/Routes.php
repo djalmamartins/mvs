@@ -115,10 +115,18 @@ final class Routes
 
         $router->get(
             '/support',
-            'PlatformController:support',
+            'SupportWorkspaceController:dashboard',
             'platform.support',
             AuthMiddleware::class
         );
+
+        $router->get('/support/inbox', 'SupportWorkspaceController:inbox', 'support.inbox', AuthMiddleware::class);
+        $router->get('/support/my-tickets', 'SupportWorkspaceController:myTickets', 'support.my-tickets', AuthMiddleware::class);
+        $router->get('/support/tickets', 'SupportWorkspaceController:tickets', 'support.tickets', AuthMiddleware::class);
+        $router->get('/support/sla', 'SupportWorkspaceController:sla', 'support.sla', AuthMiddleware::class);
+        $router->get('/support/users', 'SupportWorkspaceController:users', 'support.users', AuthMiddleware::class);
+        $router->get('/support/reports', 'SupportWorkspaceController:reports', 'support.reports', AuthMiddleware::class);
+        $router->get('/support/settings', 'SupportWorkspaceController:settings', 'support.settings', AuthMiddleware::class);
 
         // Moves Support | Base de conhecimento
         $router->get(

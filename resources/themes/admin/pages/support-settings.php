@@ -1,0 +1,7 @@
+<?php $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage')); ?>
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919b">
+<section class="support-workspace-page">
+<?php $this->insert('components/support-page-header', ['heading'=>'Configurações do Support','description'=>'Visão organizada das capacidades disponíveis e planejadas.']); ?>
+<div class="support-settings-grid"><section class="support-panel"><header><div><h2>Base de conhecimento</h2><p>Recursos disponíveis agora.</p></div><i class="icon-checkmark-circle-outline"></i></header><ul><li>Artigos, categorias, produtos e tags</li><li>Rascunhos, revisões e lixeira</li><li>SEO e publicação de conteúdo</li></ul></section><section class="support-panel"><header><div><h2>Atendimento</h2><p>Estrutura aguardando integração.</p></div><i class="icon-time-outline"></i></header><ul><li>Caixa de entrada e chamados</li><li>Atribuição de responsáveis</li><li>Políticas e métricas de SLA</li></ul></section><section class="support-panel"><header><div><h2>Permissões</h2><p>Gerenciadas pela plataforma.</p></div><i class="icon-shield-checkmark-outline"></i></header><ul><li>Autenticação obrigatória</li><li>Perfis existentes preservados</li><li>Nenhuma configuração fictícia é salva</li></ul></section></div>
+<p class="support-info"><i class="icon-help-circle-outline"></i> Esta tela é informativa. Opções persistentes serão habilitadas somente quando houver regras e armazenamento próprios do Support.</p>
+</section>
