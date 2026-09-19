@@ -24,7 +24,7 @@ if ($pagination['pages'] > 7) {
     $pageNumbers = [1, ...($window[0] > 2 ? [null] : []), ...$window, ...((int) end($window) < $pagination['pages'] - 1 ? [null] : []), $pagination['pages']];
 }
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page support-articles-workspace" data-knowledge-page="articles">
     <header class="knowledge-header">

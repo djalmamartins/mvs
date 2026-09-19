@@ -4,7 +4,7 @@ $this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte',
 $pageUrl = static fn (int $page): string => '/support/revisions?' . http_build_query(array_filter(['q' => $search, 'page' => $page], static fn ($value): bool => $value !== ''));
 $pageNumbers = range(1, (int) $pagination['pages']);
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="revisions">
     <header class="knowledge-header"><div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Revisões de conteúdo</h1><p>Consulte snapshots de conteúdo registrados antes de cada alteração.</p></div></header>

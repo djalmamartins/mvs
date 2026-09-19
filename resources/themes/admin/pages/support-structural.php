@@ -1,5 +1,5 @@
 <?php $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage')); ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919b">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <section class="support-workspace-page">
 <?php $this->insert('components/support-page-header', ['heading'=>$title,'description'=>'Workspace de atendimento do Moves Support.']); ?>
 <div class="support-toolbar-static"><span><i class="icon-search-outline"></i> Buscar chamados</span><span>Todos os status</span><span>Todas as prioridades</span></div>

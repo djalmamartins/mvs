@@ -8,7 +8,7 @@ $this->layout('layouts/default', [
 ]);
 $statusLabels = ['active' => 'Ativo', 'inactive' => 'Inativo'];
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="products">
     <header class="knowledge-header">

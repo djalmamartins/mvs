@@ -1,5 +1,5 @@
 <?php $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage')); ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919b">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <section class="support-workspace-page">
 <?php $this->insert('components/support-page-header', ['heading'=>'Usuários','description'=>'Consulte as pessoas com acesso à plataforma.']); ?>
 <form class="support-filterbar" method="get"><label><i class="icon-search-outline"></i><input name="q" value="<?= $this->e($search) ?>" placeholder="Buscar por nome ou e-mail"></label><select name="role"><option value="">Todas as funções</option><?php foreach (['admin'=>'Administrador','user'=>'Usuário'] as $v=>$l): ?><option value="<?= $v ?>"<?= $role===$v?' selected':'' ?>><?= $l ?></option><?php endforeach; ?></select><select name="status"><option value="">Todos os status</option><option value="active"<?= $status==='active'?' selected':'' ?>>Ativo</option><option value="inactive"<?= $status==='inactive'?' selected':'' ?>>Inativo</option></select><button class="support-secondary-action">Filtrar</button></form>

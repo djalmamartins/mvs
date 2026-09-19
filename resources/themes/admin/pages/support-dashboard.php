@@ -1,5 +1,5 @@
 <?php $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage')); ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919b">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <section class="support-workspace-page">
 <?php $this->insert('components/support-page-header', ['heading' => 'Central de suporte', 'description' => 'Acompanhe a base de conhecimento e acesse as áreas de atendimento.', 'actionHref' => '/support/articles/create', 'actionLabel' => 'Novo artigo']); ?>
 <div class="support-metric-grid">

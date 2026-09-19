@@ -2,7 +2,7 @@
 declare(strict_types=1);
 $this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte', 'activeProduct' => 'support', 'currentPage' => 'tags']);
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="tags">
     <header class="knowledge-header"><div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Base de conhecimento</h1><p>Crie e gerencie conteúdos para ajudar seus usuários.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="tag"><i class="icon-pricetag-outline" aria-hidden="true"></i> Nova tag</button></header>

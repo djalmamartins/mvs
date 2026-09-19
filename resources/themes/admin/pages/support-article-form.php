@@ -676,7 +676,7 @@ $this->layout('layouts/default', [
 
 </div>
 
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
 
 <dialog

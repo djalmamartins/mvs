@@ -1,5 +1,5 @@
 <?php $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage')); $max=max(1,...array_map(fn($x)=>(int)$x['total'],array_merge($byProduct,$byCategory))); ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919b">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <section class="support-workspace-page">
 <?php $this->insert('components/support-page-header', ['heading'=>'Relatórios da base','description'=>'Métricas reais dos conteúdos ativos da base de conhecimento.']); ?>
 <div class="support-metric-grid"><?php foreach ([['Artigos',$summary['articles']],['Publicados',$summary['published']],['Rascunhos',$summary['drafts']],['Arquivados',$summary['archived']]] as [$label,$value]): ?><article class="support-metric simple"><div><span><?= $label ?></span><strong><?= (int)$value ?></strong></div></article><?php endforeach; ?></div>

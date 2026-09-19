@@ -6,7 +6,7 @@ foreach ($products as $product) { $productNames[(int) $product->id] = (string) $
 $categoryNames = [];
 foreach ($allCategories as $category) { $categoryNames[(int) $category->id] = (string) $category->name; }
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
 <script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="categories">
     <header class="knowledge-header"><div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Base de conhecimento</h1><p>Crie e gerencie conteúdos para ajudar seus usuários.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="category"><i class="icon-archive-outline" aria-hidden="true"></i> Nova categoria</button></header>
