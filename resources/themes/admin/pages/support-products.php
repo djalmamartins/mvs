@@ -17,9 +17,9 @@ $statusLabels = ['active' => 'Ativo', 'inactive' => 'Inativo'];
             <h1>Base de conhecimento</h1>
             <p>Crie e gerencie conteúdos para ajudar seus usuários.</p>
         </div>
-        <button class="studio-btn primary" type="button" data-knowledge-open="product"><?= studio_icon('briefcase') ?> Novo produto</button>
+        <button class="studio-btn primary" type="button" data-knowledge-open="product"><i class="icon-briefcase-outline" aria-hidden="true"></i> Novo produto</button>
     </header>
-    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><?= studio_icon('newspaper') ?> Artigos</a><a href="/support/categories"><?= studio_icon('archive') ?> Categorias</a><a class="active" href="/support/products"><?= studio_icon('briefcase') ?> Produtos</a><a href="/support/tags"><?= studio_icon('tag') ?> Tags</a><span class="knowledge-tab-muted"><?= studio_icon('trash') ?> Lixeira</span></nav>
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><i class="icon-newspaper-outline" aria-hidden="true"></i> Artigos</a><a href="/support/categories"><i class="icon-archive-outline" aria-hidden="true"></i> Categorias</a><a class="active" href="/support/products"><i class="icon-briefcase-outline" aria-hidden="true"></i> Produtos</a><a href="/support/tags"><i class="icon-pricetag-outline" aria-hidden="true"></i> Tags</a><span class="knowledge-tab-muted"><i class="icon-trash-outline" aria-hidden="true"></i> Lixeira</span></nav>
     <form class="studio-filter-bar" method="get">
         <label><span>Buscar</span><input type="search" name="q" value="<?= $this->e($search) ?>" placeholder="Nome ou descrição"></label>
         <label><span>Status</span><select name="status"><option value="">Todos</option><?php foreach ($statusLabels as $value => $label): ?><option value="<?= $value ?>"<?= $status === $value ? ' selected' : '' ?>><?= $label ?></option><?php endforeach; ?></select></label>
@@ -32,8 +32,8 @@ $statusLabels = ['active' => 'Ativo', 'inactive' => 'Inativo'];
         <td>/<?= $this->e((string) $product->slug) ?></td><td><?= (int) ($categoryCounts[(int) $product->id] ?? 0) ?></td><td><?= (int) ($articleCounts[(int) $product->id] ?? 0) ?></td>
         <td><span class="studio-status studio-status-<?= $product->status === 'active' ? 'success' : 'neutral' ?>"><?= $this->e($statusLabels[$product->status] ?? $product->status) ?></span></td>
         <td><?= $this->e((string) ($product->updated_at ?? '—')) ?></td>
-        <td><button class="studio-icon-action" type="button" title="Editar" data-knowledge-edit="product" data-id="<?= (int) $product->id ?>" data-name="<?= $this->e((string) $product->name) ?>" data-description="<?= $this->e((string) ($product->description ?? '')) ?>" data-status="<?= $this->e((string) $product->status) ?>">✎</button>
-            <form class="support-inline-form" method="post" action="/support/products/delete" data-confirm-submit="Excluir este produto?"><?= $this->csrf() ?><input type="hidden" name="id" value="<?= (int) $product->id ?>"><button class="studio-icon-action danger" type="submit" title="Excluir">×</button></form></td>
+        <td><button class="studio-icon-action" type="button" title="Editar" data-knowledge-edit="product" data-id="<?= (int) $product->id ?>" data-name="<?= $this->e((string) $product->name) ?>" data-description="<?= $this->e((string) ($product->description ?? '')) ?>" data-status="<?= $this->e((string) $product->status) ?>"><i class="icon-pencil-outline" aria-hidden="true"></i></button>
+            <form class="support-inline-form" method="post" action="/support/products/delete" data-confirm-submit="Excluir este produto?"><?= $this->csrf() ?><input type="hidden" name="id" value="<?= (int) $product->id ?>"><button class="studio-icon-action danger" type="submit" title="Excluir"><i class="icon-trash-outline" aria-hidden="true"></i></button></form></td>
     </tr><?php endforeach; ?></tbody></table></div>
     <dialog class="support-modal" data-knowledge-dialog="product" aria-labelledby="product-modal-title"><form method="post" action="/support/products/save" data-knowledge-form data-reload-on-success>
         <?= $this->csrf() ?><input type="hidden" name="id" value="0"><input type="hidden" name="response" value="json"><h2 id="product-modal-title">Novo produto</h2><p class="support-modal-error" data-modal-error role="alert"></p>
