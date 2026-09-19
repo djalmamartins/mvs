@@ -113,7 +113,7 @@
             const target = drawer.querySelector('[data-drawer-history]');
             if (!target) return;
             target.innerHTML = revisions?.length
-                ? revisions.map((revision) => `<article class="knowledge-history-item"><strong>${escapeHtml(revision.title)}</strong><span>${escapeHtml(revision.created_at)}</span></article>`).join('')
+                ? revisions.map((revision) => `<details class="knowledge-history-item"><summary><strong>${escapeHtml(revision.title)}</strong><span>${escapeHtml(revision.author)} · ${escapeHtml(revision.created_at)}</span></summary><p>${escapeHtml(revision.excerpt)}</p><div class="moves-content">${revision.content || '<p>Snapshot sem conteúdo.</p>'}</div></details>`).join('')
                 : '<p class="knowledge-note">Nenhuma revisão registrada.</p>';
         };
         const open = (id) => {
@@ -168,6 +168,39 @@
         document.addEventListener('click', () => document.querySelectorAll('.knowledge-context-menu.is-open').forEach((item) => item.classList.remove('is-open')));
     };
 
+    const initArticleActions = () => {
+        const trashDialog = document.querySelector('[data-knowledge-trash-dialog]');
+        document.querySelectorAll('[data-knowledge-trash]').forEach((button) => button.addEventListener('click', () => {
+            if (!trashDialog) return;
+            trashDialog.querySelector('[name="id"]').value = button.dataset.knowledgeTrash;
+            trashDialog.querySelector('[data-trash-title]').textContent = button.dataset.articleTitle || '';
+            trashDialog.showModal();
+        }));
+        trashDialog?.querySelector('[data-knowledge-cancel-trash]')?.addEventListener('click', () => trashDialog.close());
+
+        const deleteDialog = document.querySelector('[data-knowledge-delete-dialog]');
+        document.querySelectorAll('[data-knowledge-delete]').forEach((button) => button.addEventListener('click', () => {
+            if (!deleteDialog) return;
+            deleteDialog.querySelector('[name="id"]').value = button.dataset.knowledgeDelete;
+            deleteDialog.querySelector('[data-delete-title]').textContent = button.dataset.articleTitle || '';
+            deleteDialog.showModal();
+        }));
+        deleteDialog?.querySelector('[data-knowledge-cancel-delete]')?.addEventListener('click', () => deleteDialog.close());
+    };
+
+    const initRevisionPreview = () => {
+        const dialog = document.querySelector('[data-revision-dialog]');
+        if (!dialog) return;
+        document.querySelectorAll('[data-revision-preview]').forEach((button) => button.addEventListener('click', () => {
+            dialog.querySelector('[data-revision-title]').textContent = button.dataset.title || 'Revisão de conteúdo';
+            dialog.querySelector('[data-revision-meta]').textContent = `${button.dataset.article || 'Artigo'} · ${button.dataset.author || 'Sistema'} · ${button.dataset.created || '—'}`;
+            dialog.querySelector('[data-revision-excerpt]').textContent = button.dataset.excerpt || 'Sem resumo salvo.';
+            dialog.querySelector('[data-revision-content]').innerHTML = button.dataset.content || '<p>Snapshot sem conteúdo.</p>';
+            dialog.showModal();
+        }));
+        dialog.querySelectorAll('[data-revision-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
+    };
+
     const init = () => {
         document.querySelectorAll('[data-knowledge-dialog]').forEach(initModal);
         document.querySelectorAll('[data-knowledge-open]').forEach((button) => {
@@ -205,6 +238,8 @@
         });
         initArticleDrawer();
         initContextMenus();
+        initArticleActions();
+        initRevisionPreview();
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

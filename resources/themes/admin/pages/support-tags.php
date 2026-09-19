@@ -2,11 +2,11 @@
 declare(strict_types=1);
 $this->layout('layouts/default', ['title' => $title, 'productName' => 'Suporte', 'activeProduct' => 'support', 'currentPage' => 'tags']);
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
-<script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="tags">
     <header class="knowledge-header"><div><p class="studio-eyebrow">MOVES STUDIO · SUPORTE</p><h1>Base de conhecimento</h1><p>Crie e gerencie conteúdos para ajudar seus usuários.</p></div><button class="studio-btn primary" type="button" data-knowledge-open="tag"><i class="icon-pricetag-outline" aria-hidden="true"></i> Nova tag</button></header>
-    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><i class="icon-newspaper-outline" aria-hidden="true"></i> Artigos</a><a href="/support/categories"><i class="icon-archive-outline" aria-hidden="true"></i> Categorias</a><a href="/support/products"><i class="icon-briefcase-outline" aria-hidden="true"></i> Produtos</a><a class="active" href="/support/tags"><i class="icon-pricetag-outline" aria-hidden="true"></i> Tags</a><span class="knowledge-tab-muted"><i class="icon-trash-outline" aria-hidden="true"></i> Lixeira</span></nav>
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><i class="icon-newspaper-outline" aria-hidden="true"></i> Artigos</a><a href="/support/categories"><i class="icon-archive-outline" aria-hidden="true"></i> Categorias</a><a href="/support/products"><i class="icon-briefcase-outline" aria-hidden="true"></i> Produtos</a><a class="active" href="/support/tags"><i class="icon-pricetag-outline" aria-hidden="true"></i> Tags</a><a href="/support/trash"><i class="icon-trash-outline" aria-hidden="true"></i> Lixeira</a></nav>
     <form class="studio-filter-bar" method="get"><label><span>Buscar</span><input type="search" name="q" value="<?= $this->e($search) ?>" placeholder="Nome ou slug"></label><button class="studio-btn" type="submit">Filtrar</button><a class="studio-btn" href="/support/tags">Limpar</a></form>
     <div class="studio-table-wrap"><table><thead><tr><th>Nome</th><th>Slug</th><th>Artigos</th><th>Criada em</th><th>Ações</th></tr></thead><tbody>
     <?php if ($tags === []): ?><tr><td colspan="5" class="studio-empty">Nenhuma tag encontrada.</td></tr><?php endif; ?>

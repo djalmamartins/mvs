@@ -135,6 +135,10 @@ final class Routes
             AuthMiddleware::class
         );
 
+        $router->get('/support/drafts', 'SupportController:drafts', 'support.drafts', AuthMiddleware::class);
+        $router->get('/support/revisions', 'SupportController:revisions', 'support.revisions', AuthMiddleware::class);
+        $router->get('/support/trash', 'SupportController:trash', 'support.trash', AuthMiddleware::class);
+
         $router->get(
             '/support/articles/{slug}/edit',
             'SupportController:articleForm',
@@ -148,6 +152,10 @@ final class Routes
             'support.articles.save',
             AuthMiddleware::class
         );
+
+        $router->post('/support/articles/trash', 'SupportController:articleTrash', 'support.articles.trash', AuthMiddleware::class);
+        $router->post('/support/articles/restore', 'SupportController:articleRestore', 'support.articles.restore', AuthMiddleware::class);
+        $router->post('/support/articles/delete', 'SupportController:articleDelete', 'support.articles.delete', AuthMiddleware::class);
 
         $router->get(
             '/support/products',

@@ -26,7 +26,7 @@ final class ArticleService
     public function all(): array
     {
         $articles = (new Article())
-            ->find()
+            ->find('deleted_at IS NULL')
             ->order('updated_at DESC, id DESC')
             ->fetch(true);
 
@@ -35,7 +35,11 @@ final class ArticleService
 
     public function find(int $id): ?Article
     {
-        return (new Article())->findById($id);
+        $article = (new Article())
+            ->find('id = :id AND deleted_at IS NULL', ['id' => $id])
+            ->fetch();
+
+        return $article instanceof Article ? $article : null;
     }
 
     public function findBySlug(string $slug): ?Article
@@ -48,7 +52,7 @@ final class ArticleService
 
         $record = (new Article())
             ->find(
-                'slug = :slug',
+                'slug = :slug AND deleted_at IS NULL',
                 ['slug' => $slug]
             )
             ->fetch();
@@ -56,6 +60,171 @@ final class ArticleService
         return $record instanceof Article
             ? $record
             : null;
+    }
+
+    /**
+     * @return array{items:Article[],total:int,page:int,per_page:int,pages:int,from:int,to:int}
+     */
+    public function paginate(
+        string $search = '',
+        ?int $productId = null,
+        ?int $categoryId = null,
+        ?string $status = null,
+        int $page = 1,
+        int $perPage = 10,
+        bool $trashed = false
+    ): array {
+        $page = max(1, $page);
+        $perPage = max(1, min(50, $perPage));
+        $terms = [$trashed ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL'];
+        $params = [];
+
+        if ($search !== '') {
+            $terms[] = '(title LIKE :search_title OR excerpt LIKE :search_excerpt OR slug LIKE :search_slug)';
+            $params['search_title'] = '%' . $search . '%';
+            $params['search_excerpt'] = '%' . $search . '%';
+            $params['search_slug'] = '%' . $search . '%';
+        }
+        if ($productId !== null && $productId > 0) {
+            $terms[] = 'product_id = :product_id';
+            $params['product_id'] = $productId;
+        }
+        if ($categoryId !== null && $categoryId > 0) {
+            $terms[] = 'category_id = :category_id';
+            $params['category_id'] = $categoryId;
+        }
+        if ($status !== null && $status !== '') {
+            if (!in_array($status, ['draft', 'published', 'archived'], true)) {
+                throw new RuntimeException('Status do artigo inválido.');
+            }
+            $terms[] = 'status = :status';
+            $params['status'] = $status;
+        }
+
+        $where = implode(' AND ', $terms);
+        $model = (new Article())->find($where, $params);
+        $total = $model->count();
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $items = (new Article())
+            ->find($where, $params)
+            ->order($trashed ? 'deleted_at DESC, id DESC' : 'updated_at DESC, id DESC')
+            ->limit($perPage)
+            ->offset(($page - 1) * $perPage)
+            ->fetch(true);
+
+        $items = is_array($items) ? $items : [];
+        $from = $total === 0 ? 0 : (($page - 1) * $perPage) + 1;
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'pages' => $pages,
+            'from' => $from,
+            'to' => $total === 0 ? 0 : $from + count($items) - 1,
+        ];
+    }
+
+    /**
+     * @return array{items:array<int,object>,total:int,page:int,per_page:int,pages:int,from:int,to:int}
+     */
+    public function paginateRevisions(
+        string $search = '',
+        int $page = 1,
+        int $perPage = 10
+    ): array {
+        $page = max(1, $page);
+        $perPage = max(1, min(50, $perPage));
+        $params = [];
+        $where = ' WHERE a.deleted_at IS NULL';
+
+        if ($search !== '') {
+            $where .= ' AND (r.title LIKE :revision_title OR a.title LIKE :article_title)';
+            $params['revision_title'] = '%' . $search . '%';
+            $params['article_title'] = '%' . $search . '%';
+        }
+
+        $pdo = Connection::getInstance();
+        $count = $pdo->prepare(
+            'SELECT COUNT(*) FROM support_article_revisions r
+             INNER JOIN support_articles a ON a.id = r.article_id' . $where
+        );
+        $count->execute($params);
+        $total = (int) $count->fetchColumn();
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $pages);
+        $offset = ($page - 1) * $perPage;
+        $statement = $pdo->prepare(
+            'SELECT r.*, a.title AS article_title, a.slug AS article_slug,
+                    u.name AS author_name
+               FROM support_article_revisions r
+               INNER JOIN support_articles a ON a.id = r.article_id
+               LEFT JOIN users u ON u.id = r.created_by' . $where . '
+              ORDER BY r.created_at DESC, r.id DESC
+              LIMIT ' . $perPage . ' OFFSET ' . $offset
+        );
+        $statement->execute($params);
+        $items = $statement->fetchAll(PDO::FETCH_OBJ);
+        $from = $total === 0 ? 0 : $offset + 1;
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'pages' => $pages,
+            'from' => $from,
+            'to' => $total === 0 ? 0 : $from + count($items) - 1,
+        ];
+    }
+
+    public function trash(int $id, ?int $deletedBy = null): void
+    {
+        $article = $this->find($id);
+        if (!$article instanceof Article) {
+            throw new RuntimeException('Artigo não encontrado.');
+        }
+        $this->validateAuthor($deletedBy);
+        $article->deleted_at = date('Y-m-d H:i:s');
+        $article->deleted_by = $deletedBy;
+        if (!$article->save()) {
+            throw new RuntimeException('Não foi possível mover o artigo para a lixeira.');
+        }
+    }
+
+    public function restore(int $id): void
+    {
+        $article = $this->findTrashed($id);
+        if (!$article instanceof Article) {
+            throw new RuntimeException('Artigo não encontrado na lixeira.');
+        }
+        $article->deleted_at = null;
+        $article->deleted_by = null;
+        if (!$article->save()) {
+            throw new RuntimeException('Não foi possível restaurar o artigo.');
+        }
+    }
+
+    public function permanentDelete(int $id): void
+    {
+        $article = $this->findTrashed($id);
+        if (!$article instanceof Article) {
+            throw new RuntimeException('Artigo não encontrado na lixeira.');
+        }
+        if (!$article->destroy()) {
+            throw new RuntimeException('Não foi possível excluir o artigo permanentemente.');
+        }
+    }
+
+    private function findTrashed(int $id): ?Article
+    {
+        $article = (new Article())
+            ->find('id = :id AND deleted_at IS NOT NULL', ['id' => $id])
+            ->fetch();
+
+        return $article instanceof Article ? $article : null;
     }
 
     /**

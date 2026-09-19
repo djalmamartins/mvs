@@ -8,8 +8,8 @@ $this->layout('layouts/default', [
 ]);
 $statusLabels = ['active' => 'Ativo', 'inactive' => 'Inativo'];
 ?>
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260918">
-<script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919">
+<script src="/themes/admin/js/support-knowledge.js?v=20260919" defer></script>
 <section class="studio-page support-knowledge-page" data-knowledge-page="products">
     <header class="knowledge-header">
         <div>
@@ -19,7 +19,7 @@ $statusLabels = ['active' => 'Ativo', 'inactive' => 'Inativo'];
         </div>
         <button class="studio-btn primary" type="button" data-knowledge-open="product"><i class="icon-briefcase-outline" aria-hidden="true"></i> Novo produto</button>
     </header>
-    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><i class="icon-newspaper-outline" aria-hidden="true"></i> Artigos</a><a href="/support/categories"><i class="icon-archive-outline" aria-hidden="true"></i> Categorias</a><a class="active" href="/support/products"><i class="icon-briefcase-outline" aria-hidden="true"></i> Produtos</a><a href="/support/tags"><i class="icon-pricetag-outline" aria-hidden="true"></i> Tags</a><span class="knowledge-tab-muted"><i class="icon-trash-outline" aria-hidden="true"></i> Lixeira</span></nav>
+    <nav class="support-knowledge-tabs" aria-label="Base de conhecimento"><a href="/support/articles"><i class="icon-newspaper-outline" aria-hidden="true"></i> Artigos</a><a href="/support/categories"><i class="icon-archive-outline" aria-hidden="true"></i> Categorias</a><a class="active" href="/support/products"><i class="icon-briefcase-outline" aria-hidden="true"></i> Produtos</a><a href="/support/tags"><i class="icon-pricetag-outline" aria-hidden="true"></i> Tags</a><a href="/support/trash"><i class="icon-trash-outline" aria-hidden="true"></i> Lixeira</a></nav>
     <form class="studio-filter-bar" method="get">
         <label><span>Buscar</span><input type="search" name="q" value="<?= $this->e($search) ?>" placeholder="Nome ou descrição"></label>
         <label><span>Status</span><select name="status"><option value="">Todos</option><?php foreach ($statusLabels as $value => $label): ?><option value="<?= $value ?>"<?= $status === $value ? ' selected' : '' ?>><?= $label ?></option><?php endforeach; ?></select></label>

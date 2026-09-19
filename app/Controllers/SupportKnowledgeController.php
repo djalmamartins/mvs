@@ -335,9 +335,17 @@ final class SupportKnowledgeController extends Controller
             return [];
         }
 
+        $from = " FROM {$table}";
+        $where = '';
+        if ($table === 'support_articles') {
+            $where = ' WHERE deleted_at IS NULL';
+        } elseif ($table === 'support_article_tags') {
+            $from .= ' INNER JOIN support_articles ON support_articles.id = support_article_tags.article_id';
+            $where = ' WHERE support_articles.deleted_at IS NULL';
+        }
         $statement = Connection::getInstance()->query(
             "SELECT {$column} AS item_id, {$aggregate} AS total"
-            . " FROM {$table} GROUP BY {$column}"
+            . $from . $where . " GROUP BY {$column}"
         );
         $counts = [];
 

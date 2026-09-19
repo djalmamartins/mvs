@@ -57,6 +57,12 @@ if ($activeProduct === 'support') {
                 'href'  => '/support/revisions',
                 'key'   => 'revisions',
             ],
+            [
+                'label' => 'Lixeira',
+                'icon'  => 'icon-trash-outline',
+                'href'  => '/support/trash',
+                'key'   => 'trash',
+            ],
         ],
 
         'Atendimento' => [

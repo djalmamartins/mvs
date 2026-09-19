@@ -23,130 +23,106 @@ final class SupportController extends Controller
 {
     public function articles(): void
     {
-        $articleService = new ArticleService();
-        $productService = new ProductService();
-        $categoryService = new CategoryService();
-        $products = $productService->all();
-        $categories = $categoryService->all();
-        $productNames = [];
-        $categoryNames = [];
+        $this->renderArticleList();
+    }
 
-        foreach ($products as $product) {
-            $productNames[(int) $product->id] = (string) $product->name;
-        }
+    public function drafts(): void
+    {
+        $this->renderArticleList('draft');
+    }
 
-        foreach ($categories as $category) {
-            $categoryNames[(int) $category->id] = (string) $category->name;
-        }
-
-        $search = mb_substr(
-            trim(strip_tags((string) Request::get('q', ''))),
-            0,
-            120
+    public function revisions(): void
+    {
+        $service = new ArticleService();
+        $search = $this->search();
+        $pagination = $service->paginateRevisions(
+            $search,
+            max(1, (int) Request::get('page', 1))
         );
-        $status = (string) Request::get('status', '');
 
-        if (!in_array($status, ['', 'draft', 'published', 'archived'], true)) {
-            $status = '';
-        }
-
-        $productId = max(0, (int) Request::get('product', 0));
-        $categoryId = max(0, (int) Request::get('category', 0));
-
-        $articles = array_values(array_filter(
-            $articleService->all(),
-            static function ($article) use (
-                $search,
-                $status,
-                $productId,
-                $categoryId
-            ): bool {
-                if ($status !== '' && $article->status !== $status) {
-                    return false;
-                }
-                if ($productId > 0 && (int) $article->product_id !== $productId) {
-                    return false;
-                }
-                if ($categoryId > 0 && (int) $article->category_id !== $categoryId) {
-                    return false;
-                }
-                if ($search !== '') {
-                    $haystack = mb_strtolower(
-                        (string) $article->title . ' '
-                        . strip_tags((string) $article->excerpt) . ' '
-                        . strip_tags((string) $article->content)
-                    );
-                    if (!str_contains($haystack, mb_strtolower($search))) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        ));
-
-        $tagService = new TagService();
-        $articleDetails = [];
-
-        foreach ($articles as $article) {
-            $articleId = (int) $article->id;
-            $author = $article->author_id !== null
-                ? (new User())->findById((int) $article->author_id)
-                : null;
-
-            $articleDetails[$articleId] = [
-                'id' => $articleId,
-                'title' => (string) $article->title,
-                'slug' => (string) $article->slug,
-                'excerpt' => (string) ($article->excerpt ?? ''),
-                'content' => HtmlSanitizer::clean(
-                    (string) ($article->content ?? '')
-                ),
-                'status' => (string) $article->status,
-                'product' => $productNames[(int) $article->product_id] ?? '—',
-                'category' => $categoryNames[(int) $article->category_id] ?? '—',
-                'tags' => array_map(
-                    static fn ($tag): string => (string) $tag->name,
-                    $tagService->forArticle($articleId)
-                ),
-                'author' => $author?->name ?? '—',
-                'created_at' => (string) ($article->created_at ?? '—'),
-                'updated_at' => (string) ($article->updated_at ?? '—'),
-                'reading_time' => (int) ($article->reading_time ?? 0),
-                'meta_title' => (string) ($article->meta_title ?? ''),
-                'meta_description' => (string) ($article->meta_description ?? ''),
-                'focus_keyword' => (string) ($article->focus_keyword ?? ''),
-                'canonical_url' => (string) ($article->canonical_url ?? ''),
-                'robots_index' => (bool) ($article->robots_index ?? false),
-                'robots_follow' => (bool) ($article->robots_follow ?? false),
-                'revisions' => array_map(
-                    static function ($revision): array {
-                        return [
-                            'title' => (string) $revision->title,
-                            'created_at' => (string) $revision->created_at,
-                            'content' => HtmlSanitizer::clean(
-                                (string) ($revision->content ?? '')
-                            ),
-                        ];
-                    },
-                    $articleService->revisions($articleId)
-                ),
-            ];
-        }
-
-        echo $this->view->render('pages/support-articles', [
-            'title' => 'Artigos',
+        echo $this->view->render('pages/support-revisions', [
+            'title' => 'Revisões',
             'productName' => 'Suporte',
             'activeProduct' => 'support',
-            'currentPage' => 'articles',
-            'articles' => $articles,
-            'products' => $products,
-            'categories' => $categories,
+            'currentPage' => 'revisions',
+            'revisions' => $pagination['items'],
+            'pagination' => $pagination,
             'search' => $search,
-            'status' => $status,
-            'productId' => $productId,
-            'categoryId' => $categoryId,
-            'articleDetails' => $articleDetails,
         ]);
+    }
+
+    public function trash(): void
+    {
+        $service = new ArticleService();
+        $search = $this->search();
+        $pagination = $service->paginate(
+            $search,
+            null,
+            null,
+            null,
+            max(1, (int) Request::get('page', 1)),
+            10,
+            true
+        );
+        $users = [];
+        foreach ($pagination['items'] as $article) {
+            foreach (['author_id', 'deleted_by'] as $field) {
+                $id = (int) ($article->{$field} ?? 0);
+                if ($id > 0 && !isset($users[$id])) {
+                    $users[$id] = (new User())->findById($id)?->name ?? '—';
+                }
+            }
+        }
+
+        echo $this->view->render('pages/support-trash', [
+            'title' => 'Lixeira',
+            'productName' => 'Suporte',
+            'activeProduct' => 'support',
+            'currentPage' => 'trash',
+            'articles' => $pagination['items'],
+            'pagination' => $pagination,
+            'search' => $search,
+            'users' => $users,
+        ]);
+    }
+
+    public function articleTrash(): never
+    {
+        $this->validateCsrf('/support/articles');
+        try {
+            (new ArticleService())->trash(
+                max(0, (int) Request::post('id', 0)),
+                Auth::user()?->id !== null ? (int) Auth::user()->id : null
+            );
+            Flash::set('success', 'Artigo movido para a lixeira.');
+        } catch (Throwable $exception) {
+            Flash::set('error', $exception->getMessage());
+        }
+        Response::to('/support/articles');
+    }
+
+    public function articleRestore(): never
+    {
+        $this->validateCsrf('/support/trash');
+        try {
+            (new ArticleService())->restore(max(0, (int) Request::post('id', 0)));
+            Flash::set('success', 'Artigo restaurado com sucesso.');
+        } catch (Throwable $exception) {
+            Flash::set('error', $exception->getMessage());
+        }
+        Response::to('/support/trash');
+    }
+
+    public function articleDelete(): never
+    {
+        $this->validateCsrf('/support/trash');
+        try {
+            (new ArticleService())->permanentDelete(max(0, (int) Request::post('id', 0)));
+            Flash::set('success', 'Artigo excluído permanentemente.');
+        } catch (Throwable $exception) {
+            Flash::set('error', $exception->getMessage());
+        }
+        Response::to('/support/trash');
     }
 
     /**
@@ -291,6 +267,130 @@ final class SupportController extends Controller
         }
 
         Response::to('/support/articles');
+    }
+
+    private function renderArticleList(?string $lockedStatus = null): void
+    {
+        $articleService = new ArticleService();
+        $products = (new ProductService())->all();
+        $categories = (new CategoryService())->all();
+        $search = $this->search();
+        $status = $lockedStatus ?? (string) Request::get('status', '');
+        if (!in_array($status, ['', 'draft', 'published', 'archived'], true)) {
+            $status = '';
+        }
+        $productId = max(0, (int) Request::get('product', 0));
+        $categoryId = max(0, (int) Request::get('category', 0));
+        $pagination = $articleService->paginate(
+            $search,
+            $productId > 0 ? $productId : null,
+            $categoryId > 0 ? $categoryId : null,
+            $status !== '' ? $status : null,
+            max(1, (int) Request::get('page', 1))
+        );
+        $productNames = [];
+        $categoryNames = [];
+        foreach ($products as $product) {
+            $productNames[(int) $product->id] = (string) $product->name;
+        }
+        foreach ($categories as $category) {
+            $categoryNames[(int) $category->id] = (string) $category->name;
+        }
+
+        echo $this->view->render('pages/support-articles', [
+            'title' => $lockedStatus === 'draft' ? 'Rascunhos' : 'Artigos',
+            'productName' => 'Suporte',
+            'activeProduct' => 'support',
+            'currentPage' => $lockedStatus === 'draft' ? 'drafts' : 'articles',
+            'listMode' => $lockedStatus === 'draft' ? 'drafts' : 'articles',
+            'articles' => $pagination['items'],
+            'pagination' => $pagination,
+            'products' => $products,
+            'categories' => $categories,
+            'search' => $search,
+            'status' => $status,
+            'lockedStatus' => $lockedStatus,
+            'productId' => $productId,
+            'categoryId' => $categoryId,
+            'articleDetails' => $this->articleDetails(
+                $pagination['items'],
+                $productNames,
+                $categoryNames,
+                $articleService
+            ),
+        ]);
+    }
+
+    /**
+     * @param array<int,object> $articles
+     * @param array<int,string> $productNames
+     * @param array<int,string> $categoryNames
+     * @return array<int,array<string,mixed>>
+     */
+    private function articleDetails(
+        array $articles,
+        array $productNames,
+        array $categoryNames,
+        ArticleService $articleService
+    ): array {
+        $details = [];
+        $tagService = new TagService();
+        foreach ($articles as $article) {
+            $articleId = (int) $article->id;
+            $author = $article->author_id !== null
+                ? (new User())->findById((int) $article->author_id)
+                : null;
+            $revisions = [];
+            foreach ($articleService->revisions($articleId) as $revision) {
+                $revisionAuthor = $revision->created_by !== null
+                    ? (new User())->findById((int) $revision->created_by)
+                    : null;
+                $revisions[] = [
+                    'id' => (int) $revision->id,
+                    'title' => (string) $revision->title,
+                    'author' => $revisionAuthor?->name ?? 'Sistema',
+                    'created_at' => (string) $revision->created_at,
+                    'excerpt' => (string) ($revision->excerpt ?? ''),
+                    'content' => HtmlSanitizer::clean((string) ($revision->content ?? '')),
+                ];
+            }
+            $details[$articleId] = [
+                'id' => $articleId,
+                'title' => (string) $article->title,
+                'slug' => (string) $article->slug,
+                'excerpt' => (string) ($article->excerpt ?? ''),
+                'content' => HtmlSanitizer::clean((string) ($article->content ?? '')),
+                'status' => (string) $article->status,
+                'product' => $productNames[(int) $article->product_id] ?? '—',
+                'category' => $categoryNames[(int) $article->category_id] ?? '—',
+                'tags' => array_map(
+                    static fn ($tag): string => (string) $tag->name,
+                    $tagService->forArticle($articleId)
+                ),
+                'author' => $author?->name ?? '—',
+                'created_at' => (string) ($article->created_at ?? '—'),
+                'updated_at' => (string) ($article->updated_at ?? '—'),
+                'reading_time' => (int) ($article->reading_time ?? 0),
+                'meta_title' => (string) ($article->meta_title ?? ''),
+                'meta_description' => (string) ($article->meta_description ?? ''),
+                'focus_keyword' => (string) ($article->focus_keyword ?? ''),
+                'canonical_url' => (string) ($article->canonical_url ?? ''),
+                'robots_index' => (bool) ($article->robots_index ?? false),
+                'robots_follow' => (bool) ($article->robots_follow ?? false),
+                'revisions' => $revisions,
+            ];
+        }
+
+        return $details;
+    }
+
+    private function search(): string
+    {
+        return mb_substr(
+            trim(strip_tags((string) Request::get('q', ''))),
+            0,
+            120
+        );
     }
 
     private function validateCsrf(string $redirect): void
