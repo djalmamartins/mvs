@@ -1,6 +1,22 @@
 (() => {
     'use strict';
 
+    const pendingDraftKey = 'moves-editor:pending-save';
+    const pendingDraft = sessionStorage.getItem(pendingDraftKey);
+    if (pendingDraft) {
+        try {
+            const pending = JSON.parse(pendingDraft);
+            if (document.querySelector('.moves-flash__message--success') && pending.storageKey) {
+                localStorage.removeItem(pending.storageKey);
+            }
+            if (document.querySelector('.moves-flash__message')) {
+                sessionStorage.removeItem(pendingDraftKey);
+            }
+        } catch (_) {
+            sessionStorage.removeItem(pendingDraftKey);
+        }
+    }
+
     const initModal = (dialog) => {
         const form = dialog.querySelector('[data-knowledge-form]');
         const error = dialog.querySelector('[data-modal-error]');

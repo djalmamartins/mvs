@@ -114,6 +114,10 @@ $apps = [
                 rel="stylesheet"
                 href="<?= $this->e($this->asset('css/moves-editor.css')) ?>"
         >
+        <link
+                rel="stylesheet"
+                href="<?= $this->e($this->asset('css/moves-editor-adapter.css')) ?>"
+        >
     <?php endif; ?>
 
     <script
@@ -129,6 +133,10 @@ $apps = [
     <?php if (!empty($hasMovesEditor)): ?>
         <script
                 src="<?= $this->e($this->asset('js/moves-editor.js')) ?>"
+                defer
+        ></script>
+        <script
+                src="<?= $this->e($this->asset('js/moves-editor-adapter.js')) ?>"
                 defer
         ></script>
     <?php endif; ?>

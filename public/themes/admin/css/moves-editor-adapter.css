@@ -1,0 +1,4 @@
+/* Keeps the official editor package isolated from the administrative shell. */
+html,body{font-family:"Gotham Book",Arial,sans-serif;color:var(--ink);background:var(--bg)}
+.moves-editor-host{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.me-library-panel{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:280px;overflow:auto}.me-library-panel.active{display:grid}.me-library-item{min-width:0;padding:5px;border:2px solid transparent;background:#f8fafc;color:#475569;cursor:pointer;text-align:left}.me-library-item.selected{border-color:#2563eb}.me-library-item img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}.me-library-item span{display:block;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}

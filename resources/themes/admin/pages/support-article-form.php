@@ -211,6 +211,7 @@ $this->layout('layouts/default', [
                         data-editor-document="support-article:<?= $isEdit
                             ? $this->e($slugValue)
                             : 'new' ?>"
+                        data-editor-persisted-at="<?= $this->e((string) ($article?->updated_at ?? '')) ?>"
                         data-editor-height="620"
                     ><?= $this->e($contentValue) ?></textarea>
 
@@ -775,4 +776,4 @@ $this->layout('layouts/default', [
     </form>
 </dialog>
 
-<script src="/themes/admin/js/support-article-form.js?v=2026091701"></script>
+<script src="/themes/admin/js/support-article-form.js?v=2026091901"></script>
