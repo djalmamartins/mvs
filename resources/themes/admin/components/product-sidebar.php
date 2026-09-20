@@ -132,6 +132,7 @@ if ($activeProduct === 'support') {
             ['label' => 'Destaques', 'icon' => 'icon-star-outline', 'href' => '/studio/highlights', 'key' => 'highlights'],
             ['label' => 'Depoimentos', 'icon' => 'icon-chatbubble-outline', 'href' => '/studio/testimonials', 'key' => 'testimonials'],
             ['label' => 'FAQ', 'icon' => 'icon-help-circle-outline', 'href' => '/studio/faq', 'key' => 'faq'],
+            ['label' => 'Categorias', 'icon' => 'icon-folder-outline', 'href' => '/studio/categories', 'key' => 'categories'],
             ['label' => 'Tags', 'icon' => 'icon-pricetag-outline', 'href' => '/studio/tags', 'key' => 'tags'],
             ['label' => 'Menus', 'icon' => 'icon-menu-outline', 'href' => '/studio/menus', 'key' => 'menus'],
             ['label' => 'Lixeira', 'icon' => 'icon-trash-outline', 'href' => '/studio/trash', 'key' => 'trash'],
