@@ -267,6 +267,7 @@ final class Routes
                 new PermissionMiddleware('studio.dashboard'),
             ]
         );
+        $router->get('/studio/create', 'StudioController:create', 'studio.create', [AuthMiddleware::class, new PermissionMiddleware('content.manage')]);
         $router->get('/studio/search', 'StudioSearchController:index', 'studio.search', [AuthMiddleware::class, new PermissionMiddleware('studio.search')]);
 
         $studioTechnicalMiddleware = [
