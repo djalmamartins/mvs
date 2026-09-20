@@ -101,9 +101,26 @@ $categories = [
     'editor' => $category('Moves Editor', 'moves-editor', $products['editor'], 10, 'Uso do editor visual oficial.'),
     'media' => $category('Imagens e mídia', 'imagens-e-midia', $products['editor'], 20, 'Upload, biblioteca e apresentação de imagens.'),
     'cms-start' => $category('CMS · Primeiros passos', 'cms-primeiros-passos', $products['cms'], 10, 'Visão geral e primeiros fluxos do Moves CMS.'),
-    'cms-content' => $category('CMS · Conteúdo e publicação', 'cms-conteudo-publicacao', $products['cms'], 20, 'Páginas, artigos, projetos, status, URLs e SEO.'),
-    'cms-media' => $category('CMS · Editor e mídia', 'cms-editor-midia', $products['cms'], 30, 'Moves Editor, imagens de capa e biblioteca oficial.'),
+    'cms-content' => $category('CMS · Conteúdo e publicação', 'cms-conteudo-e-publicacao', $products['cms'], 20, 'Páginas, artigos, projetos, status, URLs e SEO.'),
+    'cms-media' => $category('CMS · Editor e mídia', 'cms-editor-e-midia', $products['cms'], 30, 'Moves Editor, imagens de capa e biblioteca oficial.'),
 ];
+
+// Consolida somente duplicatas com os nomes oficiais que uma versão anterior deste
+// próprio seed pôde criar ao divergir do slug normalizado pelo CategoryService.
+foreach (['cms-content' => 'CMS · Conteúdo e publicação', 'cms-media' => 'CMS · Editor e mídia'] as $key => $name) {
+    $statement = $pdo->prepare('SELECT id FROM support_categories WHERE product_id=? AND name=? ORDER BY id');
+    $statement->execute([$products['cms'], $name]);
+    $ids = array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
+    if ($ids === []) {
+        continue;
+    }
+    $canonicalId = array_shift($ids);
+    $categories[$key] = $canonicalId;
+    foreach ($ids as $duplicateId) {
+        $pdo->prepare('UPDATE support_articles SET category_id=? WHERE category_id=?')->execute([$canonicalId, $duplicateId]);
+        $pdo->prepare('DELETE FROM support_categories WHERE id=?')->execute([$duplicateId]);
+    }
+}
 
 $articles = [
     ['Conhecendo o Moves', 'conhecendo-o-moves', 'platform', 'start', ['primeiros-passos'], 'Uma visão geral da plataforma Moves e de como seus produtos compartilham a mesma experiência.', '<h2>Para que serve</h2><p>O Moves reúne produtos administrativos em uma plataforma única, com navegação, identidade e autenticação consistentes. Cada produto mantém responsabilidades próprias, mas utiliza a mesma base segura.</p><h2>Como acessar</h2><ol><li>Entre na aplicação com uma conta ativa.</li><li>Use o seletor de produtos no topo para escolher o workspace.</li><li>Confirme o nome do produto na navegação lateral antes de alterar dados.</li></ol><h2>Comportamento esperado</h2><p>Somente módulos habilitados aparecem para o usuário. O Moves Support concentra documentação e, futuramente, atendimento. O conteúdo exibido sempre deve refletir registros reais.</p>'],
