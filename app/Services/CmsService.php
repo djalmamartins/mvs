@@ -119,15 +119,23 @@ final class CmsService
         return $statement->rowCount() === 1;
     }
 
-    /** @return list<array<string,mixed>> */
-    public function trashItems(string $q = '', string $type = ''): array
+    /** @return array{items:list<array<string,mixed>>,page:int,perPage:int,total:int,totalPages:int} */
+    public function trashPage(string $q = '', string $type = '', int $page = 1): array
     {
         $where = ['c.deleted_at IS NOT NULL']; $params = [];
         if ($q !== '') { $where[] = '(c.title LIKE :q_title OR c.slug LIKE :q_slug)'; $params['q_title'] = $params['q_slug'] = '%' . $q . '%'; }
         if ($type !== '') { $where[] = 'c.type=:type'; $params['type'] = $type; }
-        $statement = Connection::getInstance()->prepare('SELECT c.*,u.name deleted_by_name FROM studio_content c LEFT JOIN users u ON u.id=c.deleted_by WHERE ' . implode(' AND ', $where) . ' ORDER BY c.deleted_at DESC LIMIT 200');
+        $sqlWhere = implode(' AND ', $where);
+        $pdo = Connection::getInstance();
+        $count = $pdo->prepare('SELECT COUNT(*) FROM studio_content c WHERE ' . $sqlWhere);
+        $count->execute($params);
+        $total = (int) $count->fetchColumn();
+        $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
+        $page = max(1, min($page, $totalPages));
+        $offset = ($page - 1) * self::PER_PAGE;
+        $statement = $pdo->prepare('SELECT c.*,u.name deleted_by_name FROM studio_content c LEFT JOIN users u ON u.id=c.deleted_by WHERE ' . $sqlWhere . ' ORDER BY c.deleted_at DESC LIMIT ' . self::PER_PAGE . ' OFFSET ' . $offset);
         $statement->execute($params);
-        return $statement->fetchAll(PDO::FETCH_ASSOC);
+        return ['items'=>$statement->fetchAll(PDO::FETCH_ASSOC),'page'=>$page,'perPage'=>self::PER_PAGE,'total'=>$total,'totalPages'=>$totalPages];
     }
 
     /** @return list<array{source:string,title:string,url:string}> */
