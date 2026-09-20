@@ -72,5 +72,17 @@ final class SupportWorkspaceTest extends TestCase
         foreach (['support-dashboard', 'support-structural', 'support-users', 'support-reports', 'support-settings'] as $view) {
             self::assertFileIsReadable(dirname(__DIR__) . '/resources/themes/admin/pages/' . $view . '.php');
         }
+
+        $structural = file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/support-structural.php');
+        self::assertIsString($structural);
+        self::assertStringContainsString('support-inbox-shell', $structural);
+        self::assertStringContainsString('support-ticket-table', $structural);
+        self::assertStringContainsString('Dependência: módulo de chamados', $structural);
+
+        $settings = file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/support-settings.php');
+        self::assertIsString($settings);
+        foreach (['Geral', 'Base de conhecimento', 'Atendimento', 'SLA', 'Notificações', 'Permissões'] as $section) {
+            self::assertStringContainsString("['{$section}'", $settings);
+        }
     }
 }

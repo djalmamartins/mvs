@@ -261,6 +261,79 @@
             }
         };
 
+        const initCoverLibrary = () => {
+            const dialog = document.querySelector('[data-support-media-dialog]');
+            const grid = dialog?.querySelector('[data-support-media-grid]');
+            const openButton = form.querySelector('[data-support-cover-select]');
+            const removeButton = form.querySelector('[data-support-cover-remove]');
+            const cover = form.querySelector('[data-support-cover]');
+            const coverId = form.querySelector('[data-support-cover-id]');
+            let loaded = false;
+
+            if (!dialog || !grid || !openButton || !cover || !coverId) return;
+
+            const renderEmpty = () => {
+                cover.textContent = '';
+                const empty = document.createElement('div');
+                empty.className = 'support-cover-empty';
+                empty.dataset.supportCoverEmpty = '';
+                empty.textContent = 'Nenhuma imagem selecionada';
+                cover.append(empty);
+                coverId.value = '';
+                if (removeButton) removeButton.hidden = true;
+            };
+
+            const select = (file) => {
+                cover.textContent = '';
+                const image = document.createElement('img');
+                image.src = file.url;
+                image.alt = file.alt || '';
+                image.dataset.supportCoverPreview = '';
+                cover.append(image);
+                coverId.value = String(file.id);
+                if (removeButton) removeButton.hidden = false;
+                dialog.close();
+            };
+
+            const load = async () => {
+                if (loaded) return;
+                loaded = true;
+                try {
+                    const response = await fetch(document.body.dataset.editorLibrary, {
+                        headers: { Accept: 'application/json' },
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !Array.isArray(data.files)) throw new Error();
+                    grid.textContent = '';
+                    data.files.forEach((file) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'support-media-option';
+                        button.setAttribute('aria-label', `Selecionar ${file.name}`);
+                        const image = document.createElement('img');
+                        image.src = file.url;
+                        image.alt = file.alt || '';
+                        const label = document.createElement('span');
+                        label.textContent = file.name;
+                        button.append(image, label);
+                        button.addEventListener('click', () => select(file));
+                        grid.append(button);
+                    });
+                    if (!data.files.length) grid.textContent = 'Nenhuma imagem disponível.';
+                } catch (_) {
+                    grid.textContent = 'Não foi possível carregar a biblioteca de mídia.';
+                    loaded = false;
+                }
+            };
+
+            openButton.addEventListener('click', () => {
+                dialog.showModal();
+                load();
+            });
+            removeButton?.addEventListener('click', renderEmpty);
+            dialog.querySelector('[data-support-media-close]')?.addEventListener('click', () => dialog.close());
+        };
+
         const updateSeoCounters = () => {
             if (metaTitleCount && metaTitle) {
                 metaTitleCount.textContent = String(metaTitle.value.length);
@@ -290,6 +363,7 @@
         updateMetrics();
         updateSeoCounters();
         filterCategories();
+        initCoverLibrary();
     };
 
     if (document.readyState === 'loading') {

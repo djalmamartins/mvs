@@ -677,7 +677,7 @@ $this->layout('layouts/default', [
 
 </div>
 
-<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c">
+<link rel="stylesheet" href="/themes/admin/css/support.css?v=20260920a">
 <script src="/themes/admin/js/support-knowledge.js?v=20260918" defer></script>
 
 <dialog
@@ -776,4 +776,14 @@ $this->layout('layouts/default', [
     </form>
 </dialog>
 
-<script src="/themes/admin/js/support-article-form.js?v=2026091901"></script>
+<dialog class="support-modal support-media-dialog" data-support-media-dialog aria-labelledby="support-media-title">
+    <section>
+        <header>
+            <div><h2 id="support-media-title">Biblioteca de mídia</h2><p>Escolha uma imagem já enviada ao Moves.</p></div>
+            <button class="studio-icon-action" type="button" data-support-media-close aria-label="Fechar biblioteca"><i class="icon-close-outline" aria-hidden="true"></i></button>
+        </header>
+        <div class="support-media-grid" data-support-media-grid><p class="support-muted">Carregando imagens…</p></div>
+    </section>
+</dialog>
+
+<script src="/themes/admin/js/support-article-form.js?v=2026092001"></script>
