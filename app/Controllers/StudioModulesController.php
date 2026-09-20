@@ -172,7 +172,7 @@ final class StudioModulesController extends Controller
             $edit = $editStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         }
 
-        $media = $pdo->query('SELECT id,name,width,height FROM studio_media ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
+        $media = $pdo->query('SELECT id,name,width,height FROM studio_media ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
         $taxonomyType = match ($module) { 'faq' => 'faq_category', 'projects' => 'project_category', default => 'article_category' };
         $categoryStatement = $pdo->prepare('SELECT id,name FROM studio_taxonomies WHERE type=? ORDER BY name'); $categoryStatement->execute([$taxonomyType]);
         $categories = $categoryStatement->fetchAll(PDO::FETCH_ASSOC);
@@ -196,6 +196,22 @@ final class StudioModulesController extends Controller
             'title' => $definition['title'], 'module' => $module, 'singular' => $definition['singular'],
             'records' => $pagination['items'], 'edit' => $edit, 'search' => $search, 'status' => $status, 'authorId'=>$authorId, 'categoryFilter'=>$categoryFilter, 'authors'=>$cms->authors(), 'pagination'=>$pagination, 'media' => $media, 'categories' => $categories, 'tags'=>$tags, 'selectedTagIds'=>$selectedTagIds, 'revisions' => $revisions, 'selectedRevision' => $selectedRevision,
         ]);
+    }
+
+    public function categories(): void
+    {
+        $cms=new CmsService();
+        if(Request::isMethod('POST')){
+            $this->validateCsrf();
+            try{
+                if(Request::post('action')==='delete'){$cms->deleteCategory(max(0,(int)Request::post('id',0)));Flash::set('success','Categoria excluída.');}
+                else{$cms->saveCategory(max(0,(int)Request::post('id',0)),(string)Request::post('name',''),(string)Request::post('type',''));Flash::set('success','Categoria salva.');}
+            }catch(Throwable $exception){Flash::set('error',$exception->getMessage());}
+            Response::to('/studio/categories');
+        }
+        $q=mb_substr(trim(strip_tags((string)Request::get('q',''))),0,100);
+        $type=in_array(Request::get('type'),['article_category','project_category','faq_category'],true)?(string)Request::get('type'):'';
+        echo $this->view->render('pages/cms-categories',['title'=>'Categorias','currentPage'=>'categories','categories'=>$cms->categories($q,$type),'q'=>$q,'type'=>$type]);
     }
 
     public function trash(): void
@@ -333,9 +349,8 @@ final class StudioModulesController extends Controller
             Response::to('/studio/media');
         }
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
-        $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id)+(SELECT COUNT(*) FROM support_articles a WHERE a.cover_media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
-        $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
-        echo $this->view->render('pages/media', ['title' => 'Mídia', 'files' => $statement->fetchAll(PDO::FETCH_ASSOC), 'search' => $search]);
+        $pagination=(new CmsService())->mediaPage($search,max(1,(int)Request::get('page',1)));
+        echo $this->view->render('pages/media', ['title'=>'Mídia','files'=>$pagination['items'],'pagination'=>$pagination,'search'=>$search]);
     }
 
     /** Read-only data source used by the Moves Editor media picker. */
@@ -345,7 +360,7 @@ final class StudioModulesController extends Controller
         $statement = Connection::getInstance()->prepare(
             'SELECT id,name,alt_text,mime,width,height FROM studio_media'
             . ($search !== '' ? ' WHERE name LIKE ? OR alt_text LIKE ?' : '')
-            . ' ORDER BY id DESC LIMIT 100'
+            . ' ORDER BY id DESC'
         );
         $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
         $files = array_map(static fn (array $file): array => [
