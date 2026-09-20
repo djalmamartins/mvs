@@ -36,3 +36,7 @@
 @media(max-width:1180px){.support-editor-layout{grid-template-columns:minmax(0,1fr) 290px}.support-reading-stats{white-space:normal}}
 @media(max-width:960px){.support-editor-layout{grid-template-columns:1fr}.support-editor-sidebar{position:static;display:grid;grid-template-columns:1fr 1fr}.support-editor-sidebar .studio-panel:first-child{grid-column:1/-1}}
 @media(max-width:700px){.support-panel-heading{flex-direction:column}.support-content-panel .moves-editor-host{padding:8px}.support-editor-sidebar,.support-seo-indexing{grid-template-columns:1fr}.support-media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.support-metric-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.support-report-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1100px){.support-report-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.support-report-metrics{grid-template-columns:1fr 1fr}}
