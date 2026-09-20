@@ -72,6 +72,8 @@ final class HelpCenterTest extends TestCase
         self::assertStringNotContainsString('<script', $page['article']['rendered_content']);
         self::assertStringContainsString('id="primeira-etapa"', $page['article']['rendered_content']);
         self::assertSame('Primeira etapa', $page['toc'][0]['label']);
+        self::assertSame(0, $page['feedback']['total']);
+        self::assertNotEmpty($page['sectionArticles']);
         self::assertNull($help->article((string) $draft->slug));
         self::assertNull($help->article((string) $trashed->slug));
         self::assertNull($help->article($this->prefix . '-inexistente'));
@@ -91,6 +93,23 @@ final class HelpCenterTest extends TestCase
         self::assertCount(1, $category['articles']);
     }
 
+    public function testFeedbackIsPersistedOncePerVisitorAndCanBeChanged(): void
+    {
+        $article = (new ArticleService())->create(
+            $this->prefix . ' Feedback', $this->productId, $this->categoryId, 'Resumo',
+            '<h2>Ajuda</h2><p>Conteúdo.</p>', $this->userId, $this->prefix . '-feedback',
+            null, null, null, null, null, true, true, [], 'published'
+        );
+        $help = new HelpService();
+        $visitor = hash('sha256', $this->prefix . '-visitor');
+        $help->recordFeedback((int) $article->id, $visitor, true);
+        $help->recordFeedback((int) $article->id, $visitor, false);
+
+        $page = $help->article((string) $article->slug);
+        self::assertNotNull($page);
+        self::assertSame(['yes' => 0, 'no' => 1, 'total' => 1], $page['feedback']);
+    }
+
     public function testPublicRoutesAreRegisteredWithoutAuthenticationMiddleware(): void
     {
         $routes = file_get_contents(dirname(__DIR__) . '/app/Boot/Routes.php');
@@ -98,6 +117,7 @@ final class HelpCenterTest extends TestCase
         foreach (['/help', '/help/search', '/help/products/{slug}', '/help/categories/{slug}', '/help/articles/{slug}'] as $route) {
             self::assertStringContainsString("get('{$route}'", $routes);
         }
+        self::assertStringContainsString("post('/help/articles/{slug}/feedback'", $routes);
     }
 
     private function productSlug(): string
