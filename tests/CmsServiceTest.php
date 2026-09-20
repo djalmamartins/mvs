@@ -73,6 +73,25 @@ final class CmsServiceTest extends TestCase
         self::assertFalse((bool)$this->pdo->query('SELECT 1 FROM studio_content WHERE id='.$id)->fetchColumn());
     }
 
+    public function testCmsCategoriesCanBeManagedAndProtectUsage(): void
+    {
+        $id=$this->cms->saveCategory(0,$this->prefix.' Projetos','project_category');
+        $rows=$this->cms->categories($this->prefix.' Projetos','project_category');
+        self::assertSame($id,(int)$rows[0]['id']); self::assertSame(0,(int)$rows[0]['usage_count']);
+        $this->cms->saveCategory($id,$this->prefix.' Projetos Editados','project_category');
+        self::assertStringContainsString('Editados',$this->cms->categories('Editados','project_category')[0]['name']);
+        $this->cms->deleteCategory($id);
+        self::assertSame([], $this->cms->categories('Editados','project_category'));
+    }
+
+    public function testMediaLibraryPaginationIsServerSide(): void
+    {
+        $insert=$this->pdo->prepare('INSERT INTO studio_media(name,path,mime,size,created_by) VALUES(?,?,?,?,?)');
+        for($i=0;$i<23;$i++){$insert->execute([$this->prefix.'-'.$i.'.png','/tmp/'.$this->prefix.'-'.$i.'.png','image/png',1,$this->userId]);}
+        $first=$this->cms->mediaPage($this->prefix,1); self::assertSame(23,$first['total']); self::assertSame(2,$first['totalPages']); self::assertCount(20,$first['items']);
+        self::assertCount(3,$this->cms->mediaPage($this->prefix,2)['items']);
+    }
+
     public function testCmsTagsPersistRelationsAndProtectDeletion(): void
     {
         $contentId=$this->content('draft');
