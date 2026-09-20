@@ -113,6 +113,32 @@ if ($activeProduct === 'support') {
             ],
         ],
     ];
+} elseif ($activeProduct === 'talk') {
+    $ariaLabel = 'Navegação do Talk';
+
+    $groups = [
+        'Principal' => [
+            ['label' => 'Visão geral', 'icon' => 'icon-grid-outline', 'href' => '/talk', 'key' => 'dashboard'],
+            ['label' => 'Fila', 'icon' => 'icon-time-outline', 'href' => '/talk/queue', 'key' => 'queue'],
+            ['label' => 'Conversas', 'icon' => 'icon-chatbubbles-outline', 'href' => '/talk/conversations', 'key' => 'conversations'],
+            ['label' => 'Contatos', 'icon' => 'icon-people-outline', 'href' => '/talk/contacts', 'key' => 'contacts'],
+        ],
+        'Atendimento' => [
+            ['label' => 'Meus chamados', 'icon' => 'icon-headset-outline', 'href' => '/talk/my-tickets', 'key' => 'my-tickets'],
+            ['label' => 'Transferências', 'icon' => 'icon-swap-horizontal-outline', 'href' => '/talk/transfers', 'key' => 'transfers'],
+            ['label' => 'Histórico', 'icon' => 'icon-time-outline', 'href' => '/talk/history', 'key' => 'history'],
+        ],
+        'Jack' => [
+            ['label' => 'Interações', 'icon' => 'icon-sparkles-outline', 'href' => '/talk/jack', 'key' => 'jack'],
+            ['label' => 'Configuração', 'icon' => 'icon-settings-outline', 'href' => '/talk/jack/settings', 'key' => 'jack-settings'],
+        ],
+        'Gestão' => [
+            ['label' => 'Filas e departamentos', 'icon' => 'icon-git-branch-outline', 'href' => '/talk/queues', 'key' => 'queues'],
+            ['label' => 'Usuários e permissões', 'icon' => 'icon-people-outline', 'href' => '/talk/users', 'key' => 'users'],
+            ['label' => 'Relatórios', 'icon' => 'icon-stats-chart-outline', 'href' => '/talk/reports', 'key' => 'reports'],
+            ['label' => 'Configurações', 'icon' => 'icon-settings-outline', 'href' => '/talk/settings', 'key' => 'settings'],
+        ],
+    ];
 } else {
     $ariaLabel = 'Navegação do CMS';
 
