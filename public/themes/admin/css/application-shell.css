@@ -328,3 +328,61 @@ a {
 .product-nav a.active i {
     color: #6E00B3;
 }
+
+
+/* =========================================================
+   Moves Admin Workspace — Support visual language
+   CMS and Support share one administrative grammar.
+   ========================================================= */
+#main-content.page.studio-page{max-width:none;margin:0;padding:30px}
+#main-content>.studio-page{width:100%;max-width:1500px;margin:0;color:#19223b}
+.studio-page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin:0 0 22px}
+.studio-page-heading h1,.studio-page-heading h2{margin:5px 0 8px;font:var(--moves-font-page)/var(--moves-line-page) "Gotham Medium",Arial,sans-serif;font-weight:400;color:#19223b}
+.studio-page-heading p{margin:0;color:#6f7a92;font:var(--moves-font-base)/var(--moves-line-base) "Gotham Book",Arial,sans-serif}
+.studio-eyebrow{margin:0!important;color:#6e00b3!important;font:var(--moves-font-meta)/var(--moves-line-meta) "Gotham Medium",Arial,sans-serif!important;letter-spacing:.1em;text-transform:uppercase}
+.studio-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.studio-btn,.studio-filter-bar button,.studio-filter-bar>a,.studio-editor-actions>button,.studio-inline-create>button,.studio-panel button{min-height:38px;padding:0 14px;border:1px solid #dfe2e8;border-radius:4px;background:#fff;color:#47536a;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font:var(--moves-font-base)/var(--moves-line-base) "Gotham Book",Arial,sans-serif}
+.studio-btn:hover,.studio-filter-bar button:hover,.studio-filter-bar>a:hover,.studio-panel button:hover{border-color:#cbb5da;color:#6e00b3}
+.studio-btn.primary,.studio-editor-actions>button:first-child,.studio-inline-create>button{border-color:#6e00b3;background:#6e00b3;color:#fff}
+.studio-btn.primary:hover,.studio-editor-actions>button:first-child:hover,.studio-inline-create>button:hover{background:#5f009b;color:#fff}
+.studio-btn.danger,.studio-danger-button{border-color:#c8616d;background:#fff;color:#b42318}
+.studio-btn:disabled,.studio-danger-button:disabled{cursor:not-allowed;opacity:.55}
+.studio-filter-bar{min-height:62px;margin:0 0 12px;padding:11px;border:1px solid #dfe2e8;border-radius:5px;background:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.studio-filter-bar label{display:flex;align-items:center;gap:7px;color:#657087}
+.studio-filter-bar label>span{font-size:var(--moves-font-meta);line-height:var(--moves-line-meta)}
+.studio-filter-bar input,.studio-filter-bar select{height:38px;border:1px solid #dfe2e8;border-radius:4px;background:#fff;color:#47536a;padding:0 10px;outline:0;font-size:var(--moves-font-base)}
+.studio-filter-bar input:focus,.studio-filter-bar select:focus{border-color:#6e00b3;box-shadow:0 0 0 2px rgba(110,0,179,.08)}
+.studio-panel{padding:20px;border:1px solid #dfe2e8;border-radius:5px;background:#fff}
+.studio-panel>h3,.studio-panel>header h2{margin:0 0 12px;font:var(--moves-font-component)/var(--moves-line-component) "Gotham Medium",Arial,sans-serif;font-weight:400}
+.studio-management-grid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:12px;align-items:start}
+.studio-table-wrap{border:1px solid #dfe2e8;border-radius:5px;background:#fff;overflow:auto}
+.studio-table-wrap table{width:100%;min-width:720px;border-collapse:collapse}
+.studio-table-wrap th{padding:13px 16px!important;background:#fafafb;color:#747f94;text-align:left;text-transform:uppercase;font:var(--moves-font-meta)/var(--moves-line-meta) "Gotham Book",Arial,sans-serif!important;font-weight:400!important}
+.studio-table-wrap td{padding:14px 16px!important;border-top:1px solid #e8e9ed;color:#43506a;font:var(--moves-font-base)/var(--moves-line-base) "Gotham Book",Arial,sans-serif!important}
+.studio-table-wrap td strong{font-family:"Gotham Medium",Arial,sans-serif;font-weight:400;color:#202a41}
+.studio-table-wrap td small{margin-top:4px;color:#71809a}
+.studio-status,.studio-badge{display:inline-flex;align-items:center;min-height:26px;padding:4px 8px;border-radius:12px;background:#eef0f3;color:#68738a;font:var(--moves-font-meta)/var(--moves-line-meta) "Gotham Book",Arial,sans-serif}
+.studio-status-success{background:#def5ea;color:#237c54}.studio-status-warning{background:#fff1cc;color:#94620c}
+.studio-icon-action{width:36px;height:36px;padding:0;border:1px solid #dfe2e8;border-radius:4px;background:#fff;color:#667085;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.studio-icon-action:hover{border-color:#cbb5da;color:#6e00b3;background:#fff}.studio-icon-action.danger{color:#b42318}
+.studio-empty{min-height:120px;color:#71809a;text-align:center;vertical-align:middle}
+.studio-pagination{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;color:#71809a;font-size:var(--moves-font-meta);line-height:var(--moves-line-meta)}
+.studio-pagination>div{display:flex;align-items:center;gap:7px}
+.studio-field{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.studio-field>label,.studio-inline-create label>span{color:#47536a;font-size:var(--moves-font-base);line-height:var(--moves-line-base)}
+.studio-field input,.studio-field select,.studio-field textarea,.studio-inline-create input,.studio-inline-create select,.studio-inline-form input{width:100%;min-height:40px;padding:9px 10px;border:1px solid #dfe2e8;border-radius:4px;background:#fff;color:#19223b;outline:0}
+.studio-field input:focus,.studio-field select:focus,.studio-field textarea:focus,.studio-inline-create input:focus,.studio-inline-create select:focus,.studio-inline-form input:focus{border-color:#6e00b3;box-shadow:0 0 0 2px rgba(110,0,179,.08)}
+.studio-inline-create{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.studio-inline-create label{display:flex;flex:1;min-width:180px;flex-direction:column;gap:7px}
+.studio-inline-form{display:inline-flex;align-items:center;gap:6px}
+.studio-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:12px;align-items:start}
+.studio-editor-main,.studio-editor-side{min-width:0}.studio-editor-side{padding:18px;border:1px solid #dfe2e8;border-radius:5px;background:#fff}
+.studio-editor-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.studio-revisions{margin-top:18px}.studio-revisions>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:15px;border-bottom:1px solid #e8e9ed}
+.studio-media-toolbar{min-height:62px;margin-bottom:12px;padding:11px;border:1px solid #dfe2e8;border-radius:5px;background:#fff;display:flex;align-items:center;gap:8px}
+.studio-media-toolbar label{height:38px;flex:1;border:1px solid #dfe2e8;border-radius:4px;display:flex;align-items:center;gap:8px;padding:0 11px;color:#667085}.studio-media-toolbar input{width:100%;border:0;outline:0;background:transparent}
+.studio-media-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.studio-media-card{padding:0;overflow:hidden}.studio-media-preview{position:relative;aspect-ratio:4/3;background:#f0f1f4;overflow:hidden}.studio-media-preview img{width:100%;height:100%;object-fit:cover;display:block}.studio-media-preview span{position:absolute;top:8px;right:8px;padding:4px 8px;border-radius:12px;background:#fff;color:#68738a;font-size:var(--moves-font-meta)}.studio-media-meta{padding:14px}.studio-media-meta h3{margin:0;font:var(--moves-font-base)/var(--moves-line-base) "Gotham Medium",Arial,sans-serif}.studio-media-meta p{margin:4px 0 0;color:#71809a;font-size:var(--moves-font-meta)}.studio-media-manage{padding:0 14px 14px}
+.studio-side-list{display:flex;flex-direction:column;margin-top:16px}.studio-side-list a{padding:12px 10px;border-top:1px solid #eceef1;color:#29334a;display:flex;justify-content:space-between;gap:10px}.studio-side-list a.active{background:#f5ecfb;color:#6e00b3}.studio-side-list small{color:#71809a}
+.studio-menu-item{border-top:1px solid #e8e9ed;padding:12px 0}.studio-menu-item summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px}.studio-menu-item summary strong,.studio-menu-item summary small{display:block}.studio-menu-item summary small{margin-top:4px;color:#71809a}
+@media(max-width:1100px){.studio-media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-editor-grid{grid-template-columns:minmax(0,1fr) 280px}}
+@media(max-width:900px){.studio-management-grid,.studio-editor-grid{grid-template-columns:1fr}.studio-page-heading{gap:16px}.studio-media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#main-content.page.studio-page{padding:22px 18px 36px}.studio-page-heading{align-items:stretch;flex-direction:column}.studio-filter-bar,.studio-media-toolbar{align-items:stretch;flex-direction:column}.studio-filter-bar label,.studio-filter-bar input,.studio-filter-bar select,.studio-filter-bar button,.studio-filter-bar>a,.studio-media-toolbar label,.studio-media-toolbar .studio-btn{width:100%}.studio-table-wrap{margin-right:-18px;margin-left:-18px;border-right:0;border-left:0;border-radius:0}.studio-pagination{align-items:flex-start;flex-direction:column}.studio-media-grid{grid-template-columns:1fr}.studio-inline-create{align-items:stretch;flex-direction:column}.studio-inline-create label{min-width:0}.studio-editor-actions>*{width:100%}}
