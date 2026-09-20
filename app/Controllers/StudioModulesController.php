@@ -32,7 +32,7 @@ final class StudioModulesController extends Controller
         'faq' => ['type' => 'faq', 'title' => 'FAQ', 'singular' => 'Pergunta'],
     ];
 
-    public function content(): void
+    public function content(array $routeData = []): void
     {
         $module = $this->currentModule();
         $definition = self::CONTENT_MODULES[$module];
@@ -76,7 +76,7 @@ final class StudioModulesController extends Controller
             $seoDescription = mb_substr(trim(strip_tags((string) Request::post('seo_description', ''))), 0, 320);
             $seoFocusKeyword = mb_substr(trim(strip_tags((string) Request::post('seo_focus_keyword', ''))), 0, 120);
             $canonicalUrl = mb_substr(trim((string) Request::post('canonical_url', '')), 0, 500);
-            if ($canonicalUrl !== '' && (filter_var($canonicalUrl, FILTER_VALIDATE_URL) === false || !in_array(strtolower((string) parse_url($canonicalUrl, PHP_URL_SCHEME)), ['http', 'https'], true))) { Flash::set('error', 'Informe uma URL canonical HTTP(S) válida.'); Response::to('/studio/' . $module . ($id ? '?edit=' . $id : '?create=1')); }
+            if ($canonicalUrl !== '' && (filter_var($canonicalUrl, FILTER_VALIDATE_URL) === false || !in_array(strtolower((string) parse_url($canonicalUrl, PHP_URL_SCHEME)), ['http', 'https'], true))) { Flash::set('error', 'Informe uma URL canonical HTTP(S) válida.'); Response::to('/studio/' . $module . ($id ? '/edit/' . $id : '/create/1')); }
             $robotsIndex = Request::post('robots_index') === '1' ? 1 : 0;
             $robotsFollow = Request::post('robots_follow') === '1' ? 1 : 0;
             $automaticSeo = Seo::contentFields($title, $excerpt, $content, $requestedSlug, $seoTitle, $seoDescription);
@@ -154,7 +154,7 @@ final class StudioModulesController extends Controller
 
             Flash::set('success', $definition['singular'] . ' salvo(a).');
             $savedDraftKey = mb_substr((string) Request::post('autosave_key', $module . ':' . $id), 0, 100);
-            Response::to('/studio/' . $module . '?edit=' . $id . '&saved_key=' . rawurlencode($savedDraftKey));
+            Response::to('/studio/' . $module . '/edit/' . $id . '?saved_key=' . rawurlencode($savedDraftKey));
         }
 
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
@@ -165,7 +165,8 @@ final class StudioModulesController extends Controller
         $cms = new CmsService();
         $pagination = $cms->contentPage($definition['type'], ['q'=>$search,'status'=>$status,'author'=>$authorId,'category'=>$categoryFilter], $page);
         $edit = null;
-        $editId = max(0, (int) Request::get('edit', 0));
+        $routeId = max(0, (int) ($routeData['id'] ?? 0));
+        $editId = str_contains((string) ($_SERVER['REQUEST_URI'] ?? ''), '/edit/') ? $routeId : max(0, (int) Request::get('edit', 0));
         if ($editId) {
             $editStatement = $pdo->prepare('SELECT * FROM studio_content WHERE id=? AND type=? AND deleted_at IS NULL');
             $editStatement->execute([$editId, $definition['type']]);
