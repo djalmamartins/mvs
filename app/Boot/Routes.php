@@ -60,6 +60,13 @@ final class Routes
         $router->get('/pagina/{slug}', 'Home:dynamicPage', 'site.dynamic.page');
         $router->get('/faq', 'Home:faq', 'site.faq');
 
+        // Moves Help Center | Knowledge Base pública
+        $router->get('/help', 'HelpController:index', 'help.home');
+        $router->get('/help/search', 'HelpController:search', 'help.search');
+        $router->get('/help/products/{slug}', 'HelpController:product', 'help.product');
+        $router->get('/help/categories/{slug}', 'HelpController:category', 'help.category');
+        $router->get('/help/articles/{slug}', 'HelpController:article', 'help.article');
+
         $router->get(
             '/contato',
             'Home:contact',

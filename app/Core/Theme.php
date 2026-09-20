@@ -23,6 +23,10 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
+        if ($path === '/help' || str_starts_with($path, '/help/')) {
+            return 'help';
+        }
+
         $adminPrefixes = [
             '/studio',
             '/day',
