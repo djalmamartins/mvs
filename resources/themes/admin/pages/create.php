@@ -2,12 +2,12 @@
 <section class="studio-page cms-workspace-page">
 <header class="knowledge-header"><div><p class="studio-eyebrow">VISÃO GERAL</p><h1>Criar</h1><p>Escolha o tipo de conteúdo que deseja cadastrar no CMS.</p></div></header>
 <section class="cms-create-grid" aria-label="Tipos de conteúdo">
-<a class="studio-panel cms-create-card" href="/studio/pages?create=1"><?= studio_icon('copy') ?><div><strong>Nova página</strong><span>Crie páginas institucionais e conteúdos permanentes.</span></div><?= studio_icon('chevron-down') ?></a>
-<a class="studio-panel cms-create-card" href="/studio/articles?create=1"><?= studio_icon('newspaper') ?><div><strong>Novo artigo</strong><span>Publique conteúdo editorial com SEO e categorias.</span></div><?= studio_icon('chevron-down') ?></a>
-<a class="studio-panel cms-create-card" href="/studio/projects?create=1"><?= studio_icon('briefcase') ?><div><strong>Novo projeto</strong><span>Cadastre projetos e itens de portfólio.</span></div><?= studio_icon('chevron-down') ?></a>
-<a class="studio-panel cms-create-card" href="/studio/faq?create=1"><?= studio_icon('circle-help') ?><div><strong>Nova pergunta</strong><span>Adicione perguntas e respostas frequentes.</span></div><?= studio_icon('chevron-down') ?></a>
-<a class="studio-panel cms-create-card" href="/studio/highlights?create=1"><?= studio_icon('sparkles') ?><div><strong>Novo destaque</strong><span>Crie chamadas e destaques do site.</span></div><?= studio_icon('chevron-down') ?></a>
-<a class="studio-panel cms-create-card" href="/studio/testimonials?create=1"><?= studio_icon('message-square') ?><div><strong>Novo depoimento</strong><span>Cadastre depoimentos para publicação.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/pages/create/1"><?= studio_icon('copy') ?><div><strong>Nova página</strong><span>Crie páginas institucionais e conteúdos permanentes.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/articles/create/1"><?= studio_icon('newspaper') ?><div><strong>Novo artigo</strong><span>Publique conteúdo editorial com SEO e categorias.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/projects/create/1"><?= studio_icon('briefcase') ?><div><strong>Novo projeto</strong><span>Cadastre projetos e itens de portfólio.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/faq/create/1"><?= studio_icon('circle-help') ?><div><strong>Nova pergunta</strong><span>Adicione perguntas e respostas frequentes.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/highlights/create/1"><?= studio_icon('sparkles') ?><div><strong>Novo destaque</strong><span>Crie chamadas e destaques do site.</span></div><?= studio_icon('chevron-down') ?></a>
+<a class="studio-panel cms-create-card" href="/studio/testimonials/create/1"><?= studio_icon('message-square') ?><div><strong>Novo depoimento</strong><span>Cadastre depoimentos para publicação.</span></div><?= studio_icon('chevron-down') ?></a>
 <button class="studio-panel cms-create-card" type="button" data-cms-modal-open="#create-category"><?= studio_icon('archive') ?><div><strong>Nova categoria</strong><span>Organize artigos, projetos e perguntas.</span></div><?= studio_icon('add') ?></button>
 <button class="studio-panel cms-create-card" type="button" data-cms-modal-open="#create-tag"><?= studio_icon('tag') ?><div><strong>Nova tag</strong><span>Crie um termo de classificação editorial.</span></div><?= studio_icon('add') ?></button>
 </section>
