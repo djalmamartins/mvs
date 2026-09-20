@@ -7,6 +7,8 @@ namespace Moves\Controllers;
 use Moves\Core\Config;
 use Moves\Core\Controller;
 use Moves\Core\Request;
+use Moves\Core\Csrf;
+use Moves\Core\Response;
 use Moves\Services\HelpService;
 
 final class HelpController extends Controller
@@ -61,6 +63,25 @@ final class HelpController extends Controller
         $metadata['ogType'] = 'article';
         $metadata['ogImage'] = $article['cover_media_id'] ? '/media/' . (int) $article['cover_media_id'] : null;
         echo $this->view->render('pages/article', ['title' => $title, 'description' => $description, ...$result, ...$metadata]);
+    }
+
+    /** @param array<string,string> $data */
+    public function feedback(array $data): never
+    {
+        $slug = (string) ($data['slug'] ?? '');
+        $result = $this->help->article($slug);
+        $token = Request::post('_token');
+        $vote = (string) Request::post('helpful', '');
+        if ($result === null || !is_string($token) || !Csrf::validate($token) || !in_array($vote, ['yes', 'no'], true)) {
+            Response::to('/help/articles/' . rawurlencode($slug));
+        }
+        $visitor = (string) ($_COOKIE['moves_help_visitor'] ?? '');
+        if (preg_match('/^[a-f0-9]{32}$/', $visitor) !== 1) {
+            $visitor = bin2hex(random_bytes(16));
+            setcookie('moves_help_visitor', $visitor, ['expires' => time() + 31536000, 'path' => '/help', 'httponly' => true, 'samesite' => 'Lax']);
+        }
+        $this->help->recordFeedback((int) $result['article']['id'], hash('sha256', $visitor), $vote === 'yes');
+        Response::to('/help/articles/' . rawurlencode($slug) . '?feedback=thanks#article-feedback');
     }
 
     private function notFound(): void

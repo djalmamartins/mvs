@@ -113,7 +113,7 @@ final class HelpService
         return ['category' => $category, 'articles' => $articles->fetchAll(PDO::FETCH_ASSOC), 'children' => $children->fetchAll(PDO::FETCH_ASSOC)];
     }
 
-    /** @return array{article:array<string,mixed>,tags:list<array<string,mixed>>,related:list<array<string,mixed>>,toc:list<array{id:string,label:string,level:int}>}|null */
+    /** @return array{article:array<string,mixed>,tags:list<array<string,mixed>>,related:list<array<string,mixed>>,sectionArticles:list<array<string,mixed>>,feedback:array{yes:int,no:int,total:int},toc:list<array{id:string,label:string,level:int}>}|null */
     public function article(string $slug): ?array
     {
         $pdo = Connection::getInstance();
@@ -139,7 +139,28 @@ final class HelpService
             'article_id' => $article['id'],
             'exclude_id' => $article['id'],
         ]);
-        return ['article' => $article, 'tags' => $tags->fetchAll(PDO::FETCH_ASSOC), 'related' => $related->fetchAll(PDO::FETCH_ASSOC), 'toc' => $toc];
+        $section = $pdo->prepare($this->articleSelect() . " WHERE " . self::PUBLISHED . " AND a.category_id=? ORDER BY a.title LIMIT 8");
+        $section->execute([(int) $article['category_id']]);
+        $feedback = $pdo->prepare('SELECT SUM(helpful=1) yes_count,SUM(helpful=0) no_count,COUNT(*) total FROM support_article_feedback WHERE article_id=?');
+        $feedback->execute([(int) $article['id']]);
+        $feedbackRow = $feedback->fetch(PDO::FETCH_ASSOC) ?: [];
+        return [
+            'article' => $article,
+            'tags' => $tags->fetchAll(PDO::FETCH_ASSOC),
+            'related' => $related->fetchAll(PDO::FETCH_ASSOC),
+            'sectionArticles' => $section->fetchAll(PDO::FETCH_ASSOC),
+            'feedback' => ['yes' => (int) ($feedbackRow['yes_count'] ?? 0), 'no' => (int) ($feedbackRow['no_count'] ?? 0), 'total' => (int) ($feedbackRow['total'] ?? 0)],
+            'toc' => $toc,
+        ];
+    }
+
+    public function recordFeedback(int $articleId, string $visitorHash, bool $helpful): void
+    {
+        $statement = Connection::getInstance()->prepare(
+            'INSERT INTO support_article_feedback(article_id,visitor_hash,helpful) VALUES(?,?,?) '
+            . 'ON DUPLICATE KEY UPDATE helpful=VALUES(helpful),updated_at=CURRENT_TIMESTAMP'
+        );
+        $statement->execute([$articleId, $visitorHash, $helpful ? 1 : 0]);
     }
 
     private function articleSelect(bool $withContent = false): string

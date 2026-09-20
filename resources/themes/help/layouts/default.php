@@ -18,6 +18,7 @@
     <link rel="icon" href="/themes/site/images/brand/favicon.png" type="image/png">
     <link rel="stylesheet" href="/themes/admin/css/moves-icons.css">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/help.css')) ?>">
+    <script src="<?= $this->e($this->asset('js/help.js')) ?>" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#help-main">Pular para o conteúdo</a>

@@ -66,6 +66,7 @@ final class Routes
         $router->get('/help/products/{slug}', 'HelpController:product', 'help.product');
         $router->get('/help/categories/{slug}', 'HelpController:category', 'help.category');
         $router->get('/help/articles/{slug}', 'HelpController:article', 'help.article');
+        $router->post('/help/articles/{slug}/feedback', 'HelpController:feedback', 'help.article.feedback');
 
         $router->get(
             '/contato',

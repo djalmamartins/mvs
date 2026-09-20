@@ -13,7 +13,15 @@ final class HtmlSanitizer
 {
     private const TAGS = ['p','br','h2','h3','h4','blockquote','pre','code','strong','b','em','i','u','s','ul','ol','li','a','img','figure','figcaption','table','thead','tbody','tfoot','tr','th','td','hr','div','iframe'];
     private const ATTRIBUTES = ['href','title','target','rel','src','alt','class','colspan','rowspan','width','height','loading','allow','allowfullscreen','style','data-align'];
-    private const CLASSES = ['moves-table-scroll', 'moves-embed'];
+    private const CLASSES = [
+        'moves-table-scroll',
+        'moves-embed',
+        'help-callout',
+        'help-callout-note',
+        'help-callout-tip',
+        'help-callout-warning',
+        'help-callout-important',
+    ];
 
     public static function clean(string $html): string
     {
