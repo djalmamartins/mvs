@@ -114,12 +114,19 @@ final class Routes
             AuthMiddleware::class
         );
 
-        $router->get(
-            '/talk',
-            'PlatformController:talk',
-            'platform.talk',
-            AuthMiddleware::class
-        );
+        $router->get('/talk', 'TalkController:dashboard', 'talk.dashboard', AuthMiddleware::class);
+        $router->get('/talk/queue', 'TalkController:queue', 'talk.queue', AuthMiddleware::class);
+        $router->get('/talk/conversations', 'TalkController:conversations', 'talk.conversations', AuthMiddleware::class);
+        $router->get('/talk/contacts', 'TalkController:contacts', 'talk.contacts', AuthMiddleware::class);
+        $router->get('/talk/my-tickets', 'TalkController:myTickets', 'talk.my-tickets', AuthMiddleware::class);
+        $router->get('/talk/transfers', 'TalkController:transfers', 'talk.transfers', AuthMiddleware::class);
+        $router->get('/talk/history', 'TalkController:history', 'talk.history', AuthMiddleware::class);
+        $router->get('/talk/jack', 'TalkController:jack', 'talk.jack', AuthMiddleware::class);
+        $router->get('/talk/jack/settings', 'TalkController:jackSettings', 'talk.jack.settings', AuthMiddleware::class);
+        $router->get('/talk/queues', 'TalkController:queues', 'talk.queues', AuthMiddleware::class);
+        $router->get('/talk/users', 'TalkController:users', 'talk.users', AuthMiddleware::class);
+        $router->get('/talk/reports', 'TalkController:reports', 'talk.reports', AuthMiddleware::class);
+        $router->get('/talk/settings', 'TalkController:settings', 'talk.settings', AuthMiddleware::class);
 
         $router->get(
             '/support',
