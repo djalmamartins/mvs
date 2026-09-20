@@ -300,6 +300,13 @@ final class Routes
             $router->get('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module, $studioContentMiddleware);
             $router->post('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module . '.save', $studioContentMiddleware);
         }
+        $router->get('/studio/content/preview/{id}', 'StudioModulesController:preview', 'studio.content.preview', $studioContentMiddleware);
+        $router->get('/studio/tags', 'StudioModulesController:tags', 'studio.tags', $studioContentMiddleware);
+        $router->post('/studio/tags', 'StudioModulesController:tags', 'studio.tags.save', $studioContentMiddleware);
+        $router->get('/studio/trash', 'StudioModulesController:trash', 'studio.trash', $studioContentMiddleware);
+        $router->post('/studio/trash', 'StudioModulesController:trash', 'studio.trash.action', $studioContentMiddleware);
+        $router->get('/studio/menus', 'StudioModulesController:menus', 'studio.menus', $studioContentMiddleware);
+        $router->post('/studio/menus', 'StudioModulesController:menus', 'studio.menus.save', $studioContentMiddleware);
         $mediaMiddleware = [AuthMiddleware::class, new PermissionMiddleware('media.manage')];
         $proposalMiddleware = [AuthMiddleware::class, new PermissionMiddleware('proposals.manage')];
         $notificationMiddleware = [AuthMiddleware::class, new PermissionMiddleware('notifications.manage')];

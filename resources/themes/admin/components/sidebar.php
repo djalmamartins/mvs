@@ -17,6 +17,9 @@ $groups = [
         ['label' => 'Destaques', 'icon' => 'archive', 'href' => '/studio/highlights', 'key' => 'highlights'],
         ['label' => 'Depoimentos', 'icon' => 'message-square', 'href' => '/studio/testimonials', 'key' => 'testimonials'],
         ['label' => 'FAQ', 'icon' => 'circle-help', 'href' => '/studio/faq', 'key' => 'faq'],
+        ['label' => 'Tags', 'icon' => 'tag', 'href' => '/studio/tags', 'key' => 'tags'],
+        ['label' => 'Menus', 'icon' => 'menu', 'href' => '/studio/menus', 'key' => 'menus'],
+        ['label' => 'Lixeira', 'icon' => 'trash-2', 'href' => '/studio/trash', 'key' => 'trash'],
     ],
     'Gestão' => [
         ['label' => 'Usuários', 'icon' => 'users', 'href' => '/studio/users', 'key' => 'users'],

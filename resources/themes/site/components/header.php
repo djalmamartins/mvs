@@ -8,6 +8,7 @@
  * @author Djalma Martins
  */
 ?>
+<?php $managedMenu=(new \Moves\Services\CmsService())->publicMenu('principal'); ?>
 
 <header class="site-header">
     <a class="brand" href="/" aria-label="Moves — início">
@@ -17,12 +18,16 @@
         Menu <span aria-hidden="true">☰</span>
     </button>
     <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
+        <?php if($managedMenu!==[]): ?>
+        <?php foreach($managedMenu as $menuItem): ?><a href="<?= $this->e($menuItem['href']) ?>" target="<?= $this->e($menuItem['target']) ?>"<?= $menuItem['target']==='_blank'?' rel="noopener"':'' ?>><?= $this->e($menuItem['label']) ?></a><?php endforeach; ?>
+        <?php else: ?>
         <a href="/"<?= ($currentPage ?? null) === 'home' ? ' class="active" aria-current="page"' : '' ?>>Início</a>
         <a href="/servicos"<?= ($currentPage ?? null) === 'services' ? ' class="active" aria-current="page"' : '' ?>>Serviços</a>
         <a href="/projetos"<?= ($currentPage ?? null) === 'projects' ? ' class="active" aria-current="page"' : '' ?>>Projetos</a>
         <a href="/conteudo"<?= ($currentPage ?? null) === 'content' ? ' class="active" aria-current="page"' : '' ?>>Conteúdo</a>
         <a class="mobile-budget" href="/contato"<?= ($currentPage ?? null) === 'contact' ? ' aria-current="page"' : '' ?>>Solicitar orçamento ↗</a>
         <a class="mobile-client" href="/login">Área do cliente</a>
+        <?php endif; ?>
     </nav>
     <div class="header-actions">
         <a class="button button-primary small" href="/contato"<?= ($currentPage ?? null) === 'contact' ? ' aria-current="page"' : '' ?>>Solicitar orçamento ↗</a>

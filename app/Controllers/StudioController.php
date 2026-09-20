@@ -31,12 +31,12 @@ final class StudioController extends Controller
                 $contentCounts[$type] = (int) Connection::getInstance()->query('SELECT COUNT(*) FROM studio_media')->fetchColumn();
                 continue;
             }
-            $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM studio_content WHERE type=?');
+            $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM studio_content WHERE type=? AND deleted_at IS NULL');
             $statement->execute([$type]);
             $contentCounts[$type] = (int) $statement->fetchColumn();
         }
         $publishedStatement = Connection::getInstance()->prepare(
-            'SELECT COUNT(*) FROM studio_content WHERE type = ? AND status = ?'
+            'SELECT COUNT(*) FROM studio_content WHERE type = ? AND status = ? AND deleted_at IS NULL'
         );
         $publishedStatement->execute(['article', 'published']);
         $publishedArticles = (int) $publishedStatement->fetchColumn();

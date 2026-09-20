@@ -14,6 +14,7 @@ use Moves\Core\HtmlSanitizer;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Seo;
+use Moves\Services\CmsService;
 use MovesCode\Storage\Image;
 use PDO;
 use Throwable;
@@ -56,10 +57,9 @@ final class StudioModulesController extends Controller
             }
 
             if ($action === 'delete') {
-                $statement = $pdo->prepare('DELETE FROM studio_content WHERE id = ? AND type = ?');
-                $statement->execute([$id, $definition['type']]);
-                Flash::set('success', $definition['singular'] . ' excluído(a).');
-                Logger::info('Conteúdo do Studio excluído.', ['action'=>'deleted','module' => $module, 'record_id' => $id,'actor_id'=>Auth::user()?->id]);
+                (new CmsService())->trash($id, $definition['type'], (int) Auth::user()?->id);
+                Flash::set('success', $definition['singular'] . ' movido(a) para a lixeira.');
+                Logger::info('Conteúdo do Studio movido para a lixeira.', ['action'=>'trashed','module' => $module, 'record_id' => $id,'actor_id'=>Auth::user()?->id]);
                 Response::to('/studio/' . $module);
             }
 
@@ -74,6 +74,11 @@ final class StudioModulesController extends Controller
             $position = max(0, min(9999, (int) Request::post('position', 0)));
             $seoTitle = mb_substr(trim(strip_tags((string) Request::post('seo_title', ''))), 0, 160);
             $seoDescription = mb_substr(trim(strip_tags((string) Request::post('seo_description', ''))), 0, 320);
+            $seoFocusKeyword = mb_substr(trim(strip_tags((string) Request::post('seo_focus_keyword', ''))), 0, 120);
+            $canonicalUrl = mb_substr(trim((string) Request::post('canonical_url', '')), 0, 500);
+            if ($canonicalUrl !== '' && (filter_var($canonicalUrl, FILTER_VALIDATE_URL) === false || !in_array(strtolower((string) parse_url($canonicalUrl, PHP_URL_SCHEME)), ['http', 'https'], true))) { Flash::set('error', 'Informe uma URL canonical HTTP(S) válida.'); Response::to('/studio/' . $module . ($id ? '?edit=' . $id : '?create=1')); }
+            $robotsIndex = Request::post('robots_index') === '1' ? 1 : 0;
+            $robotsFollow = Request::post('robots_follow') === '1' ? 1 : 0;
             $automaticSeo = Seo::contentFields($title, $excerpt, $content, $requestedSlug, $seoTitle, $seoDescription);
             $slug = $automaticSeo['slug'];
             $seoTitle = $automaticSeo['title'];
@@ -122,17 +127,21 @@ final class StudioModulesController extends Controller
             try {
                 $previousStatus = null;
                 if ($id > 0) {
-                    $statusStatement = $pdo->prepare('SELECT status FROM studio_content WHERE id=? AND type=?');
+                    $statusStatement = $pdo->prepare('SELECT status FROM studio_content WHERE id=? AND type=? AND deleted_at IS NULL');
                     $statusStatement->execute([$id, $definition['type']]);
                     $previousStatus = $statusStatement->fetchColumn() ?: null;
                 }
                 if ($id > 0) {
-                    $statement = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,starts_at=?,ends_at=?,published_at=? WHERE id=? AND type=?');
-                    $statement->execute([$title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, $id, $definition['type']]);
+                    $statement = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,seo_focus_keyword=?,canonical_url=?,robots_index=?,robots_follow=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,starts_at=?,ends_at=?,published_at=? WHERE id=? AND type=? AND deleted_at IS NULL');
+                    $statement->execute([$title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $seoFocusKeyword ?: null, $canonicalUrl ?: null, $robotsIndex, $robotsFollow, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, $id, $definition['type']]);
                 } else {
-                    $statement = $pdo->prepare('INSERT INTO studio_content(type,title,slug,excerpt,content,seo_title,seo_description,media_id,category_id,template,meta_json,status,position,starts_at,ends_at,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-                    $statement->execute([$definition['type'], $title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, Auth::user()?->id]);
+                    $statement = $pdo->prepare('INSERT INTO studio_content(type,title,slug,excerpt,content,seo_title,seo_description,seo_focus_keyword,canonical_url,robots_index,robots_follow,media_id,category_id,template,meta_json,status,position,starts_at,ends_at,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+                    $statement->execute([$definition['type'], $title, $slug, $excerpt ?: null, $content ?: null, $seoTitle ?: null, $seoDescription ?: null, $seoFocusKeyword ?: null, $canonicalUrl ?: null, $robotsIndex, $robotsFollow, $mediaId, $categoryId, $template, json_encode($meta, JSON_UNESCAPED_UNICODE), $status, $position, $startsAt, $endsAt, $status === 'published' ? date('Y-m-d H:i:s') : null, Auth::user()?->id]);
                     $id = (int) $pdo->lastInsertId();
+                }
+                if (in_array($module, ['articles', 'pages', 'projects'], true)) {
+                    $tagIds = array_values(array_filter(array_map('intval', (array) Request::post('tag_ids', []))));
+                    (new CmsService())->syncTags($id, $tagIds);
                 }
                 if (in_array($module, ['articles', 'pages'], true)) { $this->recordRevision($pdo, $id, $definition['type'], $previousStatus === null ? 'created' : 'updated'); }
                 $auditAction = $previousStatus === null ? 'created' : ($previousStatus !== $status ? 'status_changed' : 'updated');
@@ -144,21 +153,21 @@ final class StudioModulesController extends Controller
             }
 
             Flash::set('success', $definition['singular'] . ' salvo(a).');
-            Response::to('/studio/' . $module);
+            $savedDraftKey = mb_substr((string) Request::post('autosave_key', $module . ':' . $id), 0, 100);
+            Response::to('/studio/' . $module . '?edit=' . $id . '&saved_key=' . rawurlencode($savedDraftKey));
         }
 
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
         $status = in_array(Request::get('status'), ['draft', 'published', 'archived'], true) ? (string) Request::get('status') : '';
-        $where = ['type = :type'];
-        $params = ['type' => $definition['type']];
-        if ($search !== '') { $where[] = '(title LIKE :search OR slug LIKE :search)'; $params['search'] = '%' . $search . '%'; }
-        if ($status !== '') { $where[] = 'status = :status'; $params['status'] = $status; }
-        $statement = $pdo->prepare('SELECT * FROM studio_content WHERE ' . implode(' AND ', $where) . ' ORDER BY position,id DESC LIMIT 200');
-        $statement->execute($params);
+        $authorId = max(0, (int) Request::get('author', 0));
+        $categoryFilter = max(0, (int) Request::get('category', 0));
+        $page = max(1, (int) Request::get('page', 1));
+        $cms = new CmsService();
+        $pagination = $cms->contentPage($definition['type'], ['q'=>$search,'status'=>$status,'author'=>$authorId,'category'=>$categoryFilter], $page);
         $edit = null;
         $editId = max(0, (int) Request::get('edit', 0));
         if ($editId) {
-            $editStatement = $pdo->prepare('SELECT * FROM studio_content WHERE id=? AND type=?');
+            $editStatement = $pdo->prepare('SELECT * FROM studio_content WHERE id=? AND type=? AND deleted_at IS NULL');
             $editStatement->execute([$editId, $definition['type']]);
             $edit = $editStatement->fetch(PDO::FETCH_ASSOC) ?: null;
         }
@@ -168,6 +177,8 @@ final class StudioModulesController extends Controller
         $categoryStatement = $pdo->prepare('SELECT id,name FROM studio_taxonomies WHERE type=? ORDER BY name'); $categoryStatement->execute([$taxonomyType]);
         $categories = $categoryStatement->fetchAll(PDO::FETCH_ASSOC);
         if ($edit) { $edit['meta'] = json_decode((string) ($edit['meta_json'] ?? ''), true) ?: []; }
+        $tags = $cms->tags();
+        $selectedTagIds = $edit ? array_map(static fn(array $tag): int => (int) $tag['id'], $cms->tagsForContent((int) $edit['id'])) : [];
         $revisions = [];
         $selectedRevision = null;
         if ($edit && in_array($module, ['articles', 'pages'], true)) {
@@ -183,8 +194,88 @@ final class StudioModulesController extends Controller
         }
         echo $this->view->render('pages/content-module', [
             'title' => $definition['title'], 'module' => $module, 'singular' => $definition['singular'],
-            'records' => $statement->fetchAll(PDO::FETCH_ASSOC), 'edit' => $edit, 'search' => $search, 'status' => $status, 'media' => $media, 'categories' => $categories, 'revisions' => $revisions, 'selectedRevision' => $selectedRevision,
+            'records' => $pagination['items'], 'edit' => $edit, 'search' => $search, 'status' => $status, 'authorId'=>$authorId, 'categoryFilter'=>$categoryFilter, 'authors'=>$cms->authors(), 'pagination'=>$pagination, 'media' => $media, 'categories' => $categories, 'tags'=>$tags, 'selectedTagIds'=>$selectedTagIds, 'revisions' => $revisions, 'selectedRevision' => $selectedRevision,
         ]);
+    }
+
+    public function trash(): void
+    {
+        $cms = new CmsService();
+        if (Request::isMethod('POST')) {
+            $this->validateCsrf();
+            $id = max(0, (int) Request::post('id', 0));
+            $action = (string) Request::post('action', '');
+            $changed = $action === 'restore' ? $cms->restore($id, (int) Auth::user()?->id) : ($action === 'delete' ? $cms->deletePermanently($id) : false);
+            Flash::set($changed ? 'success' : 'error', $changed ? ($action === 'restore' ? 'Conteúdo restaurado.' : 'Conteúdo excluído permanentemente.') : 'O conteúdo não está mais disponível na lixeira.');
+            Logger::info('Ação executada na lixeira do CMS.', ['action'=>'trash_' . $action,'record_id'=>$id,'actor_id'=>Auth::user()?->id]);
+            Response::to('/studio/trash');
+        }
+        $q = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
+        $type = in_array(Request::get('type'), array_column(self::CONTENT_MODULES, 'type'), true) ? (string) Request::get('type') : '';
+        echo $this->view->render('pages/cms-trash', ['title'=>'Lixeira','currentPage'=>'trash','items'=>$cms->trashItems($q, $type),'q'=>$q,'type'=>$type,'modules'=>self::CONTENT_MODULES]);
+    }
+
+    public function tags(): void
+    {
+        $cms = new CmsService();
+        if (Request::isMethod('POST')) {
+            $this->validateCsrf();
+            try {
+                if (Request::post('action') === 'delete') { $cms->deleteTag(max(0, (int) Request::post('id', 0))); Flash::set('success', 'Tag excluída.'); }
+                else { $cms->saveTag(max(0, (int) Request::post('id', 0)), (string) Request::post('name', '')); Flash::set('success', 'Tag salva.'); }
+            } catch (Throwable $exception) { Flash::set('error', $exception->getMessage()); }
+            Response::to('/studio/tags');
+        }
+        $q = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
+        echo $this->view->render('pages/cms-tags', ['title'=>'Tags','currentPage'=>'tags','tags'=>$cms->tags($q),'q'=>$q]);
+    }
+
+    /** @param array<string,string> $data */
+    public function preview(array $data): void
+    {
+        $id = max(0, (int) ($data['id'] ?? 0));
+        $statement = Connection::getInstance()->prepare('SELECT c.*,m.alt_text FROM studio_content c LEFT JOIN studio_media m ON m.id=c.media_id WHERE c.id=? AND c.deleted_at IS NULL LIMIT 1');
+        $statement->execute([$id]);
+        $content = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!$content) { http_response_code(404); return; }
+        header('X-Robots-Tag: noindex, nofollow');
+        $content['rendered_content'] = HtmlSanitizer::clean((string) ($content['content'] ?? ''));
+        echo $this->view->render('pages/content-preview', ['title'=>'Pré-visualização · ' . $content['title'],'content'=>$content,'canonical'=>null,'robots'=>'noindex, nofollow']);
+    }
+
+    public function menus(): void
+    {
+        $pdo = Connection::getInstance();
+        $cms = new CmsService();
+        if (Request::isMethod('POST')) {
+            $this->validateCsrf();
+            $action = (string) Request::post('action', 'save_menu');
+            try {
+                if ($action === 'save_menu') {
+                    $id=max(0,(int)Request::post('id',0)); $name=mb_substr(trim(strip_tags((string)Request::post('name',''))),0,120); $location=Seo::slug((string)Request::post('location','')); $status=Request::post('status')==='inactive'?'inactive':'active';
+                    if (mb_strlen($name)<2||$location==='') { throw new \RuntimeException('Informe nome e localização válidos.'); }
+                    if($id){$pdo->prepare('UPDATE studio_menus SET name=?,location=?,status=? WHERE id=?')->execute([$name,$location,$status,$id]);}else{$pdo->prepare('INSERT INTO studio_menus(name,location,status) VALUES(?,?,?)')->execute([$name,$location,$status]);}
+                    Flash::set('success','Menu salvo.');
+                } elseif ($action === 'delete_menu') {
+                    $id=max(0,(int)Request::post('id',0)); $count=$pdo->prepare('SELECT COUNT(*) FROM studio_menu_items WHERE menu_id=?');$count->execute([$id]);if((int)$count->fetchColumn()>0){throw new \RuntimeException('Remova os itens antes de excluir o menu.');}$pdo->prepare('DELETE FROM studio_menus WHERE id=?')->execute([$id]);Flash::set('success','Menu excluído.');
+                } elseif ($action === 'delete_item') {
+                    $pdo->prepare('DELETE FROM studio_menu_items WHERE id=?')->execute([max(0,(int)Request::post('id',0))]);Flash::set('success','Item removido.');
+                } elseif ($action === 'save_item') {
+                    $id=max(0,(int)Request::post('id',0));$menuId=max(0,(int)Request::post('menu_id',0));$label=mb_substr(trim(strip_tags((string)Request::post('label',''))),0,120);$type=in_array(Request::post('type'),['page','external'],true)?(string)Request::post('type'):'external';$pageId=$type==='page'?(max(0,(int)Request::post('page_id',0))?:null):null;$url=$type==='external'?mb_substr(trim((string)Request::post('url','')),0,500):null;$parentId=max(0,(int)Request::post('parent_id',0))?:null;$position=max(0,min(9999,(int)Request::post('position',0)));$target=Request::post('target')==='_blank'?'_blank':'_self';$status=Request::post('status')==='inactive'?'inactive':'active';
+                    $urlScheme=strtolower((string)parse_url((string)$url,PHP_URL_SCHEME));
+                    if(mb_strlen($label)<2){throw new \RuntimeException('Informe um rótulo válido.');}if($type==='external'&&($url===null||filter_var($url,FILTER_VALIDATE_URL)===false||!in_array($urlScheme,['http','https'],true))){throw new \RuntimeException('Informe uma URL externa HTTP(S) válida.');}
+                    if($id>0&&$parentId===$id){throw new \RuntimeException('Um item não pode ser pai de si mesmo.');}if($parentId){$check=$pdo->prepare('SELECT 1 FROM studio_menu_items WHERE id=? AND menu_id=?');$check->execute([$parentId,$menuId]);if(!$check->fetchColumn()){throw new \RuntimeException('Item pai inválido.');}}
+                    $values=[$menuId,$parentId,$label,$type,$pageId,$url,$target,$status,$position];
+                    if($id){$values[]=$id;$pdo->prepare('UPDATE studio_menu_items SET menu_id=?,parent_id=?,label=?,type=?,page_id=?,url=?,target=?,status=?,position=? WHERE id=?')->execute($values);}else{$pdo->prepare('INSERT INTO studio_menu_items(menu_id,parent_id,label,type,page_id,url,target,status,position) VALUES(?,?,?,?,?,?,?,?,?)')->execute($values);}Flash::set('success','Item de menu salvo.');
+                }
+                Logger::info('Navegação do CMS alterada.',['action'=>$action,'actor_id'=>Auth::user()?->id]);
+            } catch(Throwable $exception){Flash::set('error',$exception->getMessage());}
+            Response::to('/studio/menus' . ((int)Request::post('menu_id',0)>0?'?menu='.(int)Request::post('menu_id',0):''));
+        }
+        $menuId=max(0,(int)Request::get('menu',0));$menus=$cms->menus();if(!$menuId&&$menus!==[]){$menuId=(int)$menus[0]['id'];}
+        $selectedMenu=null;foreach($menus as $candidate){if((int)$candidate['id']===$menuId){$selectedMenu=$candidate;break;}}
+        $pages=$pdo->query("SELECT id,title FROM studio_content WHERE type='page' AND deleted_at IS NULL ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
+        echo $this->view->render('pages/cms-menus',['title'=>'Menus','currentPage'=>'menus','menus'=>$menus,'selectedMenu'=>$selectedMenu,'menuId'=>$menuId,'items'=>$menuId?$cms->menuItems($menuId):[],'pages'=>$pages]);
     }
 
     public function media(): void
@@ -196,9 +287,8 @@ final class StudioModulesController extends Controller
             $action = (string) Request::post('action', 'upload');
             if ($action === 'delete') {
                 $id = max(0, (int) Request::post('id', 0));
-                $usage = $pdo->prepare('SELECT (SELECT COUNT(*) FROM studio_content WHERE media_id=?) + (SELECT COUNT(*) FROM support_articles WHERE cover_media_id=?)');
-                $usage->execute([$id, $id]);
-                if ((int) $usage->fetchColumn() > 0) { Flash::set('error', 'A imagem está associada a conteúdo. Remova os vínculos antes de excluir.'); Response::to('/studio/media'); }
+                $uses = (new CmsService())->mediaUsage($id);
+                if ($uses !== []) { Flash::set('error', 'Esta mídia está sendo utilizada em ' . count($uses) . ' local(is). Remova os vínculos antes de excluir.'); Response::to('/studio/media'); }
                 $statement = $pdo->prepare('SELECT path FROM studio_media WHERE id=?');
                 $statement->execute([$id]);
                 $path = $statement->fetchColumn();
@@ -241,7 +331,7 @@ final class StudioModulesController extends Controller
             Response::to('/studio/media');
         }
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
-        $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
+        $statement = $pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id)+(SELECT COUNT(*) FROM support_articles a WHERE a.cover_media_id=m.id) usage_count FROM studio_media m' . ($search !== '' ? ' WHERE m.name LIKE ? OR m.alt_text LIKE ?' : '') . ' ORDER BY m.id DESC LIMIT 200');
         $statement->execute($search !== '' ? ['%' . $search . '%', '%' . $search . '%'] : []);
         echo $this->view->render('pages/media', ['title' => 'Mídia', 'files' => $statement->fetchAll(PDO::FETCH_ASSOC), 'search' => $search]);
     }
@@ -325,8 +415,8 @@ final class StudioModulesController extends Controller
         if (!$row) { return; }
         $numberStatement = $pdo->prepare('SELECT COALESCE(MAX(revision_number),0)+1 FROM studio_content_revisions WHERE content_id=? FOR UPDATE');
         $numberStatement->execute([$contentId]);
-        $insert = $pdo->prepare('INSERT INTO studio_content_revisions(content_id,type,revision_number,reason,title,slug,excerpt,content,seo_title,seo_description,media_id,category_id,template,meta_json,status,position,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        $insert->execute([$contentId,$type,(int)$numberStatement->fetchColumn(),$reason,$row['title'],$row['slug'],$row['excerpt'],$row['content'],$row['seo_title'],$row['seo_description'],$row['media_id'],$row['category_id'],$row['template'],$row['meta_json'],$row['status'],$row['position'],$row['published_at'],Auth::user()?->id]);
+        $insert = $pdo->prepare('INSERT INTO studio_content_revisions(content_id,type,revision_number,reason,title,slug,excerpt,content,seo_title,seo_description,seo_focus_keyword,canonical_url,robots_index,robots_follow,media_id,category_id,template,meta_json,status,position,published_at,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $insert->execute([$contentId,$type,(int)$numberStatement->fetchColumn(),$reason,$row['title'],$row['slug'],$row['excerpt'],$row['content'],$row['seo_title'],$row['seo_description'],$row['seo_focus_keyword'],$row['canonical_url'],$row['robots_index'],$row['robots_follow'],$row['media_id'],$row['category_id'],$row['template'],$row['meta_json'],$row['status'],$row['position'],$row['published_at'],Auth::user()?->id]);
     }
 
     private function restoreRevision(PDO $pdo, int $contentId, int $revisionId, string $type, string $module): never
@@ -337,8 +427,8 @@ final class StudioModulesController extends Controller
         if (!$revision) { Flash::set('error', 'Revisão inválida ou indisponível.'); Response::to('/studio/' . $module . '?edit=' . $contentId); }
         try {
             $pdo->beginTransaction();
-            $update = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,published_at=? WHERE id=? AND type=?');
-            $update->execute([$revision['title'],$revision['slug'],$revision['excerpt'],$revision['content'],$revision['seo_title'],$revision['seo_description'],$revision['media_id'],$revision['category_id'],$revision['template'],$revision['meta_json'],$revision['status'],$revision['position'],$revision['published_at'],$contentId,$type]);
+            $update = $pdo->prepare('UPDATE studio_content SET title=?,slug=?,excerpt=?,content=?,seo_title=?,seo_description=?,seo_focus_keyword=?,canonical_url=?,robots_index=?,robots_follow=?,media_id=?,category_id=?,template=?,meta_json=?,status=?,position=?,published_at=? WHERE id=? AND type=? AND deleted_at IS NULL');
+            $update->execute([$revision['title'],$revision['slug'],$revision['excerpt'],$revision['content'],$revision['seo_title'],$revision['seo_description'],$revision['seo_focus_keyword'],$revision['canonical_url'],$revision['robots_index'],$revision['robots_follow'],$revision['media_id'],$revision['category_id'],$revision['template'],$revision['meta_json'],$revision['status'],$revision['position'],$revision['published_at'],$contentId,$type]);
             $this->recordRevision($pdo, $contentId, $type, 'restored');
             $pdo->commit();
             Logger::info('Revisão de conteúdo restaurada.', ['action'=>'revision_restored','module'=>$module,'record_id'=>$contentId,'revision_id'=>$revisionId,'actor_id'=>Auth::user()?->id]);

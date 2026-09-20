@@ -139,6 +139,10 @@ $apps = [
                 src="<?= $this->e($this->asset('js/moves-editor-adapter.js')) ?>"
                 defer
         ></script>
+        <script
+                src="<?= $this->e($this->asset('js/cms-editor.js')) ?>"
+                defer
+        ></script>
     <?php endif; ?>
 </head>
 
