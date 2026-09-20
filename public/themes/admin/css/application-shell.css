@@ -421,3 +421,15 @@ button.cms-create-card{width:100%}
 .cms-create-card>i:first-child{width:40px;height:40px;border-radius:4px;background:#f5ecfb;color:#6e00b3;display:grid;place-items:center;font-size:20px}
 .cms-create-card>div{display:flex;flex-direction:column;gap:5px}.cms-create-card strong{font:16px/22px "Gotham Medium",Arial,sans-serif;font-weight:400}.cms-create-card span{color:#71809a;font:12px/16px "Gotham Book",Arial,sans-serif}.cms-create-card>i:last-child{transform:rotate(-90deg);color:#98a0b1}.cms-create-card:hover{border-color:#cbb5da;box-shadow:0 5px 18px rgba(25,34,56,.05)}.cms-create-card:hover>i:last-child{color:#6e00b3}
 @media(max-width:1100px){.cms-create-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:700px){.cms-create-grid{grid-template-columns:1fr}}
+
+
+/* CMS typography normalization — same scale used by approved Support workspace */
+.cms-workspace-page,.cms-workspace-page input,.cms-workspace-page select,.cms-workspace-page textarea,.cms-workspace-page button{font-family:"Gotham Book",Arial,sans-serif;font-size:14px;line-height:20px}
+.cms-workspace-page .studio-eyebrow{font-size:12px!important;line-height:16px!important}
+.cms-workspace-page .knowledge-header h1,.cms-workspace-page .knowledge-header h2{font-family:"Gotham Medium",Arial,sans-serif;font-size:28px!important;line-height:34px!important;font-weight:400}
+.cms-workspace-page .knowledge-header p:not(.studio-eyebrow){font-size:14px!important;line-height:20px!important}
+.cms-workspace-page h2,.cms-workspace-page h3,.cms-workspace-page strong{font-family:"Gotham Medium",Arial,sans-serif;font-weight:400}
+.cms-workspace-page .studio-panel h2,.cms-workspace-page .studio-panel h3,.cms-workspace-page .studio-editor-main>h2{font-size:16px;line-height:22px}
+.cms-workspace-page label,.cms-workspace-page .studio-field>label{font-size:14px;line-height:20px}
+.cms-workspace-page small,.cms-workspace-page .studio-badge,.cms-workspace-page .studio-status,.cms-workspace-page .knowledge-table-meta,.cms-workspace-page .studio-pagination,.cms-workspace-page .support-knowledge-tabs a{font-size:12px!important;line-height:16px!important}
+.cms-workspace-page .studio-btn,.cms-workspace-page .studio-filter-bar button,.cms-workspace-page .studio-filter-bar>a,.cms-workspace-page .studio-icon-action{font-size:14px;line-height:20px}
