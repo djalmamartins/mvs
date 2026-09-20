@@ -331,6 +331,11 @@ $apps = [
             <?= $this->section('content') ?>
         </section>
 
+        <footer class="workspace-footer">
+            <span>Copyright © <?= date('Y') ?> MovesOS. Todos os direitos reservados.</span>
+            <span>Versão 1.0.0</span>
+        </footer>
+
     </main>
 
 </div>

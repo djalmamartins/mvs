@@ -217,6 +217,29 @@
         dialog.querySelectorAll('[data-revision-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
     };
 
+    const initArticleView = () => {
+        const list = document.querySelector('.knowledge-table-wrap');
+        const buttons = document.querySelectorAll('.knowledge-view-toggle button');
+        if (!list || buttons.length !== 2) return;
+        const storageKey = 'moves-support:knowledge-view';
+        buttons[0].dataset.knowledgeView = 'list';
+        buttons[1].dataset.knowledgeView = 'grid';
+        buttons[1].disabled = false;
+        buttons[1].removeAttribute('title');
+        const apply = (mode) => {
+            const selected = mode === 'grid' ? 'grid' : 'list';
+            list.classList.toggle('is-grid', selected === 'grid');
+            buttons.forEach((button) => {
+                const active = button.dataset.knowledgeView === selected;
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+            });
+            localStorage.setItem(storageKey, selected);
+        };
+        buttons.forEach((button) => button.addEventListener('click', () => apply(button.dataset.knowledgeView)));
+        apply(localStorage.getItem(storageKey) || 'list');
+    };
+
     const init = () => {
         document.querySelectorAll('[data-knowledge-dialog]').forEach(initModal);
         document.querySelectorAll('[data-knowledge-open]').forEach((button) => {
@@ -256,6 +279,7 @@
         initContextMenus();
         initArticleActions();
         initRevisionPreview();
+        initArticleView();
     };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
