@@ -332,7 +332,7 @@ $apps = [
         </section>
 
         <footer class="workspace-footer">
-            <span>Copyright © <?= date('Y') ?> MovesOS. Todos os direitos reservados.</span>
+            <span>Copyright © <?= date('Y') ?> Moves. Todos os direitos reservados.</span>
             <span>Versão 1.0.0</span>
         </footer>
 
