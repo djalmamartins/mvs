@@ -212,7 +212,9 @@ final class StudioModulesController extends Controller
         }
         $q = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
         $type = in_array(Request::get('type'), array_column(self::CONTENT_MODULES, 'type'), true) ? (string) Request::get('type') : '';
-        echo $this->view->render('pages/cms-trash', ['title'=>'Lixeira','currentPage'=>'trash','items'=>$cms->trashItems($q, $type),'q'=>$q,'type'=>$type,'modules'=>self::CONTENT_MODULES]);
+        $page = max(1, (int) Request::get('page', 1));
+        $pagination = $cms->trashPage($q, $type, $page);
+        echo $this->view->render('pages/cms-trash', ['title'=>'Lixeira','currentPage'=>'trash','items'=>$pagination['items'],'pagination'=>$pagination,'q'=>$q,'type'=>$type,'modules'=>self::CONTENT_MODULES]);
     }
 
     public function tags(): void
