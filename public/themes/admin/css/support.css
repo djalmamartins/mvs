@@ -40,3 +40,4 @@
 .support-report-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media(max-width:1100px){.support-report-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.support-report-metrics{grid-template-columns:1fr 1fr}}
+.support-article-heading-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}

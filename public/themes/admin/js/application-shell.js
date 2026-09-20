@@ -21,15 +21,16 @@ studio:{name:"Studio",desc:"Base visual, conteúdo, desenvolvimento e publicaç�
 ]}
 };
 const nav=document.querySelector("#productNav"), sidebar=document.querySelector("#productSidebar");
-function render(app){const d=apps[app];document.querySelector("#productName").textContent=d.name;document.querySelector("#crumbApp").textContent=d.name;document.querySelector("#pageKicker").textContent=d.name.toUpperCase();document.querySelector("#pageDescription").textContent=d.desc;nav.innerHTML=d.nav.map(([s,items])=>(s?`<div class="nav-section">${s}</div>`:"")+items.map(([n,i],ix)=>`<a href="#" class="${s==="Principal"&&ix===0?"active":""}"><i class="icon-${i}"></i><span>${n}</span></a>`).join("")).join("");document.querySelectorAll(".rail-app").forEach(x=>x.classList.toggle("active",x.dataset.app===app));closeLauncher()}
+function render(app){const d=apps[app];if(!d||!nav||!sidebar)return;const productName=document.querySelector("#productName"),crumbApp=document.querySelector("#crumbApp"),pageKicker=document.querySelector("#pageKicker"),pageDescription=document.querySelector("#pageDescription");if(productName)productName.textContent=d.name;if(crumbApp)crumbApp.textContent=d.name;if(pageKicker)pageKicker.textContent=d.name.toUpperCase();if(pageDescription)pageDescription.textContent=d.desc;nav.innerHTML=d.nav.map(([s,items])=>(s?`<div class="nav-section">${s}</div>`:"")+items.map(([n,i],ix)=>`<a href="#" class="${s==="Principal"&&ix===0?"active":""}"><i class="icon-${i}"></i><span>${n}</span></a>`).join("")).join("");document.querySelectorAll(".rail-app").forEach(x=>x.classList.toggle("active",x.dataset.app===app));closeLauncher()}
 document.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click",()=>b.dataset.app&&render(b.dataset.app)));
-document.querySelector("#collapseBtn").onclick=()=>sidebar.classList.add("collapsed");
-document.querySelector("#openSidebar").onclick=()=>{sidebar.classList.remove("collapsed");sidebar.classList.add("mobile-open")};
+const collapseBtn=document.querySelector("#collapseBtn"),openSidebar=document.querySelector("#openSidebar");
+if(collapseBtn&&sidebar)collapseBtn.onclick=()=>sidebar.classList.add("collapsed");
+if(openSidebar&&sidebar)openSidebar.onclick=()=>{sidebar.classList.remove("collapsed");sidebar.classList.add("mobile-open")};
 const launcher=document.querySelector("#launcher"),overlay=document.querySelector("#overlay");
-function openLauncher(){launcher.classList.add("show");overlay.classList.add("show");launcher.setAttribute("aria-hidden","false");setTimeout(()=>document.querySelector("#appSearch").focus(),50)}
-function closeLauncher(){launcher.classList.remove("show");overlay.classList.remove("show");launcher.setAttribute("aria-hidden","true")}
-document.querySelector("#launcherBtn").onclick=openLauncher;document.querySelector("#launcherClose").onclick=closeLauncher;overlay.onclick=closeLauncher;
-document.querySelector("#appSearch").addEventListener("input",e=>{const q=e.target.value.toLowerCase();document.querySelectorAll("#appGrid button").forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?"":"none")});
+function openLauncher(){if(!launcher||!overlay)return;launcher.classList.add("show");overlay.classList.add("show");launcher.setAttribute("aria-hidden","false");setTimeout(()=>document.querySelector("#appSearch")?.focus(),50)}
+function closeLauncher(){if(!launcher||!overlay)return;launcher.classList.remove("show");overlay.classList.remove("show");launcher.setAttribute("aria-hidden","true")}
+const launcherBtn=document.querySelector("#launcherBtn"),launcherClose=document.querySelector("#launcherClose"),appSearch=document.querySelector("#appSearch");if(launcherBtn)launcherBtn.onclick=openLauncher;if(launcherClose)launcherClose.onclick=closeLauncher;if(overlay)overlay.onclick=closeLauncher;
+appSearch?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();document.querySelectorAll("#appGrid button").forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?"":"none")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLauncher()});render("studio");
 document.querySelectorAll("[data-tabs] button").forEach(b=>b.addEventListener("click",()=>{b.parentElement.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active")}));
 const qs=document.querySelector("#tableSearch"),sf=document.querySelector("#statusFilter"),rows=[...document.querySelectorAll("#proposalRows tr")],rc=document.querySelector("#resultCount");

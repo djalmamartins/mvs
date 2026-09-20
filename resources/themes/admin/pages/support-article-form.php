@@ -81,12 +81,14 @@ $this->layout('layouts/default', [
             </p>
         </div>
 
-        <a
-            href="/support/articles"
-            class="studio-btn"
-        >
-            Voltar
-        </a>
+        <div class="support-article-heading-actions">
+            <?php if ($isEdit && $statusValue === 'published'): ?>
+                <a href="/help/articles/<?= $this->e(rawurlencode($slugValue)) ?>" class="studio-btn" target="_blank" rel="noopener">
+                    <i class="icon-eye-outline" aria-hidden="true"></i> Visualizar artigo
+                </a>
+            <?php endif; ?>
+            <a href="/support/articles" class="studio-btn">Voltar</a>
+        </div>
     </header>
 
 <form
