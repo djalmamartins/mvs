@@ -50,12 +50,22 @@ final class CmsServiceTest extends TestCase
         self::assertSame(11,$published['total']);
     }
 
+    public function testTrashPaginationIsServerSide(): void
+    {
+        $ids=[];
+        for($i=0;$i<23;$i++){ $id=$this->content('draft'); $ids[]=$id; self::assertTrue($this->cms->trash($id,'article',$this->userId)); }
+        $first=$this->cms->trashPage($this->prefix,'article',1);
+        self::assertSame(23,$first['total']); self::assertSame(2,$first['totalPages']); self::assertCount(20,$first['items']);
+        $second=$this->cms->trashPage($this->prefix,'article',2);
+        self::assertCount(3,$second['items']);
+    }
+
     public function testTrashRestoreAndPermanentDeletePreserveRecord(): void
     {
         $id=$this->content('draft');
         self::assertTrue($this->cms->trash($id,'article',$this->userId));
         self::assertSame(0,$this->cms->contentPage('article',['q'=>$this->prefix],1)['total']);
-        self::assertCount(1,$this->cms->trashItems($this->prefix,'article'));
+        self::assertCount(1,$this->cms->trashPage($this->prefix,'article',1)['items']);
         self::assertTrue($this->cms->restore($id,$this->userId));
         self::assertSame('draft',$this->pdo->query('SELECT status FROM studio_content WHERE id='.$id)->fetchColumn());
         self::assertTrue($this->cms->trash($id,'article',$this->userId));
