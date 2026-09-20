@@ -56,6 +56,7 @@ if (!function_exists('studio_icon')) {
             'search'=>'icon-search-outline', 'settings'=>'icon-settings-outline', 'sparkles'=>'icon-sparkles-outline',
             'tag'=>'icon-pricetag-outline', 'trash'=>'icon-trash-outline', 'trash-2'=>'icon-trash-outline',
             'upload'=>'icon-cloud-upload-outline', 'users'=>'icon-people-outline', 'refresh-cw'=>'icon-refresh-outline',
+            'add'=>'icon-add-outline', 'save'=>'icon-save-outline', 'eye'=>'icon-eye-outline',
         ];
 
         $icon = $icons[$name] ?? 'icon-help-circle-outline';
