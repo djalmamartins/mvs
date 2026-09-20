@@ -15,27 +15,26 @@ Auditoria executada em 20/09/2026 antes da publicação dos guias oficiais na Ba
 - SEO do CMS com título e descrição, incluindo fallback para os campos editoriais.
 - Revisões e restauração para Páginas e Artigos.
 
-## Parcial
+## Concluído na sprint final do CMS v1.0.0
 
-- Listagens pesquisam texto e status, limitadas a 200 registros e sem paginação.
+- Paginação server-side de 20 registros com total, páginas, anterior/próxima e query string preservada.
+- Filtros combináveis por busca, status, autor e categoria.
+- Tags próprias do domínio CMS, relações, contagem e exclusão protegida.
+- Autosave local por usuário/documento sem alteração do core do Moves Editor.
+- Lixeira com restauração do status anterior seguro e exclusão permanente explícita.
+- Preview autenticado de rascunhos com `noindex,nofollow`.
+- SEO avançado com palavra-chave, canonical e Robots persistidos.
+- Proteção de mídia por vínculos diretos e referências exatas no HTML do CMS e Support.
+- Menus e itens com tipos Página interna/URL externa, ordem, hierarquia e status.
+
+## Parcial conhecido e aceito
+
 - Categorias são criadas/associadas pelo formulário, sem tela própria para editar, contar ou excluir.
-- Proteção de exclusão de mídia cobre vínculos diretos, mas não referências antigas inseridas no HTML.
-- Legendas pertencem à figura no editor; `studio_media` não possui metadado próprio de legenda.
-
-## Inexistente e não documentado como funcional
-
-- Tags no CMS.
-- Autosave local e recuperação automática no editor do CMS.
-- Lixeira/soft delete do conteúdo do CMS.
-- Preview de conteúdo não publicado por URL pública.
-- Menus e navegação administráveis.
-- Focus keyword, canonical e Robots no SEO do CMS.
-- Paginação e filtros por autor/categoria nas listas do CMS.
+- Legendas pertencem à figura no editor; `studio_media` mantém ALT, mas não possui legenda global.
 
 ## Bugs e riscos registrados
 
-1. `StudioModulesController::media()` não detecta referências de mídia existentes dentro do HTML antes da exclusão. Esperado: impedir exclusão ou atualizar referências de maneira transacional.
-2. A exclusão de conteúdo do CMS é definitiva. A interface deve manter esse caráter explícito até existir uma lixeira transacional.
-3. Listas com mais de 200 itens deixam de oferecer acesso aos registros excedentes por não haver paginação.
+1. A exclusão permanente da lixeira é irreversível e permanece protegida por confirmação e autorização.
+2. A hierarquia de menus é persistida; o tema público atual apresenta a navegação principal conforme sua capacidade visual.
 
-Esses pontos não foram refatorados nesta entrega, cujo escopo é Help Center e documentação oficial.
+Auditoria atualizada após implementação, suíte automatizada e homologação browser da sprint final.
