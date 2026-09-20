@@ -299,6 +299,8 @@ final class Routes
         $studioContentMiddleware = [AuthMiddleware::class, new PermissionMiddleware('content.manage')];
         foreach (['pages', 'projects', 'articles', 'highlights', 'testimonials', 'faq'] as $module) {
             $router->get('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module, $studioContentMiddleware);
+            $router->get('/studio/' . $module . '/create/{id}', 'StudioModulesController:content', 'studio.' . $module . '.create', $studioContentMiddleware);
+            $router->get('/studio/' . $module . '/edit/{id}', 'StudioModulesController:content', 'studio.' . $module . '.edit', $studioContentMiddleware);
             $router->post('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module . '.save', $studioContentMiddleware);
         }
         $router->get('/studio/content/preview/{id}', 'StudioModulesController:preview', 'studio.content.preview', $studioContentMiddleware);
