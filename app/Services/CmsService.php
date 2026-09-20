@@ -52,6 +52,47 @@ final class CmsService
     }
 
     /** @return list<array<string,mixed>> */
+    public function categories(string $q = '', string $type = ''): array
+    {
+        $where = ["t.type IN ('article_category','project_category','faq_category')"]; $params = [];
+        if ($q !== '') { $where[] = '(t.name LIKE :q_name OR t.slug LIKE :q_slug)'; $params['q_name']=$params['q_slug']='%'.$q.'%'; }
+        if ($type !== '') { $where[] = 't.type=:type'; $params['type']=$type; }
+        $statement=Connection::getInstance()->prepare('SELECT t.*,COUNT(c.id) usage_count FROM studio_taxonomies t LEFT JOIN studio_content c ON c.category_id=t.id AND c.deleted_at IS NULL WHERE '.implode(' AND ',$where).' GROUP BY t.id ORDER BY t.type,t.name');
+        $statement->execute($params);
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function saveCategory(int $id, string $name, string $type): int
+    {
+        if (!in_array($type,['article_category','project_category','faq_category'],true)) { throw new RuntimeException('Tipo de categoria inválido.'); }
+        $name=mb_substr(trim(strip_tags($name)),0,120); $slug=Seo::slug($name);
+        if(mb_strlen($name)<2||$slug===''){throw new RuntimeException('Informe uma categoria válida.');}
+        $pdo=Connection::getInstance();
+        if($id>0){$check=$pdo->prepare('SELECT 1 FROM studio_taxonomies WHERE id=? AND type=?');$check->execute([$id,$type]);if(!$check->fetchColumn()){throw new RuntimeException('Categoria não encontrada.');}$pdo->prepare('UPDATE studio_taxonomies SET name=?,slug=? WHERE id=?')->execute([$name,$slug,$id]);return $id;}
+        $pdo->prepare('INSERT INTO studio_taxonomies(type,name,slug) VALUES(?,?,?)')->execute([$type,$name,$slug]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public function deleteCategory(int $id): void
+    {
+        $pdo=Connection::getInstance();$usage=$pdo->prepare('SELECT COUNT(*) FROM studio_content WHERE category_id=? AND deleted_at IS NULL');$usage->execute([$id]);
+        if((int)$usage->fetchColumn()>0){throw new RuntimeException('Esta categoria está sendo utilizada. Remova as relações antes de excluir.');}
+        $pdo->prepare("DELETE FROM studio_taxonomies WHERE id=? AND type IN ('article_category','project_category','faq_category')")->execute([$id]);
+    }
+
+    /** @return array{items:list<array<string,mixed>>,page:int,perPage:int,total:int,totalPages:int} */
+    public function mediaPage(string $q='', int $page=1): array
+    {
+        $where='';$params=[];
+        if($q!==''){$where=' WHERE m.name LIKE :q_name OR m.alt_text LIKE :q_alt';$params['q_name']=$params['q_alt']='%'.$q.'%';}
+        $pdo=Connection::getInstance();$count=$pdo->prepare('SELECT COUNT(*) FROM studio_media m'.$where);$count->execute($params);$total=(int)$count->fetchColumn();
+        $totalPages=max(1,(int)ceil($total/self::PER_PAGE));$page=max(1,min($page,$totalPages));$offset=($page-1)*self::PER_PAGE;
+        $statement=$pdo->prepare('SELECT m.id,m.name,m.alt_text,m.mime,m.size,m.width,m.height,m.parent_id,m.created_at,(SELECT COUNT(*) FROM studio_content c WHERE c.media_id=m.id)+(SELECT COUNT(*) FROM support_articles a WHERE a.cover_media_id=m.id) usage_count FROM studio_media m'.$where.' ORDER BY m.id DESC LIMIT '.self::PER_PAGE.' OFFSET '.$offset);
+        $statement->execute($params);
+        return ['items'=>$statement->fetchAll(PDO::FETCH_ASSOC),'page'=>$page,'perPage'=>self::PER_PAGE,'total'=>$total,'totalPages'=>$totalPages];
+    }
+
+    /** @return list<array<string,mixed>> */
     public function tagsForContent(int $contentId): array
     {
         $statement = Connection::getInstance()->prepare('SELECT t.id,t.name,t.slug FROM studio_tags t JOIN studio_content_tags ct ON ct.tag_id=t.id WHERE ct.content_id=? ORDER BY t.name');
