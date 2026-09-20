@@ -153,8 +153,6 @@ $apps = [
         data-editor-user="<?= (int) ($user?->id ?? 0) ?>"
 >
 
-<?php $this->insert('components/icon-sprite'); ?>
-
 <a class="studio-skip-link" href="#main-content">
     Ir para o conteúdo
 </a>
