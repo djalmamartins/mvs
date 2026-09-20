@@ -3,4 +3,14 @@
 <header class="studio-page-heading"><div><p class="studio-eyebrow">CONTEÚDO</p><h2>Lixeira</h2><p>Restaure registros preservando vínculos e revisões ou exclua-os definitivamente.</p></div></header>
 <form class="studio-filter-bar" method="get"><label><span>Busca</span><input name="q" value="<?= $this->e($q) ?>" placeholder="Título ou slug"></label><label><span>Tipo</span><select name="type"><option value="">Todos</option><?php foreach($labels as $value=>$label):?><option value="<?= $value ?>"<?= $type===$value?' selected':'' ?>><?= $label ?></option><?php endforeach;?></select></label><button>Filtrar</button><a href="/studio/trash">Limpar</a></form>
 <div class="studio-table-wrap"><table><thead><tr><th>Título</th><th>Tipo</th><th>Status anterior</th><th>Excluído em</th><th>Por</th><th>Ações</th></tr></thead><tbody><?php if($items===[]):?><tr><td class="studio-empty" colspan="6">A lixeira está vazia.</td></tr><?php endif;?><?php foreach($items as $item):?><tr><td><strong><?= $this->e($item['title']) ?></strong><small>/<?= $this->e($item['slug']) ?></small></td><td><?= $this->e($labels[$item['type']]??$item['type']) ?></td><td><?= $this->e($item['deleted_status']??$item['status']) ?></td><td><?= $this->e($item['deleted_at']) ?></td><td><?= $this->e($item['deleted_by_name']??'Sistema') ?></td><td><form class="studio-inline-form" method="post"><?= $this->csrf() ?><input type="hidden" name="id" value="<?= (int)$item['id'] ?>"><button class="studio-btn" name="action" value="restore"><?= studio_icon('refresh-cw') ?> Restaurar</button><button class="studio-danger-button" name="action" value="delete" data-confirm="Excluir permanentemente? Esta ação não pode ser desfeita."><?= studio_icon('trash-2') ?> Excluir</button></form></td></tr><?php endforeach;?></tbody></table></div>
+<?php if (($pagination['totalPages'] ?? 1) > 1): $query=['q'=>$q,'type'=>$type]; ?>
+<nav class="studio-pagination" aria-label="Paginação da lixeira">
+    <span><?= (int)$pagination['total'] ?> registro(s)</span>
+    <div>
+        <?php if ($pagination['page'] > 1): $query['page']=$pagination['page']-1; ?><a class="studio-btn" href="/studio/trash?<?= $this->e(http_build_query($query)) ?>">Anterior</a><?php endif; ?>
+        <span>Página <?= (int)$pagination['page'] ?> de <?= (int)$pagination['totalPages'] ?></span>
+        <?php if ($pagination['page'] < $pagination['totalPages']): $query['page']=$pagination['page']+1; ?><a class="studio-btn" href="/studio/trash?<?= $this->e(http_build_query($query)) ?>">Próxima</a><?php endif; ?>
+    </div>
+</nav>
+<?php endif; ?>
 </section>
