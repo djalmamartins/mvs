@@ -119,6 +119,7 @@ if ($activeProduct === 'support') {
     $groups = [
         'Visão geral' => [
             ['label' => 'Dashboard', 'icon' => 'icon-grid-outline', 'href' => '/studio', 'key' => 'dashboard'],
+            ['label' => 'Criar', 'icon' => 'icon-add-outline', 'href' => '/studio/create', 'key' => 'create'],
             ['label' => 'Relatórios', 'icon' => 'icon-stats-chart-outline', 'href' => '/studio/reports', 'key' => 'reports'],
             ['label' => 'Notificações', 'icon' => 'icon-notifications-outline', 'href' => '/studio/notifications', 'key' => 'notifications'],
             ['label' => 'Propostas', 'icon' => 'icon-document-text-outline', 'href' => '/studio/proposals', 'key' => 'proposals'],
