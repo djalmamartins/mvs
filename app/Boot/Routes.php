@@ -301,6 +301,8 @@ final class Routes
             $router->post('/studio/' . $module, 'StudioModulesController:content', 'studio.' . $module . '.save', $studioContentMiddleware);
         }
         $router->get('/studio/content/preview/{id}', 'StudioModulesController:preview', 'studio.content.preview', $studioContentMiddleware);
+        $router->get('/studio/categories', 'StudioModulesController:categories', 'studio.categories', $studioContentMiddleware);
+        $router->post('/studio/categories', 'StudioModulesController:categories', 'studio.categories.save', $studioContentMiddleware);
         $router->get('/studio/tags', 'StudioModulesController:tags', 'studio.tags', $studioContentMiddleware);
         $router->post('/studio/tags', 'StudioModulesController:tags', 'studio.tags.save', $studioContentMiddleware);
         $router->get('/studio/trash', 'StudioModulesController:trash', 'studio.trash', $studioContentMiddleware);
