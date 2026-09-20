@@ -390,7 +390,9 @@ final class StudioModulesController extends Controller
     private function currentModule(): string
     {
         $path = trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
-        $module = basename($path);
+        $segments = array_values(array_filter(explode('/', $path), static fn(string $segment): bool => $segment !== ''));
+        if (($segments[0] ?? '') !== 'studio') { throw new \RuntimeException('Módulo inválido.'); }
+        $module = (string) ($segments[1] ?? '');
         if (!isset(self::CONTENT_MODULES[$module])) { throw new \RuntimeException('Módulo inválido.'); }
         return $module;
     }
