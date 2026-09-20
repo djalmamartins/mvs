@@ -62,6 +62,13 @@ final class StudioController extends Controller
         ]);
     }
 
+    public function create(): void
+    {
+        echo $this->view->render('pages/create', [
+            'title' => 'Criar',
+        ]);
+    }
+
     public function versions(): void
     {
         $pdo = Connection::getInstance();
