@@ -386,3 +386,31 @@ a {
 @media(max-width:1100px){.studio-media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-editor-grid{grid-template-columns:minmax(0,1fr) 280px}}
 @media(max-width:900px){.studio-management-grid,.studio-editor-grid{grid-template-columns:1fr}.studio-page-heading{gap:16px}.studio-media-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){#main-content.page.studio-page{padding:22px 18px 36px}.studio-page-heading{align-items:stretch;flex-direction:column}.studio-filter-bar,.studio-media-toolbar{align-items:stretch;flex-direction:column}.studio-filter-bar label,.studio-filter-bar input,.studio-filter-bar select,.studio-filter-bar button,.studio-filter-bar>a,.studio-media-toolbar label,.studio-media-toolbar .studio-btn{width:100%}.studio-table-wrap{margin-right:-18px;margin-left:-18px;border-right:0;border-left:0;border-radius:0}.studio-pagination{align-items:flex-start;flex-direction:column}.studio-media-grid{grid-template-columns:1fr}.studio-inline-create{align-items:stretch;flex-direction:column}.studio-inline-create label{min-width:0}.studio-editor-actions>*{width:100%}}
+
+
+/* Shared knowledge workspace primitives — canonical Support geometry */
+.knowledge-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:22px}
+.knowledge-header h1{margin:5px 0 8px;font:26px/34px "Gotham Medium",Arial,sans-serif;font-weight:400;color:#19223b}
+.knowledge-header p{margin:0;color:#6f7a92;font:14px/20px "Gotham Book",Arial,sans-serif}
+.knowledge-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.support-knowledge-tabs{display:flex;gap:22px;margin:0 0 18px;border-bottom:1px solid #dfe2e8;overflow:auto}
+.support-knowledge-tabs a{padding:10px 2px;color:#667085;text-decoration:none;border-bottom:2px solid transparent;font:12px/16px "Gotham Medium",Arial,sans-serif;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.support-knowledge-tabs a.active{color:#6e00b3;border-color:#6e00b3}
+.knowledge-table-meta{display:flex;justify-content:space-between;margin:10px 2px;color:#71809a;font:12px/16px "Gotham Book",Arial,sans-serif}
+.knowledge-empty{min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#71809a;text-align:center}
+.knowledge-empty>i{font-size:28px;color:#6e00b3}.knowledge-empty strong{color:#273148;font-family:"Gotham Medium",Arial,sans-serif;font-weight:400}
+.moves-modal{width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px);padding:0;border:0;border-radius:6px;box-shadow:0 24px 70px rgba(25,34,56,.24);color:#19223b}
+.moves-modal::backdrop{background:rgba(25,34,56,.42)}
+.moves-modal>form,.moves-modal>.moves-modal-body{padding:24px}
+.moves-modal h2{margin:0 0 8px;font:20px/26px "Gotham Medium",Arial,sans-serif;font-weight:400}
+.moves-modal>form>p{margin:0 0 18px;color:#71809a}
+.moves-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid #e8e9ed}
+.cms-workspace-tabs{margin-bottom:18px}
+.cms-workspace-page .studio-filter-bar{justify-content:flex-start}
+.cms-workspace-page .studio-table-wrap th{font-size:12px!important;line-height:16px!important;letter-spacing:.02em}
+.cms-workspace-page .studio-table-wrap td{font-size:14px!important;line-height:20px!important}
+.cms-workspace-page .studio-table-wrap{border-radius:4px}
+.cms-workspace-page .studio-status{font-size:12px;line-height:16px}
+.cms-workspace-page .studio-icon-action{width:36px;height:36px}
+.cms-workspace-page .studio-pagination{font-size:12px;line-height:16px}
+@media(max-width:700px){.knowledge-header{align-items:stretch;flex-direction:column}.knowledge-header-actions .studio-btn{flex:1}.moves-modal{width:calc(100vw - 24px)}}
