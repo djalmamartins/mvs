@@ -1,0 +1,1 @@
+<?php $this->layout('layouts/default', compact('title', 'description', 'canonical', 'robots', 'ogUrl', 'ogType', 'ogImage')); ?><section class="help-error"><div><span><?= (int) ($code ?? 404) ?></span><h1>Conteúdo não encontrado</h1><p>Este artigo não existe, não está publicado ou foi removido.</p><a href="/help">Voltar para a Central de Ajuda</a></div></section>

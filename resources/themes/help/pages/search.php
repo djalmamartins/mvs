@@ -1,0 +1,3 @@
+<?php $this->layout('layouts/default', compact('title', 'description', 'canonical', 'robots', 'ogUrl', 'ogType', 'ogImage')); ?>
+<section class="help-page-head"><div class="help-shell"><?php $this->insert('components/breadcrumb', ['items' => [['label' => 'Busca']]]); ?><p class="help-eyebrow">PESQUISA</p><h1>Buscar na Central de Ajuda</h1><?php $this->insert('components/search-form', ['query' => $query]); ?></div></section>
+<section class="help-shell help-results"><header class="section-heading"><div><h2><?= $query === '' ? 'Digite um termo para começar' : count($items) . ' resultado(s) para “' . $this->e($query) . '”' ?></h2></div></header><?php if ($query !== ''): ?><?php $this->insert('components/article-list', ['articles' => $items]); ?><?php endif; ?></section>

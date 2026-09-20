@@ -1,0 +1,1 @@
+<footer class="help-footer"><div class="help-shell"><div><strong>Moves</strong><span>Ideias em movimento.</span></div><nav aria-label="Rodapé"><a href="/help">Central de Ajuda</a><a href="/contato">Contato</a><a href="/">moves.com.br</a></nav><small>© <?= date('Y') ?> Moves. Todos os direitos reservados.</small></div></footer>
