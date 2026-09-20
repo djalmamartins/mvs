@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Services\Support;
 
+use Moves\Boot\Connection;
 use Moves\Models\Support\Category;
 use Moves\Models\Support\Product;
 use RuntimeException;
@@ -150,6 +151,17 @@ final class CategoryService
 
         if (!$category instanceof Category) {
             throw new RuntimeException('Categoria não encontrada.');
+        }
+
+        $statement = Connection::getInstance()->prepare(
+            'SELECT
+                (SELECT COUNT(*) FROM support_categories WHERE parent_id = ?) AS children,
+                (SELECT COUNT(*) FROM support_articles WHERE category_id = ?) AS articles'
+        );
+        $statement->execute([$id, $id]);
+        $usage = $statement->fetch(\PDO::FETCH_ASSOC) ?: [];
+        if ((int) ($usage['children'] ?? 0) > 0 || (int) ($usage['articles'] ?? 0) > 0) {
+            throw new RuntimeException('A categoria está vinculada a subcategorias ou artigos e não pode ser excluída.');
         }
 
         if (!$category->destroy()) {

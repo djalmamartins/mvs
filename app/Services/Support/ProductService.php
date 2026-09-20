@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Services\Support;
 
+use Moves\Boot\Connection;
 use Moves\Models\Support\Product;
 use RuntimeException;
 
@@ -117,6 +118,17 @@ final class ProductService
 
         if (!$product instanceof Product) {
             throw new RuntimeException('Produto não encontrado.');
+        }
+
+        $statement = Connection::getInstance()->prepare(
+            'SELECT
+                (SELECT COUNT(*) FROM support_categories WHERE product_id = ?) AS categories,
+                (SELECT COUNT(*) FROM support_articles WHERE product_id = ?) AS articles'
+        );
+        $statement->execute([$id, $id]);
+        $usage = $statement->fetch(\PDO::FETCH_ASSOC) ?: [];
+        if ((int) ($usage['categories'] ?? 0) > 0 || (int) ($usage['articles'] ?? 0) > 0) {
+            throw new RuntimeException('O produto está vinculado a categorias ou artigos e não pode ser excluído.');
         }
 
         if (!$product->destroy()) {

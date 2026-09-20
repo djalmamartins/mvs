@@ -12,7 +12,7 @@ use DOMNode;
 final class HtmlSanitizer
 {
     private const TAGS = ['p','br','h2','h3','h4','blockquote','pre','code','strong','b','em','i','u','s','ul','ol','li','a','img','figure','figcaption','table','thead','tbody','tfoot','tr','th','td','hr','div','iframe'];
-    private const ATTRIBUTES = ['href','title','target','rel','src','alt','class','colspan','rowspan','width','height','loading','allow','allowfullscreen'];
+    private const ATTRIBUTES = ['href','title','target','rel','src','alt','class','colspan','rowspan','width','height','loading','allow','allowfullscreen','style','data-align'];
     private const CLASSES = ['moves-table-scroll', 'moves-embed'];
 
     public static function clean(string $html): string
@@ -51,6 +51,10 @@ final class HtmlSanitizer
                 if ($name === 'class') {
                     $classes = array_values(array_intersect(preg_split('/\s+/', trim($attribute->value)) ?: [], self::CLASSES));
                     $classes === [] ? $node->removeAttribute('class') : $node->setAttribute('class', implode(' ', $classes));
+                }
+                if ($name === 'data-align' && ($tag !== 'figure' || !in_array($attribute->value, ['left','center','right'], true))) { $node->removeAttribute($name); }
+                if ($name === 'style') {
+                    if ($tag !== 'figure' || preg_match('/^width:\s*(?:100%|[1-9]?\d(?:\.\d+)?%|(?:[4-9]\d|[1-9]\d{2,3})px)\s*;?$/i', trim($attribute->value)) !== 1) { $node->removeAttribute($name); }
                 }
             }
             if ($tag === 'a' && $node->getAttribute('target') === '_blank') { $node->setAttribute('rel', 'noopener noreferrer'); }

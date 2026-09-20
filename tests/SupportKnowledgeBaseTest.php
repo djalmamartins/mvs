@@ -7,6 +7,7 @@ use Moves\Boot\Environment;
 use Moves\Services\Support\ArticleService;
 use Moves\Services\Support\CategoryService;
 use Moves\Services\Support\ProductService;
+use Moves\Core\HtmlSanitizer;
 use MovesCode\Model\Connection as ModelConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -153,5 +154,82 @@ final class SupportKnowledgeBaseTest extends TestCase
         $revisions = $this->pdo->prepare('SELECT COUNT(*) FROM support_article_revisions WHERE article_id = ?');
         $revisions->execute([(int) $discard->id]);
         self::assertSame(0, (int) $revisions->fetchColumn());
+    }
+
+    public function testArticleSecuritySlugConflictsAndRelationshipGuards(): void
+    {
+        $productService = new ProductService();
+        $categoryService = new CategoryService();
+        $articleService = new ArticleService();
+        $product = $productService->create($this->prefix . ' Produto protegido', null, $this->userId);
+        $this->productId = (int) $product->id;
+        $category = $categoryService->create($this->prefix . ' Categoria protegida', $this->productId);
+
+        $article = $articleService->create(
+            $this->prefix . ' Segurança',
+            $this->productId,
+            (int) $category->id,
+            'Resumo',
+            '<script>alert(1)</script><p onclick="alert(2)">Seguro</p><a href="javascript:alert(3)">link</a><figure data-align="center" style="width: 65%;"><img src="/media/1" onerror="alert(4)" alt="Imagem"></figure>',
+            $this->userId,
+            $this->prefix . '-seguranca'
+        );
+
+        $stored = (string) $articleService->find((int) $article->id)?->content;
+        self::assertStringNotContainsString('<script', $stored);
+        self::assertStringNotContainsString('onclick', $stored);
+        self::assertStringNotContainsString('javascript:', $stored);
+        self::assertStringNotContainsString('onerror', $stored);
+        self::assertStringContainsString('data-align="center"', $stored);
+        self::assertStringContainsString('style="width: 65%;"', $stored);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Este slug já está em uso');
+        $articleService->create(
+            $this->prefix . ' Slug duplicado',
+            $this->productId,
+            (int) $category->id,
+            null,
+            '<p>Conteúdo.</p>',
+            $this->userId,
+            $this->prefix . '-seguranca'
+        );
+    }
+
+    public function testRelatedProductAndCategoryCannotBeDeleted(): void
+    {
+        $productService = new ProductService();
+        $categoryService = new CategoryService();
+        $product = $productService->create($this->prefix . ' Produto relacionado', null, $this->userId);
+        $this->productId = (int) $product->id;
+        $category = $categoryService->create($this->prefix . ' Categoria relacionada', $this->productId);
+
+        try {
+            $productService->delete($this->productId);
+            self::fail('Produto relacionado deveria ser protegido.');
+        } catch (RuntimeException $exception) {
+            self::assertStringContainsString('vinculado', $exception->getMessage());
+        }
+
+        (new ArticleService())->create(
+            $this->prefix . ' Artigo relacionado',
+            $this->productId,
+            (int) $category->id,
+            null,
+            '<p>Conteúdo.</p>',
+            $this->userId
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('A categoria está vinculada');
+        $categoryService->delete((int) $category->id);
+    }
+
+    public function testSanitizerPreservesOnlySupportedEditorFigurePresentation(): void
+    {
+        $html = HtmlSanitizer::clean('<figure data-align="right" style="width: 420px; color:red"><img src="/media/9"></figure><figure data-align="left" style="width: 420px;"><img src="/media/9"></figure>');
+        self::assertStringNotContainsString('color:red', $html);
+        self::assertStringContainsString('data-align="left"', $html);
+        self::assertStringContainsString('style="width: 420px;"', $html);
     }
 }

@@ -196,8 +196,8 @@ final class StudioModulesController extends Controller
             $action = (string) Request::post('action', 'upload');
             if ($action === 'delete') {
                 $id = max(0, (int) Request::post('id', 0));
-                $usage = $pdo->prepare('SELECT COUNT(*) FROM studio_content WHERE media_id=?');
-                $usage->execute([$id]);
+                $usage = $pdo->prepare('SELECT (SELECT COUNT(*) FROM studio_content WHERE media_id=?) + (SELECT COUNT(*) FROM support_articles WHERE cover_media_id=?)');
+                $usage->execute([$id, $id]);
                 if ((int) $usage->fetchColumn() > 0) { Flash::set('error', 'A imagem está associada a conteúdo. Remova os vínculos antes de excluir.'); Response::to('/studio/media'); }
                 $statement = $pdo->prepare('SELECT path FROM studio_media WHERE id=?');
                 $statement->execute([$id]);

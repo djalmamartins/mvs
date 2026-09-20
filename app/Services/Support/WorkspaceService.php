@@ -24,6 +24,11 @@ final class WorkspaceService
         foreach (['products' => 'support_products', 'categories' => 'support_categories', 'tags' => 'support_tags'] as $key => $table) {
             $counts[$key] = (int) $pdo->query('SELECT COUNT(*) FROM ' . $table)->fetchColumn();
         }
+        $counts['revisions'] = (int) $pdo->query(
+            'SELECT COUNT(*) FROM support_article_revisions r
+             INNER JOIN support_articles a ON a.id = r.article_id
+             WHERE a.deleted_at IS NULL'
+        )->fetchColumn();
 
         $recent = $pdo->query(
             "SELECT a.title, a.slug, a.status, a.updated_at,

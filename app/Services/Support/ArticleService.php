@@ -10,6 +10,7 @@ use Moves\Models\Support\Category;
 use Moves\Models\Support\Product;
 use Moves\Models\User;
 use Moves\Boot\Connection;
+use Moves\Core\HtmlSanitizer;
 use PDO;
 use RuntimeException;
 
@@ -263,13 +264,16 @@ final class ArticleService
         $this->validateAuthor($authorId);
         $this->validateMedia($coverMediaId);
 
-        $slug = $this->uniqueSlug(
-            $slug !== null && trim($slug) !== ''
-                ? $slug
-                : $title
-        );
+        if ($slug !== null && trim($slug) !== '') {
+            $slug = $this->slug($slug);
+            if ($this->slugExists($slug)) {
+                throw new RuntimeException('Este slug já está em uso. Escolha outro endereço.');
+            }
+        } else {
+            $slug = $this->uniqueSlug($title);
+        }
 
-        $content = $this->nullableText($content);
+        $content = $this->sanitizeContent($content);
         [$wordCount, $readingTime] = $this->contentMetrics($content);
 
         $article = new Article();
@@ -387,12 +391,12 @@ final class ArticleService
             ? $slug
             : (string) $article->slug;
 
-        $requestedSlug = $this->uniqueSlug(
-            $requestedSlug,
-            $id
-        );
+        $requestedSlug = $this->slug($requestedSlug);
+        if ($this->slugExists($requestedSlug, $id)) {
+            throw new RuntimeException('Este slug já está em uso. Escolha outro endereço.');
+        }
 
-        $content = $this->nullableText($content);
+        $content = $this->sanitizeContent($content);
         [$wordCount, $readingTime] = $this->contentMetrics($content);
 
         $excerpt = $this->nullableText($excerpt);
@@ -746,5 +750,12 @@ final class ArticleService
         $value = trim($value);
 
         return $value !== '' ? $value : null;
+    }
+
+    private function sanitizeContent(?string $content): ?string
+    {
+        $content = HtmlSanitizer::clean((string) $content);
+
+        return $content !== '' ? $content : null;
     }
 }
