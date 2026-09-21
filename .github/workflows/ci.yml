@@ -60,6 +60,9 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Security audit
+        run: composer audit --no-interaction
+
       - name: Migration smoke test
         run: |
           php scripts/migrate.php
