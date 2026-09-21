@@ -6,6 +6,8 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
+use RuntimeException;
+use Throwable;
 
 /**
  * Moves | Migration Runner
@@ -20,66 +22,85 @@ Environment::load(dirname(__DIR__));
 
 $pdo = Connection::getInstance();
 
-$pdo->exec(
-    'CREATE TABLE IF NOT EXISTS migrations (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        migration VARCHAR(255) NOT NULL UNIQUE,
-        executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB
-    DEFAULT CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci'
-);
+$lockName = 'moves:migrations';
+$lockStatement = $pdo->prepare('SELECT GET_LOCK(:lock_name, 0)');
+$lockStatement->execute([
+    'lock_name' => $lockName,
+]);
 
-$directory = dirname(__DIR__) . '/database/migrations';
-
-$files = glob($directory . '/*.sql');
-
-if ($files === false || $files === []) {
-    echo 'Nenhuma migration encontrada.' . PHP_EOL;
-    exit(0);
+if ((int) $lockStatement->fetchColumn() !== 1) {
+    throw new RuntimeException(
+        'Outra execução de migrations já está em andamento.'
+    );
 }
 
-sort($files);
-
-foreach ($files as $file) {
-    $migration = basename($file);
-
-    $statement = $pdo->prepare(
-        'SELECT COUNT(*) FROM migrations WHERE migration = :migration'
+try {
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS migrations (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            migration VARCHAR(255) NOT NULL UNIQUE,
+            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB
+        DEFAULT CHARACTER SET utf8mb4
+        COLLATE utf8mb4_unicode_ci'
     );
 
-    $statement->execute([
-        'migration' => $migration,
-    ]);
+    $directory = dirname(__DIR__) . '/database/migrations';
 
-    if ((int) $statement->fetchColumn() > 0) {
-        echo 'SKIP: ' . $migration . PHP_EOL;
-        continue;
+    $files = glob($directory . '/*.sql');
+
+    if ($files === false || $files === []) {
+        echo 'Nenhuma migration encontrada.' . PHP_EOL;
+        exit(0);
     }
 
-    $sql = file_get_contents($file);
+    sort($files);
 
-    if ($sql === false || trim($sql) === '') {
-        throw new RuntimeException(
-            'Migration vazia ou ilegível: ' . $migration
-        );
-    }
-
-    try {
-        $pdo->exec($sql);
+    foreach ($files as $file) {
+        $migration = basename($file);
 
         $statement = $pdo->prepare(
-            'INSERT INTO migrations (migration) VALUES (:migration)'
+            'SELECT COUNT(*) FROM migrations WHERE migration = :migration'
         );
 
         $statement->execute([
             'migration' => $migration,
         ]);
 
-        echo 'OK: ' . $migration . PHP_EOL;
-    } catch (Throwable $exception) {
-        throw $exception;
-    }
-}
+        if ((int) $statement->fetchColumn() > 0) {
+            echo 'SKIP: ' . $migration . PHP_EOL;
+            continue;
+        }
 
-echo 'Migrations concluídas.' . PHP_EOL;
+        $sql = file_get_contents($file);
+
+        if ($sql === false || trim($sql) === '') {
+            throw new RuntimeException(
+                'Migration vazia ou ilegível: ' . $migration
+            );
+        }
+
+        try {
+            $pdo->exec($sql);
+
+            $statement = $pdo->prepare(
+                'INSERT INTO migrations (migration) VALUES (:migration)'
+            );
+
+            $statement->execute([
+                'migration' => $migration,
+            ]);
+
+            echo 'OK: ' . $migration . PHP_EOL;
+        } catch (Throwable $exception) {
+            throw $exception;
+        }
+    }
+
+    echo 'Migrations concluídas.' . PHP_EOL;
+} finally {
+    $releaseStatement = $pdo->prepare('SELECT RELEASE_LOCK(:lock_name)');
+    $releaseStatement->execute([
+        'lock_name' => $lockName,
+    ]);
+}
