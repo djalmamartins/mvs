@@ -104,12 +104,37 @@ final class TalkController extends Controller
     }
     public function transfers(): void { $this->page('Transferências','transfers','Transferências recebidas, enviadas e pendentes.',['transfers'=>$this->talk->transfers()]); }
     public function history(): void { $this->page('Histórico','history','Atendimentos finalizados e histórico operacional.',['tickets'=>$this->talk->history()]); }
-    public function jack(): void { $this->page('Interações do Jack', 'jack', 'Revise atendimentos, respostas e decisões do agente virtual.'); }
-    public function jackSettings(): void { $this->page('Configuração do Jack', 'jack-settings', 'Defina quando e como o Jack participa do atendimento.'); }
+    public function jack(): void { $this->page('Interações do Jack','jack','Revise atendimentos, respostas e decisões do agente virtual.',['jack_interactions'=>$this->talk->jackInteractions()]); }
+    public function jackSettings(): void
+    {
+        $user=Auth::user(); if($user===null){Response::to('/login');}
+        if(Request::isMethod('POST')){
+            $this->requireCsrf('/talk/jack/settings');
+            $this->talk->saveSettings([
+                'jack.enabled'=>Request::post('jack_enabled')!==null?'1':'0',
+                'jack.wait_seconds'=>(string)max(0,(int)Request::post('jack_wait_seconds',60)),
+                'jack.transfer_summary'=>Request::post('jack_transfer_summary')!==null?'1':'0',
+            ],(int)$user->id);
+            Response::to('/talk/jack/settings?saved=1');
+        }
+        $this->page('Configuração do Jack','jack-settings','Defina quando e como o Jack participa do atendimento.',['settings'=>$this->talk->settings()]);
+    }
     public function queues(): void { $this->page('Filas e departamentos','queues','Organize departamentos, filas e capacidade de atendimento.',['queues'=>$this->talk->queues()]); }
     public function users(): void { $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->eligibleUsers()]); }
     public function reports(): void { $this->page('Relatórios','reports','Indicadores de fila, atendimento, transferência e SLA.',['reports'=>$this->talk->reports()]); }
-    public function settings(): void { $this->page('Configurações', 'settings', 'Configurações gerais, canais e regras do Talk.'); }
+    public function settings(): void
+    {
+        $user=Auth::user(); if($user===null){Response::to('/login');}
+        if(Request::isMethod('POST')){
+            $this->requireCsrf('/talk/settings');
+            $this->talk->saveSettings([
+                'auto_assign.enabled'=>Request::post('auto_assign_enabled')!==null?'1':'0',
+                'auto_assign.default_seconds'=>(string)max(5,(int)Request::post('auto_assign_default_seconds',30)),
+            ],(int)$user->id);
+            Response::to('/talk/settings?saved=1');
+        }
+        $this->page('Configurações','settings','Configurações gerais, canais e regras do Talk.',['settings'=>$this->talk->settings(),'channels'=>$this->talk->channels()]);
+    }
 
     private function requireCsrf(string $fallback): void
     {
