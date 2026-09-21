@@ -51,6 +51,86 @@ final class TalkService
         $s->execute(['id'=>$userId]); return $s->fetch(PDO::FETCH_ASSOC) ?: ['talk_role'=>'agent','max_active_tickets'=>5];
     }
 
+    public function canManage(int $userId): bool
+    {
+        return in_array((string)($this->permissions($userId)['talk_role']??'agent'),['supervisor','admin'],true);
+    }
+
+    public function canViewTicket(int $ticketId,int $userId): bool
+    {
+        if($this->canManage($userId)){return true;}
+        $s=Connection::getInstance()->prepare("SELECT COUNT(*) FROM talk_tickets t LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.id=:id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))");
+        $s->execute(['user_id'=>$userId,'id'=>$ticketId]);
+        return (int)$s->fetchColumn()>0;
+    }
+
+    public function saveUserSettings(int $targetUserId,string $role,int $capacity): void
+    {
+        if(!in_array($role,['agent','supervisor','admin'],true)){$role='agent';}
+        $capacity=max(1,min(100,$capacity));
+        Connection::getInstance()->prepare("INSERT INTO talk_user_settings(user_id,talk_role,max_active_tickets) VALUES(:user_id,:role,:capacity) ON DUPLICATE KEY UPDATE talk_role=VALUES(talk_role),max_active_tickets=VALUES(max_active_tickets)")->execute(['user_id'=>$targetUserId,'role'=>$role,'capacity'=>$capacity]);
+    }
+
+    public function saveQueue(int $id,string $name,?int $departmentId,int $seconds,string $status): int
+    {
+        $name=trim($name); if($name===''){throw new \RuntimeException('Informe o nome da fila.');}
+        $status=in_array($status,['active','inactive'],true)?$status:'active';
+        $seconds=max(5,min(86400,$seconds));
+        $slug=$this->slug($name);
+        $pdo=Connection::getInstance();
+        if($id>0){
+            $s=$pdo->prepare("UPDATE talk_queues SET name=:name,department_id=:department_id,auto_assign_after_seconds=:seconds,status=:status WHERE id=:id");
+            $s->execute(['name'=>$name,'department_id'=>$departmentId,'seconds'=>$seconds,'status'=>$status,'id'=>$id]); return $id;
+        }
+        $base=$slug;$n=2; while($this->queueSlugExists($slug)){$slug=$base.'-'.$n++;}
+        $s=$pdo->prepare("INSERT INTO talk_queues(department_id,name,slug,status,auto_assign_after_seconds) VALUES(:department_id,:name,:slug,:status,:seconds)");
+        $s->execute(['department_id'=>$departmentId,'name'=>$name,'slug'=>$slug,'status'=>$status,'seconds'=>$seconds]); return (int)$pdo->lastInsertId();
+    }
+
+    public function saveDepartment(int $id,string $name,string $status): int
+    {
+        $name=trim($name); if($name===''){throw new \RuntimeException('Informe o nome do departamento.');}
+        $status=in_array($status,['active','inactive'],true)?$status:'active'; $pdo=Connection::getInstance(); $slug=$this->slug($name);
+        if($id>0){$pdo->prepare("UPDATE talk_departments SET name=:name,status=:status WHERE id=:id")->execute(['name'=>$name,'status'=>$status,'id'=>$id]);return $id;}
+        $base=$slug;$n=2; while((int)$pdo->query("SELECT COUNT(*) FROM talk_departments WHERE slug=".$pdo->quote($slug))->fetchColumn()>0){$slug=$base.'-'.$n++;}
+        $s=$pdo->prepare("INSERT INTO talk_departments(name,slug,status) VALUES(:name,:slug,:status)");$s->execute(['name'=>$name,'slug'=>$slug,'status'=>$status]);return (int)$pdo->lastInsertId();
+    }
+
+    public function departments(): array
+    {
+        return Connection::getInstance()->query("SELECT id,name,slug,status FROM talk_departments ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function queueMembers(int $queueId): array
+    {
+        $s=Connection::getInstance()->prepare("SELECT qm.queue_id,qm.user_id,qm.role,qm.capacity,qm.status,u.name,u.email FROM talk_queue_members qm INNER JOIN users u ON u.id=qm.user_id WHERE qm.queue_id=:id ORDER BY u.name");
+        $s->execute(['id'=>$queueId]);return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function saveQueueMember(int $queueId,int $userId,string $role,int $capacity,string $status): void
+    {
+        if(!in_array($role,['agent','supervisor'],true)){$role='agent';}
+        $status=in_array($status,['active','inactive'],true)?$status:'active';$capacity=max(1,min(100,$capacity));
+        Connection::getInstance()->prepare("INSERT INTO talk_queue_members(queue_id,user_id,role,capacity,status) VALUES(:queue_id,:user_id,:role,:capacity,:status) ON DUPLICATE KEY UPDATE role=VALUES(role),capacity=VALUES(capacity),status=VALUES(status)")->execute(['queue_id'=>$queueId,'user_id'=>$userId,'role'=>$role,'capacity'=>$capacity,'status'=>$status]);
+    }
+
+    public function removeQueueMember(int $queueId,int $userId): void
+    {
+        Connection::getInstance()->prepare("DELETE FROM talk_queue_members WHERE queue_id=:queue_id AND user_id=:user_id")->execute(['queue_id'=>$queueId,'user_id'=>$userId]);
+    }
+
+    private function slug(string $value): string
+    {
+        $value=iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$value)?:$value;
+        $value=strtolower(trim((string)preg_replace('/[^a-zA-Z0-9]+/','-',$value),'-'));
+        return $value!==''?$value:'fila';
+    }
+
+    private function queueSlugExists(string $slug): bool
+    {
+        $s=Connection::getInstance()->prepare("SELECT COUNT(*) FROM talk_queues WHERE slug=:slug");$s->execute(['slug'=>$slug]);return (int)$s->fetchColumn()>0;
+    }
+
     public function claim(int $ticketId, int $userId): bool
     {
         $pdo = Connection::getInstance();
