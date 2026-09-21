@@ -10,6 +10,11 @@ $queue = $queue ?? [];
 $counts = $counts ?? [];
 $conversations = $conversations ?? [];
 $contacts = $contacts ?? [];
+$tickets = $tickets ?? [];
+$transfers = $transfers ?? [];
+$queues = $queues ?? [];
+$users = $users ?? [];
+$reports = $reports ?? [];
 ?>
 <section class="studio-page talk-page">
     <header class="knowledge-header">
@@ -84,7 +89,21 @@ $contacts = $contacts ?? [];
             <?php foreach($contacts as $row): ?><tr><td><?= $this->e((string)($row['name'] ?: 'Sem nome')) ?></td><td><?= $this->e((string)($row['phone'] ?? '—')) ?></td><td><?= $this->e((string)($row['email'] ?? '—')) ?></td><td><?= $this->e((string)$row['channel']) ?></td><td><?= $this->e((string)$row['updated_at']) ?></td></tr><?php endforeach; ?>
             </tbody></table></div><?php endif; ?>
         </div></section>
+    <?php elseif (in_array($currentPage, ['my-tickets','history'], true)): ?>
+        <section class="studio-panel"><div class="studio-panel-body">
+        <?php if($tickets===[]): ?><div class="knowledge-empty"><i class="icon-headset-outline"></i><strong>Nenhum atendimento</strong><span>Não há registros nesta área.</span></div>
+        <?php else: ?><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Protocolo</th><th>Contato</th><th>Fila</th><th>Prioridade</th><th>Status</th><th>Atualizado</th></tr></thead><tbody><?php foreach($tickets as $row): ?><tr><td><a href="/talk/tickets/<?= (int)$row['id'] ?>"><strong><?= $this->e((string)$row['protocol']) ?></strong></a></td><td><?= $this->e((string)($row['contact_name']??'—')) ?></td><td><?= $this->e((string)($row['queue_name']??'—')) ?></td><td><?= $this->e((string)$row['priority']) ?></td><td><?= $this->e((string)$row['status']) ?></td><td><?= $this->e((string)($row['closed_at']??$row['updated_at'])) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+        </div></section>
+    <?php elseif ($currentPage === 'transfers'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><?php if($transfers===[]): ?><div class="knowledge-empty"><strong>Nenhuma transferência</strong></div><?php else: ?><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Protocolo</th><th>Origem</th><th>Destino</th><th>Motivo</th><th>Data</th></tr></thead><tbody><?php foreach($transfers as $row): ?><tr><td><?= $this->e((string)$row['protocol']) ?></td><td><?= $this->e((string)($row['from_user']??$row['from_queue']??'—')) ?></td><td><?= $this->e((string)($row['to_user']??$row['to_queue']??'—')) ?></td><td><?= $this->e((string)($row['reason']??'—')) ?></td><td><?= $this->e((string)$row['created_at']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div></section>
+    <?php elseif ($currentPage === 'queues'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Fila</th><th>Departamento</th><th>Membros</th><th>Autoatribuição</th><th>Status</th></tr></thead><tbody><?php foreach($queues as $row): ?><tr><td><strong><?= $this->e((string)$row['name']) ?></strong></td><td><?= $this->e((string)($row['department_name']??'—')) ?></td><td><?= (int)$row['members'] ?></td><td><?= (int)$row['auto_assign_after_seconds'] ?>s</td><td><?= $this->e((string)$row['status']) ?></td></tr><?php endforeach; ?></tbody></table></div></div></section>
+    <?php elseif ($currentPage === 'users'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th></tr></thead><tbody><?php foreach($users as $row): ?><tr><td><?= $this->e((string)$row['name']) ?></td><td><?= $this->e((string)$row['email']) ?></td><td><?= $this->e((string)($row['role']??'user')) ?></td><td><?= $this->e((string)$row['status']) ?></td></tr><?php endforeach; ?></tbody></table></div></div></section>
+    <?php elseif ($currentPage === 'reports'): ?>
+        <div class="studio-dashboard-kpis"><article><span>Total</span><strong><?= (int)($reports['total']??0) ?></strong></article><article><span>Na fila</span><strong><?= (int)($reports['queued']??0) ?></strong></article><article><span>Em atendimento</span><strong><?= (int)($reports['active']??0) ?></strong></article><article><span>Finalizados</span><strong><?= (int)($reports['closed']??0) ?></strong></article></div>
+        <section class="studio-panel"><div class="studio-panel-body"><h2>Atendimentos por fila</h2><?php foreach(($reports['by_queue']??[]) as $row): ?><p><?= $this->e((string)$row['label']) ?>: <strong><?= (int)$row['total'] ?></strong></p><?php endforeach; ?></div></section>
     <?php else: ?>
-        <section class="studio-panel"><div class="studio-panel-body"><div class="knowledge-empty"><i class="icon-talk"></i><strong>Talk Foundation</strong><span>Esta área será conectada ao fluxo funcional do atendimento nos próximos blocos.</span></div></div></section>
+        <section class="studio-panel"><div class="studio-panel-body"><div class="knowledge-empty"><i class="icon-talk"></i><strong>Talk</strong><span>Área preparada para a próxima integração operacional.</span></div></div></section>
     <?php endif; ?>
 </section>
