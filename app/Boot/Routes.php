@@ -1,146 +1,17 @@
 <?php
-
 declare(strict_types=1);
-
 namespace Moves\Boot;
-
-use MovesCode\Router\Router;
-use Moves\Middleware\AuthMiddleware;
-use Moves\Middleware\GuestMiddleware;
-use Moves\Middleware\PermissionMiddleware;
-
-/** Moves | Routes */
-final class Routes
-{
-    public static function register(Router $router): void
-    {
-        $router->namespace('Moves\\Controllers')->group('');
-
-        $router->get('/', 'Home:index', 'home');
-        $router->get('/servicos', 'Home:services', 'site.services');
-        $router->get('/projetos', 'Home:projects', 'site.projects');
-        $router->get('/sobre', 'Home:about', 'site.about');
-        $router->get('/conteudo', 'Home:content', 'site.content');
-        $router->get('/conteudo/{slug}', 'Home:article', 'site.article');
-        $router->get('/media/{id}', 'StudioModulesController:mediaFile', 'site.media.file');
-        $router->get('/pagina/{slug}', 'Home:dynamicPage', 'site.dynamic.page');
-        $router->get('/faq', 'Home:faq', 'site.faq');
-        $router->get('/help', 'HelpController:index', 'help.home');
-        $router->get('/help/search', 'HelpController:search', 'help.search');
-        $router->get('/help/products/{slug}', 'HelpController:product', 'help.product');
-        $router->get('/help/categories/{slug}', 'HelpController:category', 'help.category');
-        $router->get('/help/articles/{slug}', 'HelpController:article', 'help.article');
-        $router->post('/help/articles/{slug}/feedback', 'HelpController:feedback', 'help.article.feedback');
-        $router->get('/contato', 'Home:contact', 'site.contact');
-        $router->post('/contato', 'Home:contactSubmit', 'site.contact.submit');
-        $router->get('/app', 'Home:app', 'app.home', AuthMiddleware::class);
-        $router->get('/app/status', 'Home:appStatus', 'app.status', AuthMiddleware::class);
-        $router->get('/profile', 'UserController:legacyProfile', 'profile.legacy', AuthMiddleware::class);
-        $router->get('/app/profile', 'UserController:profile', 'profile', [AuthMiddleware::class,new PermissionMiddleware('profile.view')]);
-        $router->get('/day', 'PlatformController:day', 'platform.day', AuthMiddleware::class);
-
-        $router->get('/talk', 'TalkController:dashboard', 'talk.dashboard', AuthMiddleware::class);
-        $router->get('/talk/queue', 'TalkController:queue', 'talk.queue', AuthMiddleware::class);
-        $router->post('/talk/queue', 'TalkController:queue', 'talk.queue.claim', AuthMiddleware::class);
-        $router->post('/talk/simulate', 'TalkController:simulate', 'talk.simulate', AuthMiddleware::class);
-        $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', AuthMiddleware::class);
-        $router->post('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket.action', AuthMiddleware::class);
-        $router->get('/talk/conversations', 'TalkController:conversations', 'talk.conversations', AuthMiddleware::class);
-        $router->get('/talk/contacts', 'TalkController:contacts', 'talk.contacts', AuthMiddleware::class);
-        $router->get('/talk/my-tickets', 'TalkController:myTickets', 'talk.my-tickets', AuthMiddleware::class);
-        $router->get('/talk/transfers', 'TalkController:transfers', 'talk.transfers', AuthMiddleware::class);
-        $router->get('/talk/history', 'TalkController:history', 'talk.history', AuthMiddleware::class);
-        $router->get('/talk/notifications', 'TalkController:notifications', 'talk.notifications', AuthMiddleware::class);
-        $router->post('/talk/notifications', 'TalkController:notifications', 'talk.notifications.action', AuthMiddleware::class);
-        $router->get('/talk/jack', 'TalkController:jack', 'talk.jack', AuthMiddleware::class);
-        $router->get('/talk/jack/settings', 'TalkController:jackSettings', 'talk.jack.settings', AuthMiddleware::class);
-        $router->post('/talk/jack/settings', 'TalkController:jackSettings', 'talk.jack.settings.save', AuthMiddleware::class);
-        $router->get('/talk/queues', 'TalkController:queues', 'talk.queues', AuthMiddleware::class);
-        $router->post('/talk/queues', 'TalkController:queues', 'talk.queues.save', AuthMiddleware::class);
-        $router->get('/talk/users', 'TalkController:users', 'talk.users', AuthMiddleware::class);
-        $router->post('/talk/users', 'TalkController:users', 'talk.users.presence', AuthMiddleware::class);
-        $router->get('/talk/reports', 'TalkController:reports', 'talk.reports', AuthMiddleware::class);
-        $router->get('/talk/settings', 'TalkController:settings', 'talk.settings', AuthMiddleware::class);
-        $router->post('/talk/settings', 'TalkController:settings', 'talk.settings.save', AuthMiddleware::class);
-
-        $router->get('/support', 'SupportWorkspaceController:dashboard', 'platform.support', AuthMiddleware::class);
-        $router->get('/support/inbox', 'SupportWorkspaceController:inbox', 'support.inbox', AuthMiddleware::class);
-        $router->get('/support/my-tickets', 'SupportWorkspaceController:myTickets', 'support.my-tickets', AuthMiddleware::class);
-        $router->get('/support/tickets', 'SupportWorkspaceController:tickets', 'support.tickets', AuthMiddleware::class);
-        $router->get('/support/sla', 'SupportWorkspaceController:sla', 'support.sla', AuthMiddleware::class);
-        $router->get('/support/users', 'SupportWorkspaceController:users', 'support.users', AuthMiddleware::class);
-        $router->get('/support/reports', 'SupportWorkspaceController:reports', 'support.reports', AuthMiddleware::class);
-        $router->get('/support/settings', 'SupportWorkspaceController:settings', 'support.settings', AuthMiddleware::class);
-        $router->get('/support/articles', 'SupportController:articles', 'support.articles', AuthMiddleware::class);
-        $router->get('/support/articles/create', 'SupportController:articleForm', 'support.articles.create', AuthMiddleware::class);
-        $router->get('/support/drafts', 'SupportController:drafts', 'support.drafts', AuthMiddleware::class);
-        $router->get('/support/revisions', 'SupportController:revisions', 'support.revisions', AuthMiddleware::class);
-        $router->get('/support/trash', 'SupportController:trash', 'support.trash', AuthMiddleware::class);
-        $router->get('/support/articles/{slug}/edit', 'SupportController:articleForm', 'support.articles.edit', AuthMiddleware::class);
-        $router->post('/support/articles/save', 'SupportController:articleSave', 'support.articles.save', AuthMiddleware::class);
-        $router->post('/support/articles/trash', 'SupportController:articleTrash', 'support.articles.trash', AuthMiddleware::class);
-        $router->post('/support/articles/restore', 'SupportController:articleRestore', 'support.articles.restore', AuthMiddleware::class);
-        $router->post('/support/articles/delete', 'SupportController:articleDelete', 'support.articles.delete', AuthMiddleware::class);
-        $router->get('/support/products', 'SupportKnowledgeController:products', 'support.products', AuthMiddleware::class);
-        $router->post('/support/products/save', 'SupportKnowledgeController:productSave', 'support.products.save', AuthMiddleware::class);
-        $router->post('/support/products/delete', 'SupportKnowledgeController:productDelete', 'support.products.delete', AuthMiddleware::class);
-        $router->get('/support/categories', 'SupportKnowledgeController:categories', 'support.categories', AuthMiddleware::class);
-        $router->post('/support/categories/save', 'SupportKnowledgeController:categorySave', 'support.categories.save', AuthMiddleware::class);
-        $router->post('/support/categories/delete', 'SupportKnowledgeController:categoryDelete', 'support.categories.delete', AuthMiddleware::class);
-        $router->get('/support/tags', 'SupportKnowledgeController:tags', 'support.tags', AuthMiddleware::class);
-        $router->post('/support/tags/save', 'SupportKnowledgeController:tagSave', 'support.tags.save', AuthMiddleware::class);
-        $router->post('/support/tags/delete', 'SupportKnowledgeController:tagDelete', 'support.tags.delete', AuthMiddleware::class);
-
-        $router->get('/erp', 'PlatformController:erp', 'platform.erp', AuthMiddleware::class);
-        $router->get('/studio/users', 'UserController:index', 'users.index', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $router->get('/studio/users/create', 'UserController:form', 'users.create', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $router->get('/studio/users/edit/{id}', 'UserController:form', 'users.edit', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $router->post('/studio/users/save', 'UserController:save', 'users.save', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $router->post('/studio/users/action', 'UserController:action', 'users.action', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $router->get('/studio', 'StudioController:dashboard', 'studio.home', [AuthMiddleware::class,new PermissionMiddleware('studio.dashboard')]);
-        $router->get('/studio/create', 'StudioController:create', 'studio.create', [AuthMiddleware::class,new PermissionMiddleware('content.manage')]);
-        $router->get('/studio/search', 'StudioSearchController:index', 'studio.search', [AuthMiddleware::class,new PermissionMiddleware('studio.search')]);
-        $studioTechnicalMiddleware=[AuthMiddleware::class,new PermissionMiddleware('logs.manage')];
-        $studioSettingsMiddleware=[AuthMiddleware::class,new PermissionMiddleware('settings.manage')];
-        $router->get('/studio/versions', 'StudioController:versions', 'studio.versions', $studioSettingsMiddleware);
-        $router->post('/studio/versions', 'StudioController:versions', 'studio.versions.release', $studioSettingsMiddleware);
-        $router->get('/studio/logs', 'StudioController:logs', 'studio.logs', $studioTechnicalMiddleware);
-        $router->post('/studio/logs', 'StudioController:logs', 'studio.logs.action', $studioTechnicalMiddleware);
-        $studioContentMiddleware=[AuthMiddleware::class,new PermissionMiddleware('content.manage')];
-        foreach(['pages','projects','articles','highlights','testimonials','faq'] as $module){
-            $router->get('/studio/'.$module, 'StudioModulesController:content', 'studio.'.$module, $studioContentMiddleware);
-            $router->get('/studio/'.$module.'/create/{id}', 'StudioModulesController:content', 'studio.'.$module.'.create', $studioContentMiddleware);
-            $router->get('/studio/'.$module.'/edit/{id}', 'StudioModulesController:content', 'studio.'.$module.'.edit', $studioContentMiddleware);
-            $router->post('/studio/'.$module, 'StudioModulesController:content', 'studio.'.$module.'.save', $studioContentMiddleware);
-        }
-        $router->get('/studio/content/preview/{id}', 'StudioModulesController:preview', 'studio.content.preview', $studioContentMiddleware);
-        $router->get('/studio/categories', 'StudioModulesController:categories', 'studio.categories', $studioContentMiddleware);
-        $router->post('/studio/categories', 'StudioModulesController:categories', 'studio.categories.save', $studioContentMiddleware);
-        $router->get('/studio/tags', 'StudioModulesController:tags', 'studio.tags', $studioContentMiddleware);
-        $router->post('/studio/tags', 'StudioModulesController:tags', 'studio.tags.save', $studioContentMiddleware);
-        $router->get('/studio/trash', 'StudioModulesController:trash', 'studio.trash', $studioContentMiddleware);
-        $router->post('/studio/trash', 'StudioModulesController:trash', 'studio.trash.action', $studioContentMiddleware);
-        $router->get('/studio/menus', 'StudioModulesController:menus', 'studio.menus', $studioContentMiddleware);
-        $router->post('/studio/menus', 'StudioModulesController:menus', 'studio.menus.save', $studioContentMiddleware);
-        $mediaMiddleware=[AuthMiddleware::class,new PermissionMiddleware('media.manage')];
-        $proposalMiddleware=[AuthMiddleware::class,new PermissionMiddleware('proposals.manage')];
-        $notificationMiddleware=[AuthMiddleware::class,new PermissionMiddleware('notifications.manage')];
-        $reportMiddleware=[AuthMiddleware::class,new PermissionMiddleware('reports.view')];
-        $router->get('/studio/media', 'StudioModulesController:media', 'studio.media', $mediaMiddleware);
-        $router->post('/studio/media', 'StudioModulesController:media', 'studio.media.save', $mediaMiddleware);
-        $router->get('/studio/media/library', 'StudioModulesController:mediaLibrary', 'studio.media.library', $studioContentMiddleware);
-        $router->get('/studio/media/file/{id}', 'StudioModulesController:mediaFile', 'studio.media.file', $mediaMiddleware);
-        $router->get('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals', $proposalMiddleware);
-        $router->post('/studio/proposals', 'StudioOperationsController:proposals', 'studio.proposals.save', $proposalMiddleware);
-        $router->get('/studio/notifications', 'StudioOperationsController:notifications', 'studio.notifications', $notificationMiddleware);
-        $router->post('/studio/notifications', 'StudioOperationsController:notifications', 'studio.notifications.read', $notificationMiddleware);
-        $router->get('/studio/reports', 'StudioOperationsController:reports', 'studio.reports', $reportMiddleware);
-        $router->get('/studio/users/page/{page}', 'UserController:index', 'users.page', [AuthMiddleware::class,new PermissionMiddleware('users.manage')]);
-        $settingsMiddleware=[AuthMiddleware::class,new PermissionMiddleware('settings.manage')];
-        $router->get('/studio/settings', 'SettingsController:index', 'settings.index', $settingsMiddleware);
-        $router->post('/studio/settings', 'SettingsController:update', 'settings.update', $settingsMiddleware);
-        $router->get('/studio/diagnostics', 'DiagnosticsController:index', 'diagnostics.index', [AuthMiddleware::class,new PermissionMiddleware('diagnostics.view')]);
-
-        foreach(['/admin','/admin/search','/admin/pages','/admin/projects','/admin/articles','/admin/media','/admin/highlights','/admin/testimonials','/admin/faq','/admin/proposals','/admin/categories','/admin/tags','/admin/menus','/admin/trash','/admin/users','/admin/settings','/admin/notifications','/admin/reports','/admin/versions','/admin/logs','/admin/diagnostics'] as $legacy){$router->get($legacy, 'LegacyAdminController:redirect', 'legacy.'.md5($legacy), AuthMiddleware::class);}
-    }
-}
+use MovesCode\Router\Router;use Moves\Middleware\AuthMiddleware;use Moves\Middleware\GuestMiddleware;use Moves\Middleware\PermissionMiddleware;
+final class Routes{public static function register(Router $router):void{
+$router->namespace('Moves\\Controllers')->group('');
+$router->get('/','Home:index','home');$router->get('/servicos','Home:services','site.services');$router->get('/projetos','Home:projects','site.projects');$router->get('/sobre','Home:about','site.about');$router->get('/conteudo','Home:content','site.content');$router->get('/conteudo/{slug}','Home:article','site.article');$router->get('/media/{id}','StudioModulesController:mediaFile','site.media.file');$router->get('/pagina/{slug}','Home:dynamicPage','site.dynamic.page');$router->get('/faq','Home:faq','site.faq');
+$router->get('/help','HelpController:index','help.home');$router->get('/help/search','HelpController:search','help.search');$router->get('/help/products/{slug}','HelpController:product','help.product');$router->get('/help/categories/{slug}','HelpController:category','help.category');$router->get('/help/articles/{slug}','HelpController:article','help.article');$router->post('/help/articles/{slug}/feedback','HelpController:feedback','help.article.feedback');$router->get('/contato','Home:contact','site.contact');$router->post('/contato','Home:contactSubmit','site.contact.submit');
+$router->get('/app','Home:app','app.home',AuthMiddleware::class);$router->get('/app/status','Home:appStatus','app.status',AuthMiddleware::class);$router->get('/profile','UserController:legacyProfile','profile.legacy',AuthMiddleware::class);$router->get('/app/profile','UserController:profile','profile',[AuthMiddleware::class,new PermissionMiddleware('profile.view')]);$router->get('/day','PlatformController:day','platform.day',AuthMiddleware::class);
+$router->get('/talk','TalkController:dashboard','talk.dashboard',AuthMiddleware::class);$router->get('/talk/queue','TalkController:queue','talk.queue',AuthMiddleware::class);$router->post('/talk/queue','TalkController:queue','talk.queue.claim',AuthMiddleware::class);$router->post('/talk/simulate','TalkController:simulate','talk.simulate',AuthMiddleware::class);$router->get('/talk/tickets/{id}','TalkController:ticket','talk.ticket',AuthMiddleware::class);$router->post('/talk/tickets/{id}','TalkController:ticket','talk.ticket.action',AuthMiddleware::class);$router->get('/talk/conversations','TalkController:conversations','talk.conversations',AuthMiddleware::class);$router->get('/talk/contacts','TalkController:contacts','talk.contacts',AuthMiddleware::class);$router->get('/talk/my-tickets','TalkController:myTickets','talk.my-tickets',AuthMiddleware::class);$router->get('/talk/transfers','TalkController:transfers','talk.transfers',AuthMiddleware::class);$router->get('/talk/history','TalkController:history','talk.history',AuthMiddleware::class);$router->get('/talk/notifications','TalkController:notifications','talk.notifications',AuthMiddleware::class);$router->post('/talk/notifications','TalkController:notifications','talk.notifications.action',AuthMiddleware::class);$router->get('/talk/jack','TalkController:jack','talk.jack',AuthMiddleware::class);$router->get('/talk/jack/settings','TalkController:jackSettings','talk.jack.settings',AuthMiddleware::class);$router->post('/talk/jack/settings','TalkController:jackSettings','talk.jack.settings.save',AuthMiddleware::class);$router->get('/talk/queues','TalkController:queues','talk.queues',AuthMiddleware::class);$router->post('/talk/queues','TalkController:queues','talk.queues.save',AuthMiddleware::class);$router->get('/talk/users','TalkController:users','talk.users',AuthMiddleware::class);$router->post('/talk/users','TalkController:users','talk.users.presence',AuthMiddleware::class);$router->get('/talk/reports','TalkController:reports','talk.reports',AuthMiddleware::class);$router->get('/talk/settings','TalkController:settings','talk.settings',AuthMiddleware::class);$router->post('/talk/settings','TalkController:settings','talk.settings.save',AuthMiddleware::class);
+$router->get('/support','SupportWorkspaceController:dashboard','platform.support',AuthMiddleware::class);$router->get('/support/inbox','SupportWorkspaceController:inbox','support.inbox',AuthMiddleware::class);$router->get('/support/my-tickets','SupportWorkspaceController:myTickets','support.my-tickets',AuthMiddleware::class);$router->get('/support/tickets','SupportWorkspaceController:tickets','support.tickets',AuthMiddleware::class);$router->get('/support/sla','SupportWorkspaceController:sla','support.sla',AuthMiddleware::class);$router->get('/support/users','SupportWorkspaceController:users','support.users',AuthMiddleware::class);$router->get('/support/reports','SupportWorkspaceController:reports','support.reports',AuthMiddleware::class);$router->get('/support/settings','SupportWorkspaceController:settings','support.settings',AuthMiddleware::class);$router->get('/support/articles','SupportController:articles','support.articles',AuthMiddleware::class);$router->get('/support/articles/create','SupportController:articleForm','support.articles.create',AuthMiddleware::class);$router->get('/support/drafts','SupportController:drafts','support.drafts',AuthMiddleware::class);$router->get('/support/revisions','SupportController:revisions','support.revisions',AuthMiddleware::class);$router->get('/support/trash','SupportController:trash','support.trash',AuthMiddleware::class);$router->get('/support/articles/{slug}/edit','SupportController:articleForm','support.articles.edit',AuthMiddleware::class);$router->post('/support/articles/save','SupportController:articleSave','support.articles.save',AuthMiddleware::class);$router->post('/support/articles/trash','SupportController:articleTrash','support.articles.trash',AuthMiddleware::class);$router->post('/support/articles/restore','SupportController:articleRestore','support.articles.restore',AuthMiddleware::class);$router->post('/support/articles/delete','SupportController:articleDelete','support.articles.delete',AuthMiddleware::class);$router->get('/support/products','SupportKnowledgeController:products','support.products',AuthMiddleware::class);$router->post('/support/products/save','SupportKnowledgeController:productSave','support.products.save',AuthMiddleware::class);$router->post('/support/products/delete','SupportKnowledgeController:productDelete','support.products.delete',AuthMiddleware::class);$router->get('/support/categories','SupportKnowledgeController:categories','support.categories',AuthMiddleware::class);$router->post('/support/categories/save','SupportKnowledgeController:categorySave','support.categories.save',AuthMiddleware::class);$router->post('/support/categories/delete','SupportKnowledgeController:categoryDelete','support.categories.delete',AuthMiddleware::class);$router->get('/support/tags','SupportKnowledgeController:tags','support.tags',AuthMiddleware::class);$router->post('/support/tags/save','SupportKnowledgeController:tagSave','support.tags.save',AuthMiddleware::class);$router->post('/support/tags/delete','SupportKnowledgeController:tagDelete','support.tags.delete',AuthMiddleware::class);
+$router->get('/erp','PlatformController:erp','platform.erp',AuthMiddleware::class);$users=[AuthMiddleware::class,new PermissionMiddleware('users.manage')];$router->get('/studio/users','UserController:index','users.index',$users);$router->get('/studio/users/create','UserController:form','users.create',$users);$router->get('/studio/users/edit/{id}','UserController:form','users.edit',$users);$router->post('/studio/users/save','UserController:save','users.save',$users);$router->post('/studio/users/action','UserController:action','users.action',$users);$router->get('/studio/users/page/{page}','UserController:index','users.page',$users);
+$content=[AuthMiddleware::class,new PermissionMiddleware('content.manage')];$router->get('/studio','StudioController:dashboard','studio.home',[AuthMiddleware::class,new PermissionMiddleware('studio.dashboard')]);$router->get('/studio/create','StudioController:create','studio.create',$content);$router->get('/studio/search','StudioSearchController:index','studio.search',[AuthMiddleware::class,new PermissionMiddleware('studio.search')]);$technical=[AuthMiddleware::class,new PermissionMiddleware('logs.manage')];$settings=[AuthMiddleware::class,new PermissionMiddleware('settings.manage')];$router->get('/studio/versions','StudioController:versions','studio.versions',$settings);$router->post('/studio/versions','StudioController:versions','studio.versions.release',$settings);$router->get('/studio/logs','StudioController:logs','studio.logs',$technical);$router->post('/studio/logs','StudioController:logs','studio.logs.action',$technical);foreach(['pages','projects','articles','highlights','testimonials','faq'] as $module){$router->get('/studio/'.$module,'StudioModulesController:content','studio.'.$module,$content);$router->get('/studio/'.$module.'/create/{id}','StudioModulesController:content','studio.'.$module.'.create',$content);$router->get('/studio/'.$module.'/edit/{id}','StudioModulesController:content','studio.'.$module.'.edit',$content);$router->post('/studio/'.$module,'StudioModulesController:content','studio.'.$module.'.save',$content);}$router->get('/studio/content/preview/{id}','StudioModulesController:preview','studio.content.preview',$content);$router->get('/studio/categories','StudioModulesController:categories','studio.categories',$content);$router->post('/studio/categories','StudioModulesController:categories','studio.categories.save',$content);$router->get('/studio/tags','StudioModulesController:tags','studio.tags',$content);$router->post('/studio/tags','StudioModulesController:tags','studio.tags.save',$content);$router->get('/studio/trash','StudioModulesController:trash','studio.trash',$content);$router->post('/studio/trash','StudioModulesController:trash','studio.trash.action',$content);$router->get('/studio/menus','StudioModulesController:menus','studio.menus',$content);$router->post('/studio/menus','StudioModulesController:menus','studio.menus.save',$content);
+$media=[AuthMiddleware::class,new PermissionMiddleware('media.manage')];$proposal=[AuthMiddleware::class,new PermissionMiddleware('proposals.manage')];$notice=[AuthMiddleware::class,new PermissionMiddleware('notifications.manage')];$report=[AuthMiddleware::class,new PermissionMiddleware('reports.view')];$router->get('/studio/media','StudioModulesController:media','studio.media',$media);$router->post('/studio/media','StudioModulesController:media','studio.media.save',$media);$router->get('/studio/media/library','StudioModulesController:mediaLibrary','studio.media.library',$content);$router->get('/studio/media/file/{id}','StudioModulesController:mediaFile','studio.media.file',$media);$router->get('/studio/proposals','StudioOperationsController:proposals','studio.proposals',$proposal);$router->post('/studio/proposals','StudioOperationsController:proposals','studio.proposals.save',$proposal);$router->get('/studio/notifications','StudioOperationsController:notifications','studio.notifications',$notice);$router->post('/studio/notifications','StudioOperationsController:notifications','studio.notifications.read',$notice);$router->get('/studio/reports','StudioOperationsController:reports','studio.reports',$report);$router->get('/studio/settings','SettingsController:index','settings.index',$settings);$router->post('/studio/settings','SettingsController:update','settings.update',$settings);$router->get('/studio/diagnostics','DiagnosticsController:index','diagnostics.index',[AuthMiddleware::class,new PermissionMiddleware('diagnostics.view')]);
+foreach(['/admin','/admin/search','/admin/versions','/admin/logs','/admin/pages','/admin/projects','/admin/articles','/admin/highlights','/admin/testimonials','/admin/faq','/admin/media','/admin/proposals','/admin/notifications','/admin/reports','/admin/settings','/admin/diagnostics','/admin/users','/admin/users/create'] as $legacy){$router->get($legacy,'LegacyStudioController:redirect');}$router->get('/admin/users/edit/{id}','LegacyStudioController:redirect');$router->get('/admin/users/page/{page}','LegacyStudioController:redirect');$router->get('/admin/media/file/{id}','LegacyStudioController:redirect');
+$router->get('/login','AuthController:login','login',GuestMiddleware::class);$router->post('/login','AuthController:authenticate','login.authenticate',GuestMiddleware::class);$router->post('/logout','AuthController:logout','logout',AuthMiddleware::class);Modules::boot($router);
+}}
