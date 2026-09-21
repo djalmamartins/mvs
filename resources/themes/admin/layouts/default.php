@@ -14,6 +14,10 @@ $user = Auth::user();
 $unreadNotifications = $user
     ? NotificationCounter::unreadFor((int) $user->id)
     : 0;
+$talkUnreadNotifications = 0;
+if ($user !== null && ($activeProduct ?? '') === 'talk') {
+    $talkUnreadNotifications = (new \Moves\Services\Talk\TalkNotificationService())->unreadCount((int) $user->id);
+}
 
 $activeProduct = $activeProduct ?? 'cms';
 $productName   = $productName ?? 'CMS';
@@ -108,6 +112,9 @@ $apps = [
             rel="stylesheet"
             href="<?= $this->e($this->asset('css/moves-form.css')) ?>"
     >
+    <?php if (($activeProduct ?? '') === 'talk'): ?>
+        <link rel="stylesheet" href="<?= $this->e($this->asset('css/talk.css')) ?>">
+    <?php endif; ?>
 
     <?php if (!empty($hasMovesEditor)): ?>
         <link
@@ -129,6 +136,9 @@ $apps = [
             src="<?= $this->e($this->asset('js/application-shell.js')) ?>"
             defer
     ></script>
+    <?php if (($activeProduct ?? '') === 'talk'): ?>
+        <script src="<?= $this->e($this->asset('js/talk.js')) ?>" defer></script>
+    <?php endif; ?>
 
     <?php if (!empty($hasMovesEditor)): ?>
         <script
@@ -292,11 +302,12 @@ $apps = [
 
                 <a
                         class="icon-btn"
-                        href="/studio/notifications"
+                        href="<?= $activeProduct === 'talk' ? '/talk/notifications' : '/studio/notifications' ?>"
                         title="Notificações"
-                        aria-label="Notificações<?= $unreadNotifications ? ': ' . $unreadNotifications . ' não lidas' : '' ?>"
+                        aria-label="Notificações<?= ($activeProduct === 'talk' ? $talkUnreadNotifications : $unreadNotifications) ? ': ' . ($activeProduct === 'talk' ? $talkUnreadNotifications : $unreadNotifications) . ' não lidas' : '' ?>"
                 >
                     <i class="icon-notifications-outline"></i>
+                    <?php if ($activeProduct === 'talk'): ?><span data-talk-notification-count<?= $talkUnreadNotifications ? '' : ' hidden' ?>><?= $talkUnreadNotifications ?: '' ?></span><?php endif; ?>
                 </a>
 
                 <?php if ($user !== null): ?>
