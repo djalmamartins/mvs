@@ -117,6 +117,9 @@ final class Routes
         $router->get('/talk', 'TalkController:dashboard', 'talk.dashboard', AuthMiddleware::class);
         $router->get('/talk/queue', 'TalkController:queue', 'talk.queue', AuthMiddleware::class);
         $router->post('/talk/queue', 'TalkController:queue', 'talk.queue.claim', AuthMiddleware::class);
+        $router->post('/talk/simulate', 'TalkController:simulate', 'talk.simulate', AuthMiddleware::class);
+        $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', AuthMiddleware::class);
+        $router->post('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket.action', AuthMiddleware::class);
         $router->get('/talk/conversations', 'TalkController:conversations', 'talk.conversations', AuthMiddleware::class);
         $router->get('/talk/contacts', 'TalkController:contacts', 'talk.contacts', AuthMiddleware::class);
         $router->get('/talk/my-tickets', 'TalkController:myTickets', 'talk.my-tickets', AuthMiddleware::class);
