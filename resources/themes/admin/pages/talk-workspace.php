@@ -15,6 +15,9 @@ $transfers = $transfers ?? [];
 $queues = $queues ?? [];
 $users = $users ?? [];
 $reports = $reports ?? [];
+$settings = $settings ?? [];
+$channels = $channels ?? [];
+$jack_interactions = $jack_interactions ?? [];
 ?>
 <section class="studio-page talk-page">
     <header class="knowledge-header">
@@ -103,6 +106,13 @@ $reports = $reports ?? [];
     <?php elseif ($currentPage === 'reports'): ?>
         <div class="studio-dashboard-kpis"><article><span>Total</span><strong><?= (int)($reports['total']??0) ?></strong></article><article><span>Na fila</span><strong><?= (int)($reports['queued']??0) ?></strong></article><article><span>Em atendimento</span><strong><?= (int)($reports['active']??0) ?></strong></article><article><span>Finalizados</span><strong><?= (int)($reports['closed']??0) ?></strong></article></div>
         <section class="studio-panel"><div class="studio-panel-body"><h2>Atendimentos por fila</h2><?php foreach(($reports['by_queue']??[]) as $row): ?><p><?= $this->e((string)$row['label']) ?>: <strong><?= (int)$row['total'] ?></strong></p><?php endforeach; ?></div></section>
+    <?php elseif ($currentPage === 'jack'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><?php if($jack_interactions===[]): ?><div class="knowledge-empty"><i class="icon-sparkles-outline"></i><strong>Sem interações do Jack</strong><span>As decisões do agente virtual serão auditadas aqui.</span></div><?php else: ?><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Protocolo</th><th>Contato</th><th>Ação</th><th>Resumo</th><th>Data</th></tr></thead><tbody><?php foreach($jack_interactions as $row): ?><tr><td><?= $this->e((string)$row['protocol']) ?></td><td><?= $this->e((string)$row['contact_name']) ?></td><td><?= $this->e((string)$row['action']) ?></td><td><?= $this->e((string)($row['summary']??'—')) ?></td><td><?= $this->e((string)$row['created_at']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></div></section>
+    <?php elseif ($currentPage === 'jack-settings'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><h2>Agente virtual Jack</h2><form method="post" action="/talk/jack/settings"><?= $this->csrf() ?><div class="studio-field"><label><input type="checkbox" name="jack_enabled" value="1" <?= ($settings['jack.enabled']??'0')==='1'?'checked':'' ?>> Ativar Jack</label></div><div class="studio-field"><label for="jack-wait">Aguardar antes de assumir (segundos)</label><input id="jack-wait" type="number" min="0" name="jack_wait_seconds" value="<?= (int)($settings['jack.wait_seconds']??60) ?>"></div><div class="studio-field"><label><input type="checkbox" name="jack_transfer_summary" value="1" <?= ($settings['jack.transfer_summary']??'1')==='1'?'checked':'' ?>> Gerar resumo ao transferir para humano</label></div><button class="studio-btn studio-btn-primary" type="submit">Salvar</button></form></div></section>
+    <?php elseif ($currentPage === 'settings'): ?>
+        <section class="studio-panel"><div class="studio-panel-body"><h2>Distribuição automática</h2><form method="post" action="/talk/settings"><?= $this->csrf() ?><div class="studio-field"><label><input type="checkbox" name="auto_assign_enabled" value="1" <?= ($settings['auto_assign.enabled']??'1')==='1'?'checked':'' ?>> Ativar autoatribuição</label></div><div class="studio-field"><label for="auto-seconds">Tempo padrão (segundos)</label><input id="auto-seconds" type="number" min="5" name="auto_assign_default_seconds" value="<?= (int)($settings['auto_assign.default_seconds']??30) ?>"></div><button class="studio-btn studio-btn-primary" type="submit">Salvar</button></form></div></section>
+        <section class="studio-panel"><div class="studio-panel-body"><h2>Canais</h2><div class="studio-table-wrap"><table class="studio-table"><thead><tr><th>Canal</th><th>Tipo</th><th>Status</th><th>Última conexão</th></tr></thead><tbody><?php foreach($channels as $row): ?><tr><td><?= $this->e((string)$row['name']) ?></td><td><?= $this->e((string)$row['type']) ?></td><td><?= $this->e((string)$row['status']) ?></td><td><?= $this->e((string)($row['last_connected_at']??'—')) ?></td></tr><?php endforeach; ?></tbody></table></div></div></section>
     <?php else: ?>
         <section class="studio-panel"><div class="studio-panel-body"><div class="knowledge-empty"><i class="icon-talk"></i><strong>Talk</strong><span>Área preparada para a próxima integração operacional.</span></div></div></section>
     <?php endif; ?>
