@@ -283,6 +283,29 @@ final class TalkService
         ];
     }
 
+    public function settings(): array
+    {
+        $rows=Connection::getInstance()->query("SELECT setting_key,setting_value FROM talk_settings ORDER BY setting_key")->fetchAll(PDO::FETCH_ASSOC);
+        $out=[]; foreach($rows as $row){$out[$row['setting_key']]=$row['setting_value'];} return $out;
+    }
+
+    public function saveSettings(array $values,int $userId): void
+    {
+        $allowed=['jack.enabled','jack.wait_seconds','jack.transfer_summary','auto_assign.enabled','auto_assign.default_seconds'];
+        $s=Connection::getInstance()->prepare("INSERT INTO talk_settings(setting_key,setting_value,updated_by) VALUES(:key,:value,:user_id) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value),updated_by=VALUES(updated_by)");
+        foreach($allowed as $key){if(array_key_exists($key,$values)){$s->execute(['key'=>$key,'value'=>(string)$values[$key],'user_id'=>$userId]);}}
+    }
+
+    public function jackInteractions(): array
+    {
+        return Connection::getInstance()->query("SELECT ji.*,t.protocol,c.name contact_name FROM talk_jack_interactions ji INNER JOIN talk_tickets t ON t.id=ji.ticket_id INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id ORDER BY ji.created_at DESC,ji.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function channels(): array
+    {
+        return Connection::getInstance()->query("SELECT id,type,name,status,last_connected_at,created_at,updated_at FROM talk_channels ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     private function event(int $ticketId,?int $userId,string $type,array $payload): void
     {
         $s=Connection::getInstance()->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,:actor_type,:event_type,:payload)");
