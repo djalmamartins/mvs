@@ -59,6 +59,21 @@ final class TalkService
     public function jackInteractions(): array { return Connection::getInstance()->query("SELECT ji.*,t.protocol,c.name contact_name FROM talk_jack_interactions ji INNER JOIN talk_tickets t ON t.id=ji.ticket_id INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id ORDER BY ji.created_at DESC,ji.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
     public function channels(): array { return Connection::getInstance()->query("SELECT id,type,name,status,last_connected_at,created_at,updated_at FROM talk_channels ORDER BY id")->fetchAll(PDO::FETCH_ASSOC); }
     private function event(int $ticketId,?int $userId,string $type,array $payload): void { $s=Connection::getInstance()->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,:actor_type,:event_type,:payload)");$s->execute(['ticket_id'=>$ticketId,'user_id'=>$userId,'actor_type'=>$userId===null?'system':'user','event_type'=>$type,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]); }
+    public function syncState(int $userId): array
+    {
+        $pdo=Connection::getInstance();$params=[];
+        if($this->canManage($userId)){
+            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(created_at)),0) FROM talk_messages";
+        }else{
+            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE assigned_user_id=:user_id OR status='queued'";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id WHERE t.assigned_user_id=:user_id OR t.status='queued'";
+            $params=['user_id'=>$userId];
+        }
+        $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
+        $s=$pdo->prepare($messageSql);$s->execute($params);$messages=(int)$s->fetchColumn();
+        return ['revision'=>max($tickets,$messages),'server_time'=>time()];
+    }
     public function conversations(): array { return Connection::getInstance()->query("SELECT cv.id,cv.channel,cv.status,cv.last_message_at,c.name contact_name,c.phone,t.protocol,t.status ticket_status,q.name queue_name,u.name assigned_name FROM talk_conversations cv INNER JOIN talk_contacts c ON c.id=cv.contact_id LEFT JOIN talk_tickets t ON t.id=(SELECT tt.id FROM talk_tickets tt WHERE tt.conversation_id=cv.id ORDER BY tt.id DESC LIMIT 1) LEFT JOIN talk_queues q ON q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id ORDER BY COALESCE(cv.last_message_at,cv.created_at) DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
     public function contacts(): array { return Connection::getInstance()->query("SELECT id,name,phone,email,channel,created_at,updated_at FROM talk_contacts ORDER BY updated_at DESC,id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
     private function count(PDO $pdo,string $sql): int { return (int)$pdo->query($sql)->fetchColumn(); }
