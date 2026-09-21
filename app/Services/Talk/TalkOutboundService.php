@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Moves\Services\Talk;
 
 use Moves\Boot\Connection;
-use Moves\Services\Talk\Transport\NullWhatsAppTransport;
 use Moves\Services\Talk\Transport\WhatsAppTransport;
+use Moves\Services\Talk\Transport\WhatsAppTransportFactory;
 use PDO;
 use RuntimeException;
 
@@ -18,7 +18,7 @@ final class TalkOutboundService
 {
     public function __construct(private ?WhatsAppTransport $whatsApp = null)
     {
-        $this->whatsApp ??= new NullWhatsAppTransport();
+        $this->whatsApp ??= WhatsAppTransportFactory::make();
     }
 
     public function sendText(int $ticketId, int $userId, string $body): int
