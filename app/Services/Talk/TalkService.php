@@ -40,6 +40,61 @@ final class TalkService
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function claim(int $ticketId, int $userId): bool
+    {
+        $pdo = Connection::getInstance();
+        $pdo->beginTransaction();
+        try {
+            $statement = $pdo->prepare("SELECT id, queue_id, status FROM talk_tickets WHERE id = :id FOR UPDATE");
+            $statement->execute(['id' => $ticketId]);
+            $ticket = $statement->fetch(PDO::FETCH_ASSOC);
+            if (!$ticket || $ticket['status'] !== 'queued') {
+                $pdo->rollBack();
+                return false;
+            }
+
+            if ($ticket['queue_id'] !== null) {
+                $eligible = $pdo->prepare(
+                    "SELECT COUNT(*) FROM talk_queue_members
+                     WHERE queue_id = :queue_id AND user_id = :user_id AND status = 'active'"
+                );
+                $eligible->execute(['queue_id' => $ticket['queue_id'], 'user_id' => $userId]);
+                if ((int) $eligible->fetchColumn() === 0) {
+                    $pdo->rollBack();
+                    return false;
+                }
+            }
+
+            $update = $pdo->prepare(
+                "UPDATE talk_tickets SET assigned_user_id = :user_id, status = 'assigned',
+                        assigned_at = NOW(), updated_at = NOW()
+                 WHERE id = :id AND status = 'queued'"
+            );
+            $update->execute(['user_id' => $userId, 'id' => $ticketId]);
+            if ($update->rowCount() !== 1) {
+                $pdo->rollBack();
+                return false;
+            }
+
+            $event = $pdo->prepare(
+                "INSERT INTO talk_events (ticket_id, user_id, actor_type, event_type, payload)
+                 VALUES (:ticket_id, :user_id, 'user', 'ticket.claimed', :payload)"
+            );
+            $event->execute([
+                'ticket_id' => $ticketId,
+                'user_id' => $userId,
+                'payload' => json_encode(['assigned_user_id' => $userId], JSON_THROW_ON_ERROR),
+            ]);
+            $pdo->commit();
+            return true;
+        } catch (\Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
     public function conversations(): array
     {
         return Connection::getInstance()->query(
