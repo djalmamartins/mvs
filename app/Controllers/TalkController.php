@@ -61,6 +61,8 @@ final class TalkController extends Controller
         $id = max(0, (int)($data['id'] ?? 0));
         $ticket = $this->talk->ticket($id);
         if ($ticket === null) { Response::to('/talk/queue'); }
+        $viewer=Auth::user();
+        if($viewer===null || !$this->talk->canViewTicket($id,(int)$viewer->id)){Response::to('/talk/my-tickets?error=forbidden');}
 
         if (Request::isMethod('POST')) {
             $this->requireCsrf('/talk/tickets/' . $id);
@@ -123,17 +125,44 @@ final class TalkController extends Controller
         }
         $this->page('Configuração do Jack','jack-settings','Defina quando e como o Jack participa do atendimento.',['settings'=>$this->talk->settings()]);
     }
-    public function queues(): void { $this->page('Filas e departamentos','queues','Organize departamentos, filas e capacidade de atendimento.',['queues'=>$this->talk->queues()]); }
+    public function queues(): void
+    {
+        $user=Auth::user(); if($user===null){Response::to('/login');}
+        $manage=$this->talk->canManage((int)$user->id);
+        if(Request::isMethod('POST')){
+            $this->requireCsrf('/talk/queues');
+            if(!$manage){Response::to('/talk/queues?error=forbidden');}
+            $action=(string)Request::post('action','');
+            if($action==='save_queue'){
+                $this->talk->saveQueue(max(0,(int)Request::post('id',0)),mb_substr(trim((string)Request::post('name','')),0,120),($d=max(0,(int)Request::post('department_id',0)))>0?$d:null,max(5,(int)Request::post('auto_assign_after_seconds',30)),(string)Request::post('status','active'));
+            }elseif($action==='save_department'){
+                $this->talk->saveDepartment(max(0,(int)Request::post('id',0)),mb_substr(trim((string)Request::post('name','')),0,120),(string)Request::post('status','active'));
+            }elseif($action==='save_member'){
+                $this->talk->saveQueueMember(max(1,(int)Request::post('queue_id',0)),max(1,(int)Request::post('user_id',0)),(string)Request::post('role','agent'),max(1,(int)Request::post('capacity',5)),(string)Request::post('status','active'));
+            }elseif($action==='remove_member'){
+                $this->talk->removeQueueMember(max(1,(int)Request::post('queue_id',0)),max(1,(int)Request::post('user_id',0)));
+            }
+            Response::to('/talk/queues?saved=1');
+        }
+        $queues=$this->talk->queues();
+        $members=[];foreach($queues as $q){$members[(int)$q['id']]=$this->talk->queueMembers((int)$q['id']);}
+        $this->page('Filas e departamentos','queues','Organize departamentos, filas e capacidade de atendimento.',['queues'=>$queues,'departments'=>$this->talk->departments(),'members'=>$members,'users'=>$this->talk->eligibleUsers(),'canManage'=>$manage]);
+    }
     public function users(): void
     {
         $user=Auth::user(); if($user===null){Response::to('/login');}
         if(Request::isMethod('POST')){
             $this->requireCsrf('/talk/users');
-            $status=(string)Request::post('presence','online');
-            $this->talk->updatePresence((int)$user->id,$status);
+            $action=(string)Request::post('action','presence');
+            if($action==='presence'){
+                $this->talk->updatePresence((int)$user->id,(string)Request::post('presence','online'));
+            }elseif($action==='user_settings'){
+                if(!$this->talk->canManage((int)$user->id)){Response::to('/talk/users?error=forbidden');}
+                $this->talk->saveUserSettings(max(1,(int)Request::post('user_id',0)),(string)Request::post('talk_role','agent'),max(1,(int)Request::post('capacity',5)));
+            }
             Response::to('/talk/users');
         }
-        $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->usersWithPresence()]);
+        $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->usersWithPresence(),'canManage'=>$this->talk->canManage((int)$user->id)]);
     }
     public function reports(): void { $this->page('Relatórios','reports','Indicadores de fila, atendimento, transferência e SLA.',['reports'=>$this->talk->reports()]); }
     public function settings(): void
