@@ -21,6 +21,8 @@ final class Routes
 {
     public static function register(Router $router): void
     {
+        ErpModule::register();
+
         $router
             ->namespace('Moves\\Controllers')
             ->group('');
