@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Moves\Controllers;
 
 use Moves\Core\Controller;
+use Moves\Core\Auth;
+use Moves\Core\Csrf;
+use Moves\Core\Request;
+use Moves\Core\Response;
 use MovesCode\Router\Router;
 use Moves\Services\Talk\TalkService;
 
@@ -19,7 +23,25 @@ final class TalkController extends Controller
         $this->talk = new TalkService();
     }
     public function dashboard(): void { $this->page('Visão geral', 'dashboard', 'Acompanhe a operação do atendimento em um único lugar.', $this->talk->dashboard()); }
-    public function queue(): void { $this->page('Fila', 'queue', 'Atendimentos aguardando um atendente elegível.', ['queue' => $this->talk->queue()]); }
+    public function queue(): void
+    {
+        if (Request::isMethod('POST')) {
+            if (!Csrf::validate((string) Request::post('_token', ''))) {
+                Response::json(['ok' => false, 'message' => 'Token inválido.'], 419);
+            }
+            $user = Auth::user();
+            $ticketId = max(0, (int) Request::post('ticket_id', 0));
+            if ($user === null || $ticketId === 0) {
+                Response::to('/talk/queue?error=invalid');
+            }
+            $claimed = $this->talk->claim($ticketId, (int) $user->id);
+            Response::to('/talk/queue?' . ($claimed ? 'claimed=1' : 'error=unavailable'));
+        }
+
+        $this->page('Fila', 'queue', 'Atendimentos aguardando um atendente elegível.', [
+            'queue' => $this->talk->queue(),
+        ]);
+    }
     public function conversations(): void { $this->page('Conversas', 'conversations', 'Conversas ativas e seus respectivos atendimentos.', ['conversations' => $this->talk->conversations()]); }
     public function contacts(): void { $this->page('Contatos', 'contacts', 'Pessoas identificadas a partir dos canais conectados.', ['contacts' => $this->talk->contacts()]); }
     public function myTickets(): void { $this->page('Meus chamados', 'my-tickets', 'Atendimentos atualmente sob sua responsabilidade.'); }
