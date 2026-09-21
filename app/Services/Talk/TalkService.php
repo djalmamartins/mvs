@@ -157,6 +157,9 @@ final class TalkService
         $events->execute(['id' => $ticketId]);
         $ticket['messages'] = $messages->fetchAll(PDO::FETCH_ASSOC);
         $ticket['events'] = $events->fetchAll(PDO::FETCH_ASSOC);
+        $ticket['notes'] = $this->notes($ticketId);
+        $ticket['queues'] = $this->queues();
+        $ticket['eligible_users'] = $this->eligibleUsers($ticket['queue_id'] !== null ? (int)$ticket['queue_id'] : null);
         return $ticket;
     }
 
@@ -170,6 +173,120 @@ final class TalkService
         }
         Connection::getInstance()->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,sent_at,metadata) VALUES(:conversation_id,:ticket_id,'user',:user_id,'outbound','text',:body,NOW(),:metadata)")
             ->execute(['conversation_id'=>$ticket['conversation_id'],'ticket_id'=>$ticketId,'user_id'=>$userId,'body'=>$body,'metadata'=>json_encode(['simulation'=>true], JSON_THROW_ON_ERROR)]);
+    }
+
+    public function myTickets(int $userId): array
+    {
+        $s = Connection::getInstance()->prepare("SELECT t.id,t.protocol,t.subject,t.priority,t.status,t.updated_at,c.name contact_name,c.phone contact_phone,q.name queue_name FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id LEFT JOIN talk_queues q ON q.id=t.queue_id WHERE t.assigned_user_id=:user_id AND t.status IN ('assigned','open') ORDER BY t.updated_at DESC LIMIT 100");
+        $s->execute(['user_id'=>$userId]);
+        return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function history(): array
+    {
+        return Connection::getInstance()->query("SELECT t.id,t.protocol,t.subject,t.priority,t.status,t.closed_at,t.updated_at,c.name contact_name,q.name queue_name,u.name assigned_name FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id LEFT JOIN talk_queues q ON q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.status='closed' ORDER BY t.closed_at DESC,t.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function transfers(): array
+    {
+        return Connection::getInstance()->query("SELECT tr.*,t.protocol,fu.name from_user,tu.name to_user,fq.name from_queue,tq.name to_queue,cu.name created_by_name FROM talk_transfers tr INNER JOIN talk_tickets t ON t.id=tr.ticket_id LEFT JOIN users fu ON fu.id=tr.from_user_id LEFT JOIN users tu ON tu.id=tr.to_user_id LEFT JOIN talk_queues fq ON fq.id=tr.from_queue_id LEFT JOIN talk_queues tq ON tq.id=tr.to_queue_id LEFT JOIN users cu ON cu.id=tr.created_by ORDER BY tr.created_at DESC,tr.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function queues(): array
+    {
+        return Connection::getInstance()->query("SELECT q.id,q.name,q.slug,q.status,q.auto_assign_after_seconds,d.name department_name,COUNT(qm.user_id) members FROM talk_queues q LEFT JOIN talk_departments d ON d.id=q.department_id LEFT JOIN talk_queue_members qm ON qm.queue_id=q.id AND qm.status='active' GROUP BY q.id,d.name ORDER BY q.name")->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function eligibleUsers(?int $queueId = null): array
+    {
+        if ($queueId === null) {
+            return Connection::getInstance()->query("SELECT id,name,email,role,status FROM users WHERE status='active' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $s=Connection::getInstance()->prepare("SELECT u.id,u.name,u.email,qm.role,qm.capacity FROM talk_queue_members qm INNER JOIN users u ON u.id=qm.user_id WHERE qm.queue_id=:queue_id AND qm.status='active' AND u.status='active' ORDER BY u.name");
+        $s->execute(['queue_id'=>$queueId]);
+        return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function addNote(int $ticketId,int $userId,string $body): void
+    {
+        $body=trim($body); if($body===''){return;}
+        $pdo=Connection::getInstance();
+        $pdo->prepare("INSERT INTO talk_notes(ticket_id,user_id,body) VALUES(:ticket_id,:user_id,:body)")->execute(['ticket_id'=>$ticketId,'user_id'=>$userId,'body'=>$body]);
+        $this->event($ticketId,$userId,'ticket.note_added',['body'=>$body]);
+    }
+
+    public function notes(int $ticketId): array
+    {
+        $s=Connection::getInstance()->prepare("SELECT n.*,u.name user_name FROM talk_notes n LEFT JOIN users u ON u.id=n.user_id WHERE n.ticket_id=:id ORDER BY n.created_at DESC,n.id DESC");
+        $s->execute(['id'=>$ticketId]); return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function returnToQueue(int $ticketId,int $userId): void
+    {
+        $pdo=Connection::getInstance();
+        $s=$pdo->prepare("UPDATE talk_tickets SET assigned_user_id=NULL,status='queued',queued_at=NOW(),assigned_at=NULL,updated_at=NOW() WHERE id=:id AND status IN ('assigned','open')");
+        $s->execute(['id'=>$ticketId]);
+        if($s->rowCount()!==1){throw new \RuntimeException('Atendimento não pode retornar para a fila.');}
+        $this->event($ticketId,$userId,'ticket.returned_to_queue',[]);
+    }
+
+    public function close(int $ticketId,int $userId): void
+    {
+        $pdo=Connection::getInstance();
+        $s=$pdo->prepare("UPDATE talk_tickets SET status='closed',closed_at=NOW(),closed_by=:user_id,updated_at=NOW() WHERE id=:id AND status<>'closed'");
+        $s->execute(['user_id'=>$userId,'id'=>$ticketId]);
+        if($s->rowCount()!==1){throw new \RuntimeException('Atendimento já finalizado ou indisponível.');}
+        $this->event($ticketId,$userId,'ticket.closed',[]);
+    }
+
+    public function reopen(int $ticketId,int $userId): void
+    {
+        $pdo=Connection::getInstance();
+        $s=$pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=NOW(),assigned_at=NULL,closed_at=NULL,closed_by=NULL,updated_at=NOW() WHERE id=:id AND status='closed'");
+        $s->execute(['id'=>$ticketId]);
+        if($s->rowCount()!==1){throw new \RuntimeException('Atendimento não pode ser reaberto.');}
+        $this->event($ticketId,$userId,'ticket.reopened',[]);
+    }
+
+    public function transfer(int $ticketId,int $userId,?int $toUserId,?int $toQueueId,string $reason): void
+    {
+        if($toUserId===null && $toQueueId===null){throw new \RuntimeException('Selecione um atendente ou uma fila.');}
+        $pdo=Connection::getInstance(); $pdo->beginTransaction();
+        try{
+            $s=$pdo->prepare("SELECT assigned_user_id,queue_id,status FROM talk_tickets WHERE id=:id FOR UPDATE"); $s->execute(['id'=>$ticketId]); $t=$s->fetch(PDO::FETCH_ASSOC);
+            if(!$t || !in_array($t['status'],['assigned','open'],true)){throw new \RuntimeException('Atendimento indisponível para transferência.');}
+            if($toUserId!==null){
+                $eligible=$pdo->prepare("SELECT COUNT(*) FROM talk_queue_members WHERE queue_id=:queue_id AND user_id=:user_id AND status='active'");
+                $targetQueue=$toQueueId ?? (int)$t['queue_id'];
+                $eligible->execute(['queue_id'=>$targetQueue,'user_id'=>$toUserId]);
+                if((int)$eligible->fetchColumn()===0){throw new \RuntimeException('Atendente não pertence à fila selecionada.');}
+            }
+            $newQueue=$toQueueId ?? (int)$t['queue_id'];
+            $newStatus=$toUserId!==null?'assigned':'queued';
+            $u=$pdo->prepare("UPDATE talk_tickets SET queue_id=:queue_id,assigned_user_id=:assigned,status=:status,queued_at=IF(:status='queued',NOW(),queued_at),assigned_at=IF(:status='assigned',NOW(),NULL),updated_at=NOW() WHERE id=:id");
+            $u->execute(['queue_id'=>$newQueue,'assigned'=>$toUserId,'status'=>$newStatus,'id'=>$ticketId]);
+            $tr=$pdo->prepare("INSERT INTO talk_transfers(ticket_id,from_user_id,from_queue_id,to_user_id,to_queue_id,reason,status,created_by) VALUES(:ticket_id,:from_user,:from_queue,:to_user,:to_queue,:reason,'completed',:created_by)");
+            $tr->execute(['ticket_id'=>$ticketId,'from_user'=>$t['assigned_user_id'],'from_queue'=>$t['queue_id'],'to_user'=>$toUserId,'to_queue'=>$newQueue,'reason'=>trim($reason),'created_by'=>$userId]);
+            $pdo->commit(); $this->event($ticketId,$userId,'ticket.transferred',['to_user_id'=>$toUserId,'to_queue_id'=>$newQueue]);
+        }catch(\Throwable $e){if($pdo->inTransaction()){$pdo->rollBack();}throw $e;}
+    }
+
+    public function reports(): array
+    {
+        $pdo=Connection::getInstance();
+        return [
+            'total'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets"),
+            'queued'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status='queued'"),
+            'active'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status IN ('assigned','open')"),
+            'closed'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status='closed'"),
+            'by_queue'=>$pdo->query("SELECT COALESCE(q.name,'Sem fila') label,COUNT(t.id) total FROM talk_tickets t LEFT JOIN talk_queues q ON q.id=t.queue_id GROUP BY q.id,q.name ORDER BY total DESC")->fetchAll(PDO::FETCH_ASSOC),
+        ];
+    }
+
+    private function event(int $ticketId,?int $userId,string $type,array $payload): void
+    {
+        $s=Connection::getInstance()->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,:actor_type,:event_type,:payload)");
+        $s->execute(['ticket_id'=>$ticketId,'user_id'=>$userId,'actor_type'=>$userId===null?'system':'user','event_type'=>$type,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]);
     }
 
     public function conversations(): array
