@@ -19,7 +19,9 @@ final class Config
         string $key,
         mixed $default = null
     ): mixed {
-        return $_ENV[$key] ?? $default;
+        $value = $_ENV[$key] ?? getenv($key);
+
+        return $value === false ? $default : $value;
     }
 
     public static function environment(): string
