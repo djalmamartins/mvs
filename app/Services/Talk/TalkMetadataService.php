@@ -11,6 +11,7 @@ final class TalkMetadataService
 {
     public function updatePriority(int $ticketId, int $userId, string $priority): void
     {
+        if (!(new TalkService())->canOperateTicket($ticketId,$userId)) { throw new \RuntimeException('Você não pode alterar este atendimento.'); }
         if (!in_array($priority, ['low','normal','high','urgent'], true)) { throw new \RuntimeException('Prioridade inválida.'); }
         $pdo=Connection::getInstance();
         $statement=$pdo->prepare('UPDATE talk_tickets SET priority=:priority,updated_at=NOW() WHERE id=:id');
@@ -41,6 +42,7 @@ final class TalkMetadataService
 
     public function attachTag(int $ticketId,int $tagId,int $userId): void
     {
+        if (!(new TalkService())->canOperateTicket($ticketId,$userId)) { throw new \RuntimeException('Você não pode alterar este atendimento.'); }
         $pdo=Connection::getInstance();$pdo->prepare('INSERT IGNORE INTO talk_ticket_tags(ticket_id,tag_id) VALUES(:ticket_id,:tag_id)')->execute(['ticket_id'=>$ticketId,'tag_id'=>$tagId]);
         $this->event($ticketId,$userId,'ticket.tag_added',['tag_id'=>$tagId]);
         $name=$this->tagName($tagId);(new TalkNotificationService())->notifyTicketAssignee($ticketId,$userId,'tag_added','Tag adicionada ao atendimento',$name!==null?'Tag: '.$name:null,['tag_id'=>$tagId]);
@@ -48,6 +50,7 @@ final class TalkMetadataService
 
     public function detachTag(int $ticketId,int $tagId,int $userId): void
     {
+        if (!(new TalkService())->canOperateTicket($ticketId,$userId)) { throw new \RuntimeException('Você não pode alterar este atendimento.'); }
         $name=$this->tagName($tagId);$pdo=Connection::getInstance();$pdo->prepare('DELETE FROM talk_ticket_tags WHERE ticket_id=:ticket_id AND tag_id=:tag_id')->execute(['ticket_id'=>$ticketId,'tag_id'=>$tagId]);
         $this->event($ticketId,$userId,'ticket.tag_removed',['tag_id'=>$tagId]);
         (new TalkNotificationService())->notifyTicketAssignee($ticketId,$userId,'tag_removed','Tag removida do atendimento',$name!==null?'Tag: '.$name:null,['tag_id'=>$tagId]);
