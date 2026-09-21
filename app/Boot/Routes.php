@@ -8,6 +8,7 @@ use MovesCode\Router\Router;
 use Moves\Middleware\AuthMiddleware;
 use Moves\Middleware\GuestMiddleware;
 use Moves\Middleware\PermissionMiddleware;
+use Moves\Modules\Erp\ErpModule;
 
 /**
  * Moves | Routes
