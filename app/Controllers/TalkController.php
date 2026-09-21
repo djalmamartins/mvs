@@ -63,9 +63,25 @@ final class TalkController extends Controller
             $user = Auth::user();
             if ($user === null) { Response::to('/login'); }
             $action = (string) Request::post('action', '');
+            $userId = (int) $user->id;
             if ($action === 'send') {
                 $body = mb_substr(trim((string)Request::post('body', '')), 0, 4000);
-                $this->talk->sendSimulationMessage($id, (int)$user->id, $body);
+                $this->talk->sendSimulationMessage($id, $userId, $body);
+            } elseif ($action === 'note') {
+                $this->talk->addNote($id, $userId, mb_substr(trim((string)Request::post('body', '')), 0, 4000));
+            } elseif ($action === 'return_queue') {
+                $this->talk->returnToQueue($id, $userId);
+                Response::to('/talk/queue');
+            } elseif ($action === 'close') {
+                $this->talk->close($id, $userId);
+                Response::to('/talk/history');
+            } elseif ($action === 'reopen') {
+                $this->talk->reopen($id, $userId);
+                Response::to('/talk/queue');
+            } elseif ($action === 'transfer') {
+                $toUser = max(0, (int)Request::post('to_user_id', 0));
+                $toQueue = max(0, (int)Request::post('to_queue_id', 0));
+                $this->talk->transfer($id, $userId, $toUser > 0 ? $toUser : null, $toQueue > 0 ? $toQueue : null, mb_substr(trim((string)Request::post('reason','')),0,500));
             }
             Response::to('/talk/tickets/' . $id);
         }
@@ -81,14 +97,18 @@ final class TalkController extends Controller
 
     public function conversations(): void { $this->page('Conversas', 'conversations', 'Conversas ativas e seus respectivos atendimentos.', ['conversations' => $this->talk->conversations()]); }
     public function contacts(): void { $this->page('Contatos', 'contacts', 'Pessoas identificadas a partir dos canais conectados.', ['contacts' => $this->talk->contacts()]); }
-    public function myTickets(): void { $this->page('Meus chamados', 'my-tickets', 'Atendimentos atualmente sob sua responsabilidade.'); }
-    public function transfers(): void { $this->page('Transferências', 'transfers', 'Transferências recebidas, enviadas e pendentes.'); }
-    public function history(): void { $this->page('Histórico', 'history', 'Atendimentos finalizados e histórico operacional.'); }
+    public function myTickets(): void
+    {
+        $user=Auth::user(); if($user===null){Response::to('/login');}
+        $this->page('Meus chamados','my-tickets','Atendimentos atualmente sob sua responsabilidade.',['tickets'=>$this->talk->myTickets((int)$user->id)]);
+    }
+    public function transfers(): void { $this->page('Transferências','transfers','Transferências recebidas, enviadas e pendentes.',['transfers'=>$this->talk->transfers()]); }
+    public function history(): void { $this->page('Histórico','history','Atendimentos finalizados e histórico operacional.',['tickets'=>$this->talk->history()]); }
     public function jack(): void { $this->page('Interações do Jack', 'jack', 'Revise atendimentos, respostas e decisões do agente virtual.'); }
     public function jackSettings(): void { $this->page('Configuração do Jack', 'jack-settings', 'Defina quando e como o Jack participa do atendimento.'); }
-    public function queues(): void { $this->page('Filas e departamentos', 'queues', 'Organize departamentos, filas e capacidade de atendimento.'); }
-    public function users(): void { $this->page('Usuários e permissões', 'users', 'Gerencie atendentes, supervisores e permissões do Talk.'); }
-    public function reports(): void { $this->page('Relatórios', 'reports', 'Indicadores de fila, atendimento, transferência e SLA.'); }
+    public function queues(): void { $this->page('Filas e departamentos','queues','Organize departamentos, filas e capacidade de atendimento.',['queues'=>$this->talk->queues()]); }
+    public function users(): void { $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->eligibleUsers()]); }
+    public function reports(): void { $this->page('Relatórios','reports','Indicadores de fila, atendimento, transferência e SLA.',['reports'=>$this->talk->reports()]); }
     public function settings(): void { $this->page('Configurações', 'settings', 'Configurações gerais, canais e regras do Talk.'); }
 
     private function requireCsrf(string $fallback): void
