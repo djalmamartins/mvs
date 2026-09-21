@@ -130,7 +130,7 @@ final class TalkService
             $event->execute(['ticket_id' => $ticketId, 'user_id' => $actorId, 'payload' => json_encode(['source' => 'simulation'], JSON_THROW_ON_ERROR)]);
             $pdo->commit();
             return $ticketId;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }
             throw $exception;
         }
@@ -166,7 +166,7 @@ final class TalkService
         if ($body === '') { return; }
         $ticket = $this->ticket($ticketId);
         if ($ticket === null || $ticket['source'] !== 'simulation' || (int)($ticket['assigned_user_id'] ?? 0) !== $userId) {
-            throw new \\RuntimeException('Atendimento de simulação indisponível para este usuário.');
+            throw new \RuntimeException('Atendimento de simulação indisponível para este usuário.');
         }
         Connection::getInstance()->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,sent_at,metadata) VALUES(:conversation_id,:ticket_id,'user',:user_id,'outbound','text',:body,NOW(),:metadata)")
             ->execute(['conversation_id'=>$ticket['conversation_id'],'ticket_id'=>$ticketId,'user_id'=>$userId,'body'=>$body,'metadata'=>json_encode(['simulation'=>true], JSON_THROW_ON_ERROR)]);
