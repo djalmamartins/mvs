@@ -22,7 +22,11 @@ final class TalkController extends Controller
         parent::__construct($router);
         $this->talk = new TalkService();
     }
-    public function dashboard(): void { $this->page('Visão geral', 'dashboard', 'Acompanhe a operação do atendimento em um único lugar.', $this->talk->dashboard()); }
+    public function dashboard(): void
+    {
+        $user=Auth::user(); if($user!==null){$this->talk->heartbeat((int)$user->id);$this->talk->autoAssign();}
+        $this->page('Visão geral','dashboard','Acompanhe a operação do atendimento em um único lugar.',$this->talk->dashboard());
+    }
     public function queue(): void
     {
         if (Request::isMethod('POST')) {
@@ -120,7 +124,17 @@ final class TalkController extends Controller
         $this->page('Configuração do Jack','jack-settings','Defina quando e como o Jack participa do atendimento.',['settings'=>$this->talk->settings()]);
     }
     public function queues(): void { $this->page('Filas e departamentos','queues','Organize departamentos, filas e capacidade de atendimento.',['queues'=>$this->talk->queues()]); }
-    public function users(): void { $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->eligibleUsers()]); }
+    public function users(): void
+    {
+        $user=Auth::user(); if($user===null){Response::to('/login');}
+        if(Request::isMethod('POST')){
+            $this->requireCsrf('/talk/users');
+            $status=(string)Request::post('presence','online');
+            $this->talk->updatePresence((int)$user->id,$status);
+            Response::to('/talk/users');
+        }
+        $this->page('Usuários e permissões','users','Gerencie atendentes, supervisores e permissões do Talk.',['users'=>$this->talk->usersWithPresence()]);
+    }
     public function reports(): void { $this->page('Relatórios','reports','Indicadores de fila, atendimento, transferência e SLA.',['reports'=>$this->talk->reports()]); }
     public function settings(): void
     {
