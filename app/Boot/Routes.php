@@ -127,10 +127,12 @@ final class Routes
         $router->get('/talk/history', 'TalkController:history', 'talk.history', AuthMiddleware::class);
         $router->get('/talk/jack', 'TalkController:jack', 'talk.jack', AuthMiddleware::class);
         $router->get('/talk/jack/settings', 'TalkController:jackSettings', 'talk.jack.settings', AuthMiddleware::class);
+        $router->post('/talk/jack/settings', 'TalkController:jackSettings', 'talk.jack.settings.save', AuthMiddleware::class);
         $router->get('/talk/queues', 'TalkController:queues', 'talk.queues', AuthMiddleware::class);
         $router->get('/talk/users', 'TalkController:users', 'talk.users', AuthMiddleware::class);
         $router->get('/talk/reports', 'TalkController:reports', 'talk.reports', AuthMiddleware::class);
         $router->get('/talk/settings', 'TalkController:settings', 'talk.settings', AuthMiddleware::class);
+        $router->post('/talk/settings', 'TalkController:settings', 'talk.settings.save', AuthMiddleware::class);
 
         $router->get(
             '/support',
