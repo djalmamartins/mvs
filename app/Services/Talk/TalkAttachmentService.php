@@ -10,7 +10,7 @@ use RuntimeException;
 
 final class TalkAttachmentService
 {
-    private const MAX_BYTES = 10_485_760; // 10 MiB
+    private const MAX_BYTES = 10_485_760;
 
     /** @var array<string,string> */
     private const ALLOWED = [
@@ -28,6 +28,9 @@ final class TalkAttachmentService
     /** @return array<string,mixed> */
     public function store(int $ticketId, int $userId, array $file): array
     {
+        if (!(new TalkService())->canViewTicket($ticketId, $userId)) {
+            throw new RuntimeException('Você não tem acesso a este atendimento.');
+        }
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             throw new RuntimeException('Não foi possível receber o anexo.');
         }
@@ -40,15 +43,22 @@ final class TalkAttachmentService
         if (!isset(self::ALLOWED[$mime])) {
             throw new RuntimeException('Tipo de arquivo não permitido.');
         }
-        $ticket = Connection::getInstance()->prepare('SELECT conversation_id FROM talk_tickets WHERE id=:id');
+
+        $pdo = Connection::getInstance();
+        $ticket = $pdo->prepare('SELECT conversation_id,status FROM talk_tickets WHERE id=:id LIMIT 1');
         $ticket->execute(['id' => $ticketId]);
-        $conversationId = (int)$ticket->fetchColumn();
-        if ($conversationId <= 0) {
+        $ticketRow = $ticket->fetch(PDO::FETCH_ASSOC);
+        if (!$ticketRow || (int)$ticketRow['conversation_id'] <= 0) {
             throw new RuntimeException('Atendimento não encontrado.');
         }
+        if ((string)$ticketRow['status'] === 'closed') {
+            throw new RuntimeException('Reabra o atendimento antes de enviar anexos.');
+        }
+        $conversationId = (int)$ticketRow['conversation_id'];
 
-        $root = dirname(__DIR__, 3) . '/storage/talk/' . date('Y/m');
-        if (!is_dir($root) && !mkdir($root, 0775, true) && !is_dir($root)) {
+        $month = date('Y/m');
+        $root = dirname(__DIR__, 3) . '/storage/talk/' . $month;
+        if (!is_dir($root) && !mkdir($root, 0770, true) && !is_dir($root)) {
             throw new RuntimeException('Não foi possível preparar o armazenamento.');
         }
         $stored = bin2hex(random_bytes(20)) . '.' . self::ALLOWED[$mime];
@@ -56,17 +66,19 @@ final class TalkAttachmentService
         if (!move_uploaded_file($tmp, $target)) {
             throw new RuntimeException('Não foi possível salvar o anexo.');
         }
-        $relative = 'storage/talk/' . date('Y/m') . '/' . $stored;
-        $original = mb_substr(basename((string)($file['name'] ?? 'arquivo')), 0, 255);
-        $pdo = Connection::getInstance();
+        @chmod($target, 0660);
+        $relative = 'storage/talk/' . $month . '/' . $stored;
+        $original = $this->safeOriginalName((string)($file['name'] ?? 'arquivo'));
+
         $pdo->beginTransaction();
         try {
+            $type = str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'audio/') ? 'audio' : (str_starts_with($mime, 'video/') ? 'video' : 'document'));
             $message = $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,media_url,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,'outbound',:type,:body,:media_url,:metadata,NOW())");
             $message->execute([
                 'conversation_id' => $conversationId,
                 'ticket_id' => $ticketId,
                 'user_id' => $userId,
-                'type' => str_starts_with($mime, 'image/') ? 'image' : (str_starts_with($mime, 'audio/') ? 'audio' : (str_starts_with($mime, 'video/') ? 'video' : 'document')),
+                'type' => $type,
                 'body' => $original,
                 'media_url' => $relative,
                 'metadata' => json_encode(['mime_type'=>$mime,'size_bytes'=>$size], JSON_THROW_ON_ERROR),
@@ -101,5 +113,13 @@ final class TalkAttachmentService
         $s=Connection::getInstance()->prepare('SELECT a.*,u.name uploaded_by_name FROM talk_attachments a LEFT JOIN users u ON u.id=a.uploaded_by WHERE a.ticket_id=:ticket_id ORDER BY a.created_at,a.id');
         $s->execute(['ticket_id'=>$ticketId]);
         return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function safeOriginalName(string $name): string
+    {
+        $name = str_replace(["\0", "\r", "\n"], '', basename($name));
+        $name = preg_replace('/[^\pL\pN._()\- ]/u', '_', $name) ?: 'arquivo';
+        $name = trim($name, " .\t");
+        return mb_substr($name !== '' ? $name : 'arquivo', 0, 180);
     }
 }
