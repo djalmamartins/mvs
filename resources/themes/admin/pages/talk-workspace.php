@@ -29,6 +29,15 @@ $contacts = $contacts ?? [];
         </div>
     <?php endif; ?>
 
+    <?php if ($currentPage === 'queue'): ?>
+        <div class="knowledge-header-actions" style="margin-bottom:16px">
+            <form method="post" action="/talk/simulate">
+                <?= $this->csrf() ?>
+                <button class="studio-btn studio-btn-primary" type="submit"><i class="icon-add-outline"></i> Criar atendimento de simulação</button>
+            </form>
+        </div>
+    <?php endif; ?>
+
     <?php if ($currentPage === 'queue' || $currentPage === 'dashboard'): ?>
         <section class="studio-panel">
             <div class="studio-panel-body">
@@ -41,7 +50,7 @@ $contacts = $contacts ?? [];
                         <tbody>
                         <?php foreach ($queue as $ticket): ?>
                             <tr>
-                                <td><strong><?= $this->e((string)$ticket['protocol']) ?></strong></td>
+                                <td><a href="/talk/tickets/<?= (int)$ticket['id'] ?>"><strong><?= $this->e((string)$ticket['protocol']) ?></strong></a></td>
                                 <td><?= $this->e((string)($ticket['contact_name'] ?: $ticket['contact_phone'] ?: 'Sem identificação')) ?></td>
                                 <td><?= $this->e((string)($ticket['queue_name'] ?? 'Geral')) ?></td>
                                 <td><?= $this->e((string)$ticket['channel']) ?></td>
