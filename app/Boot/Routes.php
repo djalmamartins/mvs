@@ -8,6 +8,7 @@ use MovesCode\Router\Router;
 use Moves\Middleware\AuthMiddleware;
 use Moves\Middleware\GuestMiddleware;
 use Moves\Middleware\PermissionMiddleware;
+use Moves\Modules\Erp\ErpModule;
 
 /**
  * Moves | Routes
@@ -21,6 +22,8 @@ final class Routes
 {
     public static function register(Router $router): void
     {
+        ErpModule::register();
+
         $router
             ->namespace('Moves\\Controllers')
             ->group('');
