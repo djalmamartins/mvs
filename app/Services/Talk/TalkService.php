@@ -40,11 +40,26 @@ final class TalkService
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function heartbeat(int $userId): void
+    {
+        Connection::getInstance()->prepare("INSERT INTO talk_presence(user_id,status,last_seen_at) VALUES(:user_id,'online',NOW()) ON DUPLICATE KEY UPDATE status='online',last_seen_at=NOW()")->execute(['user_id'=>$userId]);
+    }
+
+    public function permissions(int $userId): array
+    {
+        $s=Connection::getInstance()->prepare("SELECT COALESCE(tus.talk_role,IF(u.role='admin','admin','agent')) talk_role,COALESCE(tus.max_active_tickets,5) max_active_tickets FROM users u LEFT JOIN talk_user_settings tus ON tus.user_id=u.id WHERE u.id=:id");
+        $s->execute(['id'=>$userId]); return $s->fetch(PDO::FETCH_ASSOC) ?: ['talk_role'=>'agent','max_active_tickets'=>5];
+    }
+
     public function claim(int $ticketId, int $userId): bool
     {
         $pdo = Connection::getInstance();
         $pdo->beginTransaction();
         try {
+            $permissions=$this->permissions($userId);
+            $active=$pdo->prepare("SELECT COUNT(*) FROM talk_tickets WHERE assigned_user_id=:user_id AND status IN ('assigned','open')");
+            $active->execute(['user_id'=>$userId]);
+            if((int)$active->fetchColumn()>=(int)$permissions['max_active_tickets']){$pdo->rollBack();return false;}
             $statement = $pdo->prepare("SELECT id, queue_id, status FROM talk_tickets WHERE id = :id FOR UPDATE");
             $statement->execute(['id' => $ticketId]);
             $ticket = $statement->fetch(PDO::FETCH_ASSOC);
@@ -67,7 +82,7 @@ final class TalkService
 
             $update = $pdo->prepare(
                 "UPDATE talk_tickets SET assigned_user_id = :user_id, status = 'assigned',
-                        assigned_at = NOW(), updated_at = NOW()
+                        assigned_at = NOW(), last_activity_at=NOW(), updated_at = NOW()
                  WHERE id = :id AND status = 'queued'"
             );
             $update->execute(['user_id' => $userId, 'id' => $ticketId]);
@@ -171,8 +186,11 @@ final class TalkService
         if ($ticket === null || $ticket['source'] !== 'simulation' || (int)($ticket['assigned_user_id'] ?? 0) !== $userId) {
             throw new \RuntimeException('Atendimento de simulação indisponível para este usuário.');
         }
-        Connection::getInstance()->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,sent_at,metadata) VALUES(:conversation_id,:ticket_id,'user',:user_id,'outbound','text',:body,NOW(),:metadata)")
+        $pdo=Connection::getInstance();
+        $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,sent_at,metadata) VALUES(:conversation_id,:ticket_id,'user',:user_id,'outbound','text',:body,NOW(),:metadata)")
             ->execute(['conversation_id'=>$ticket['conversation_id'],'ticket_id'=>$ticketId,'user_id'=>$userId,'body'=>$body,'metadata'=>json_encode(['simulation'=>true], JSON_THROW_ON_ERROR)]);
+        $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,NOW()),last_activity_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id'=>$ticketId]);
+        $pdo->prepare("UPDATE talk_conversations SET last_message_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id'=>$ticket['conversation_id']]);
     }
 
     public function myTickets(int $userId): array
@@ -269,6 +287,32 @@ final class TalkService
             $tr->execute(['ticket_id'=>$ticketId,'from_user'=>$t['assigned_user_id'],'from_queue'=>$t['queue_id'],'to_user'=>$toUserId,'to_queue'=>$newQueue,'reason'=>trim($reason),'created_by'=>$userId]);
             $pdo->commit(); $this->event($ticketId,$userId,'ticket.transferred',['to_user_id'=>$toUserId,'to_queue_id'=>$newQueue]);
         }catch(\Throwable $e){if($pdo->inTransaction()){$pdo->rollBack();}throw $e;}
+    }
+
+    public function autoAssign(): int
+    {
+        $settings=$this->settings();
+        if(($settings['auto_assign.enabled']??'1')!=='1'){return 0;}
+        $pdo=Connection::getInstance();
+        $tickets=$pdo->query("SELECT id,queue_id FROM talk_tickets WHERE status='queued' AND queue_id IS NOT NULL AND TIMESTAMPDIFF(SECOND,COALESCE(queued_at,created_at),NOW()) >= COALESCE((SELECT auto_assign_after_seconds FROM talk_queues q WHERE q.id=talk_tickets.queue_id),30) ORDER BY COALESCE(queued_at,created_at) ASC LIMIT 50")->fetchAll(PDO::FETCH_ASSOC);
+        $assigned=0;
+        foreach($tickets as $ticket){
+            $s=$pdo->prepare("SELECT qm.user_id FROM talk_queue_members qm INNER JOIN users u ON u.id=qm.user_id LEFT JOIN talk_presence p ON p.user_id=u.id LEFT JOIN talk_user_settings tus ON tus.user_id=u.id LEFT JOIN (SELECT assigned_user_id,COUNT(*) active FROM talk_tickets WHERE status IN ('assigned','open') GROUP BY assigned_user_id) a ON a.assigned_user_id=u.id WHERE qm.queue_id=:queue_id AND qm.status='active' AND u.status='active' AND p.status='online' AND p.last_seen_at>=DATE_SUB(NOW(),INTERVAL 5 MINUTE) AND COALESCE(a.active,0)<LEAST(qm.capacity,COALESCE(tus.max_active_tickets,qm.capacity)) ORDER BY COALESCE(a.active,0) ASC,p.last_seen_at DESC,qm.user_id ASC LIMIT 1");
+            $s->execute(['queue_id'=>$ticket['queue_id']]); $uid=(int)$s->fetchColumn();
+            if($uid>0 && $this->claim((int)$ticket['id'],$uid)){$assigned++;}
+        }
+        return $assigned;
+    }
+
+    public function updatePresence(int $userId,string $status): void
+    {
+        if(!in_array($status,['online','away','offline'],true)){$status='offline';}
+        Connection::getInstance()->prepare("INSERT INTO talk_presence(user_id,status,last_seen_at) VALUES(:user_id,:status,NOW()) ON DUPLICATE KEY UPDATE status=VALUES(status),last_seen_at=NOW()")->execute(['user_id'=>$userId,'status'=>$status]);
+    }
+
+    public function usersWithPresence(): array
+    {
+        return Connection::getInstance()->query("SELECT u.id,u.name,u.email,u.role,u.status,COALESCE(tus.talk_role,IF(u.role='admin','admin','agent')) talk_role,COALESCE(tus.max_active_tickets,5) max_active_tickets,COALESCE(p.status,'offline') presence,p.last_seen_at,(SELECT COUNT(*) FROM talk_tickets t WHERE t.assigned_user_id=u.id AND t.status IN ('assigned','open')) active_tickets FROM users u LEFT JOIN talk_user_settings tus ON tus.user_id=u.id LEFT JOIN talk_presence p ON p.user_id=u.id WHERE u.status='active' ORDER BY u.name")->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function reports(): array
