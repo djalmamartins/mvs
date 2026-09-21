@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Controllers;
 
 use Moves\Core\Controller;
+use MovesCode\Router\Router;
 use Moves\Services\Talk\TalkService;
 
 /** Moves Talk workspace foundation. */
@@ -12,9 +13,9 @@ final class TalkController extends Controller
 {
     private TalkService $talk;
 
-    public function __construct()
+    public function __construct(Router $router)
     {
-        parent::__construct();
+        parent::__construct($router);
         $this->talk = new TalkService();
     }
     public function dashboard(): void { $this->page('Visão geral', 'dashboard', 'Acompanhe a operação do atendimento em um único lugar.', $this->talk->dashboard()); }
