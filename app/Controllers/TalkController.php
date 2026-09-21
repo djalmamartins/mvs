@@ -42,6 +42,43 @@ final class TalkController extends Controller
             'queue' => $this->talk->queue(),
         ]);
     }
+    public function simulate(): never
+    {
+        $this->requireCsrf('/talk/queue');
+        $user = Auth::user();
+        if ($user === null) { Response::to('/login'); }
+        $ticketId = $this->talk->seedSimulation((int) $user->id);
+        Response::to('/talk/tickets/' . $ticketId);
+    }
+
+    /** @param array<string,string> $data */
+    public function ticket(array $data = []): void
+    {
+        $id = max(0, (int)($data['id'] ?? 0));
+        $ticket = $this->talk->ticket($id);
+        if ($ticket === null) { Response::to('/talk/queue'); }
+
+        if (Request::isMethod('POST')) {
+            $this->requireCsrf('/talk/tickets/' . $id);
+            $user = Auth::user();
+            if ($user === null) { Response::to('/login'); }
+            $action = (string) Request::post('action', '');
+            if ($action === 'send') {
+                $body = mb_substr(trim((string)Request::post('body', '')), 0, 4000);
+                $this->talk->sendSimulationMessage($id, (int)$user->id, $body);
+            }
+            Response::to('/talk/tickets/' . $id);
+        }
+
+        echo $this->view->render('pages/talk-ticket', [
+            'title' => 'Atendimento ' . (string)$ticket['protocol'],
+            'productName' => 'Talk',
+            'activeProduct' => 'talk',
+            'currentPage' => 'my-tickets',
+            'ticket' => $ticket,
+        ]);
+    }
+
     public function conversations(): void { $this->page('Conversas', 'conversations', 'Conversas ativas e seus respectivos atendimentos.', ['conversations' => $this->talk->conversations()]); }
     public function contacts(): void { $this->page('Contatos', 'contacts', 'Pessoas identificadas a partir dos canais conectados.', ['contacts' => $this->talk->contacts()]); }
     public function myTickets(): void { $this->page('Meus chamados', 'my-tickets', 'Atendimentos atualmente sob sua responsabilidade.'); }
@@ -53,6 +90,13 @@ final class TalkController extends Controller
     public function users(): void { $this->page('Usuários e permissões', 'users', 'Gerencie atendentes, supervisores e permissões do Talk.'); }
     public function reports(): void { $this->page('Relatórios', 'reports', 'Indicadores de fila, atendimento, transferência e SLA.'); }
     public function settings(): void { $this->page('Configurações', 'settings', 'Configurações gerais, canais e regras do Talk.'); }
+
+    private function requireCsrf(string $fallback): void
+    {
+        if (!Csrf::validate((string) Request::post('_token', ''))) {
+            Response::to($fallback . '?error=csrf');
+        }
+    }
 
     private function page(string $title, string $currentPage, string $description, array $data = []): void
     {
