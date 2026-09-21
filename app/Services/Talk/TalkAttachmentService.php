@@ -28,7 +28,7 @@ final class TalkAttachmentService
     /** @return array<string,mixed> */
     public function store(int $ticketId, int $userId, array $file): array
     {
-        if (!(new TalkService())->canViewTicket($ticketId, $userId)) {
+        if (!(new TalkService())->canOperateTicket($ticketId, $userId)) {
             throw new RuntimeException('Você não tem acesso a este atendimento.');
         }
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
