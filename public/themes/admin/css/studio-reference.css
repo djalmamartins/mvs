@@ -408,3 +408,25 @@ html[data-theme="dark"] .studio-v2 .studio-global-search input, html[data-theme=
     .studio-v2 .studio-sidebar { transition:transform var(--studio-motion), box-shadow var(--studio-motion) }
     .studio-v2 .studio-main { transition:width var(--studio-motion), margin-left var(--studio-motion) }
 }
+
+
+/* Topbar global — superfícies discretas, sem caixas decorativas nos acionadores. */
+.studio-v2 .studio-notification-panel > header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 16px 12px; background:var(--studio-surface-soft) }
+.studio-v2 .studio-notification-panel > header > div { display:grid; gap:1px }
+.studio-v2 .studio-notification-panel > header strong { color:var(--studio-ink); font-size:.95rem }
+.studio-v2 .studio-notification-panel > header small { color:var(--studio-muted); font-size:.78rem }
+.studio-v2 .studio-notification-panel > header a { color:var(--studio-primary); font-size:.8rem; font-weight:600 }
+.studio-v2 .studio-notification-empty { display:grid; place-items:center; gap:6px; padding:30px 22px; color:var(--studio-muted); text-align:center }
+.studio-v2 .studio-notification-empty > span { display:grid; width:40px; height:40px; place-items:center; border-radius:50%; background:var(--studio-surface-soft); color:var(--studio-primary) }
+.studio-v2 .studio-notification-empty strong { color:var(--studio-text); font-size:.875rem }
+.studio-v2 .studio-notification-empty small { max-width:260px; font-size:.8rem; line-height:1.45 }
+.studio-v2 .studio-profile-trigger:hover,
+.studio-v2 .studio-header-profile.open .studio-profile-trigger { border-color:transparent; background:var(--studio-surface-soft); color:var(--studio-ink) }
+.studio-v2 .studio-menu:hover,
+.studio-v2 .studio-header-actions > a:hover,
+.studio-v2 .studio-theme-toggle:hover,
+.studio-v2 .studio-notification-toggle:hover,
+.studio-v2 .studio-notifications.open .studio-notification-toggle { background:var(--studio-surface-soft); color:var(--studio-ink) }
+@media (max-width:760px) {
+    .studio-v2 .studio-notification-panel { position:fixed; top:66px; right:10px; left:10px; width:auto }
+}
