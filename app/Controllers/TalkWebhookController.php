@@ -26,7 +26,7 @@ final class TalkWebhookController
         $inbound=new TalkInboundService();$pdo=Connection::getInstance();
         try{
             foreach(($payload['entry']??[]) as $entry)foreach(($entry['changes']??[]) as $change){$value=$change['value']??[];$phoneId=trim((string)($value['metadata']['phone_number_id']??''));if($phoneId==='')continue;
-                $s=$pdo->prepare("SELECT id FROM talk_channels WHERE type='whatsapp' AND external_account_id=:external_id AND status='active' LIMIT 1");$s->execute(['external_id'=>$phoneId]);$channelId=(int)$s->fetchColumn();if($channelId<=0)continue;
+                $s=$pdo->prepare("SELECT id FROM talk_channels WHERE type='whatsapp' AND external_account_id=:external_id AND status='active' ORDER BY id LIMIT 2");$s->execute(['external_id'=>$phoneId]);$channels=$s->fetchAll(PDO::FETCH_COLUMN);if(count($channels)!==1)continue;$channelId=(int)$channels[0];
                 foreach(($value['messages']??[]) as $message){$type=(string)($message['type']??'text');$body=$type==='text'?(string)($message['text']['body']??''):'';$inbound->receiveWhatsApp($channelId,['id'=>(string)($message['id']??''),'from'=>(string)($message['from']??''),'type'=>$type,'body'=>$body]);}
             }
             http_response_code(200);echo 'EVENT_RECEIVED';
