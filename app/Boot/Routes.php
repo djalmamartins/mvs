@@ -103,6 +103,16 @@ final class Routes
             ]
         );
 
+        $router->post(
+            '/app/profile/security',
+            'UserController:security',
+            'profile.security',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('profile.view'),
+            ]
+        );
+
         $router->get(
             '/studio/users',
             'UserController:index',
