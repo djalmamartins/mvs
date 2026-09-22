@@ -106,3 +106,27 @@ if (talkWorkspace) {
         applyTalkFilters();
     });
 }
+
+const talkComposer = document.querySelector('[data-talk-composer]');
+if (talkComposer) {
+    const body = talkComposer.querySelector('[data-talk-composer-body]');
+    const send = talkComposer.querySelector('[data-talk-send]');
+    let submitting = false;
+    body?.addEventListener('keydown', event => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (body.value.trim() && !submitting) talkComposer.requestSubmit();
+        }
+    });
+    talkComposer.addEventListener('submit', event => {
+        if (submitting || !body?.value.trim()) {
+            event.preventDefault();
+            return;
+        }
+        submitting = true;
+        if (send) {
+            send.disabled = true;
+            send.textContent = 'Enviando…';
+        }
+    });
+}
