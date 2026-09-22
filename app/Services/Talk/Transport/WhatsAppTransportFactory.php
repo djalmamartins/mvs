@@ -7,12 +7,12 @@ namespace Moves\Services\Talk\Transport;
 /** Resolves the configured provider without leaking provider concerns into Talk services. */
 final class WhatsAppTransportFactory
 {
-    public static function make(): WhatsAppTransport
+    public static function make(?array $channel = null): WhatsAppTransport
     {
         $driver = strtolower(trim(self::env('TALK_WHATSAPP_DRIVER', 'null')));
 
         if ($driver === 'meta_cloud') {
-            $phoneNumberId = trim(self::env('TALK_WHATSAPP_PHONE_NUMBER_ID'));
+            $phoneNumberId = trim((string)($channel['external_account_id'] ?? self::env('TALK_WHATSAPP_PHONE_NUMBER_ID')));
             $accessToken = trim(self::env('TALK_WHATSAPP_ACCESS_TOKEN'));
             $graphVersion = trim(self::env('TALK_WHATSAPP_GRAPH_VERSION', 'v23.0'));
 
