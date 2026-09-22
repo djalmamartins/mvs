@@ -38,6 +38,14 @@ final class TalkNotificationService
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function recent(int $userId, int $limit = 8): array
+    {
+        $limit = max(1, min(30, $limit));
+        $statement = Connection::getInstance()->prepare("SELECT n.*,t.protocol FROM talk_notifications n LEFT JOIN talk_tickets t ON t.id=n.ticket_id WHERE n.recipient_id=:user_id ORDER BY n.created_at DESC,n.id DESC LIMIT {$limit}");
+        $statement->execute(['user_id'=>$userId]);
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function unreadCount(int $userId): int
     {
         $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM talk_notifications WHERE recipient_id=:user_id AND read_at IS NULL');
