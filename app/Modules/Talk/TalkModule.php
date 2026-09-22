@@ -21,6 +21,7 @@ final class TalkModule
                 $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', $middleware);
                 $router->post('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket.action', $middleware);
                 $router->get('/talk/sync', 'TalkController:sync', 'talk.sync', $middleware);
+                $router->post('/talk/notifications/read', 'TalkController:notificationsRead', 'talk.notifications.read', $middleware);
                 $router->get('/talk/attachments/{id}', 'TalkController:attachment', 'talk.attachment', $middleware);
             },
             [
