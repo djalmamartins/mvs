@@ -136,6 +136,7 @@ if (talkWorkspace?.dataset.syncUrl) {
     let talkSyncTimer = 0;
     let lastRevision = Number(talkWorkspace.dataset.revision || 0);
     let failures = 0;
+    let talkSyncInFlight = false;
     const setTalkSyncState = (label, offline = false) => {
         if (!syncState) return;
         syncState.textContent = label;
@@ -146,7 +147,8 @@ if (talkWorkspace?.dataset.syncUrl) {
         if (!document.hidden) talkSyncTimer = window.setTimeout(runTalkSync, failures ? Math.min(30000, 5000 * failures) : 10000);
     };
     const runTalkSync = async () => {
-        if (document.hidden) return;
+        if (document.hidden || talkSyncInFlight) return;
+        talkSyncInFlight = true;
         try {
             const response = await fetch(talkWorkspace.dataset.syncUrl, {headers: {'Accept': 'application/json'}, credentials: 'same-origin', cache: 'no-store'});
             if (!response.ok) throw new Error('sync');
@@ -155,14 +157,16 @@ if (talkWorkspace?.dataset.syncUrl) {
             setTalkSyncState('Conectado');
             const revision = Number(state.revision || 0);
             if (lastRevision > 0 && revision > lastRevision) {
-                const active = document.activeElement;
-                if (!active?.matches('[data-talk-composer-body]')) window.location.reload();
+                const composerBody = talkWorkspace.querySelector('[data-talk-composer-body]');
+                const hasDraft = Boolean(composerBody?.value.trim());
+                if (!hasDraft) window.location.reload();
             }
             lastRevision = Math.max(lastRevision, revision);
         } catch (error) {
             failures += 1;
             setTalkSyncState(navigator.onLine ? 'Reconectando…' : 'Offline', true);
         } finally {
+            talkSyncInFlight = false;
             scheduleTalkSync();
         }
     };
