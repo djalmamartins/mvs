@@ -74,13 +74,28 @@ final class TalkController extends Controller
             if (!Csrf::validate((string)Request::post('_token', ''))) {
                 Response::to('/talk/tickets/'.$id.'?error=csrf');
             }
-            if ((string)Request::post('action', '') === 'send') {
-                try {
+            $action = (string)Request::post('action', '');
+            try {
+                if ($action === 'send') {
                     (new TalkOutboundService())->sendText($id, (int)$user->id, (string)Request::post('body', ''));
                     $_SESSION['talk_outbound_status'] = 'sent';
-                } catch (\RuntimeException $e) {
-                    $_SESSION['talk_outbound_error'] = $e->getMessage();
+                } elseif ($action === 'claim') {
+                    if (!$talk->claim($id, (int)$user->id)) {
+                        throw new \RuntimeException('Não foi possível assumir este atendimento.');
+                    }
+                    $_SESSION['talk_action_status'] = 'Atendimento assumido.';
+                } elseif ($action === 'return') {
+                    $talk->returnToQueue($id, (int)$user->id);
+                    $_SESSION['talk_action_status'] = 'Atendimento devolvido à fila.';
+                } elseif ($action === 'close') {
+                    $talk->close($id, (int)$user->id);
+                    $_SESSION['talk_action_status'] = 'Atendimento finalizado.';
+                } elseif ($action === 'reopen') {
+                    $talk->reopen($id, (int)$user->id);
+                    $_SESSION['talk_action_status'] = 'Atendimento reaberto.';
                 }
+            } catch (\RuntimeException $e) {
+                $_SESSION['talk_outbound_error'] = 'A ação não pôde ser concluída. Verifique o estado do atendimento e tente novamente.';
             }
             Response::to('/talk/tickets/'.$id);
         }
@@ -91,7 +106,8 @@ final class TalkController extends Controller
         }
         $ticket['outbound_error'] = $_SESSION['talk_outbound_error'] ?? null;
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
-        unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status']);
+        $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
+        unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_action_status']);
 
         $mine = $talk->myTickets((int)$user->id);
         $queue = $talk->queueForUser((int)$user->id);
@@ -101,6 +117,7 @@ final class TalkController extends Controller
             'conversations' => array_merge($mine, $queue),
             'selectedConversation' => $ticket,
             'canOperateTicket' => $talk->canOperateTicket($id, (int)$user->id),
+            'canManageTalk' => $talk->canManage((int)$user->id),
             'queueCount' => count($queue),
             'mineCount' => count($mine),
         ]);
