@@ -165,6 +165,13 @@ if (talkWorkspace?.dataset.syncUrl) {
                 totalCount.textContent = String(total);
                 totalCount.setAttribute('aria-label', total + ' conversas');
             }
+            const notificationCount = document.querySelector('[data-talk-notification-count]');
+            if (notificationCount) {
+                const unread = Number(state.notifications || 0);
+                notificationCount.textContent = unread > 99 ? '99+' : String(unread);
+                notificationCount.hidden = unread === 0;
+                notificationCount.parentElement?.setAttribute('aria-label', unread === 1 ? '1 notificação não lida' : unread + ' notificações não lidas');
+            }
             const revision = Number(state.revision || 0);
             if (lastRevision > 0 && revision > lastRevision) {
                 const composerBody = talkWorkspace.querySelector('[data-talk-composer-body]');
