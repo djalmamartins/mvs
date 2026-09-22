@@ -9,7 +9,20 @@ $user = Auth::user();
 $unreadNotifications = $user ? NotificationCounter::unreadFor((int) $user->id) : 0;
 ?>
 <header class="studio-topbar studio-topbar-v2">
-    <button class="studio-menu" type="button" aria-expanded="true" aria-controls="studio-sidebar" aria-label="Alternar menu"><?= studio_icon('apps') ?></button>
+    <div class="studio-app-launcher">
+        <button class="studio-app-launcher-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="studio-app-launcher-menu" aria-label="Abrir aplicativos Moves"><?= studio_icon('apps') ?></button>
+        <div class="studio-app-launcher-menu" id="studio-app-launcher-menu" role="menu" aria-label="Aplicativos Moves">
+            <header><strong>Moves</strong><small>Aplicativos</small></header>
+            <nav>
+                <a role="menuitem" href="/app"><?= studio_icon('calendar') ?><span>Meu Dia</span></a>
+                <a role="menuitem" href="/talk"><?= studio_icon('message-square') ?><span>Talk</span></a>
+                <a role="menuitem" href="/support"><?= studio_icon('headphones') ?><span>Suporte</span></a>
+                <a role="menuitem" href="/erp"><?= studio_icon('briefcase') ?><span>ERP</span></a>
+                <a role="menuitem" href="/studio" aria-current="page"><?= studio_icon('sparkles') ?><span>Studio</span></a>
+            </nav>
+        </div>
+    </div>
+    <button class="studio-menu" type="button" aria-expanded="true" aria-controls="studio-sidebar" aria-label="Recolher ou expandir menu do produto"><?= studio_icon('chevron-down') ?></button>
     <div class="studio-topbar-context"><small>Moves Studio</small><strong><?= $this->e($title) ?></strong></div>
     <form class="studio-global-search" method="get" action="/studio/search" role="search">
         <label class="sr-only" for="studio-global-search">Buscar no Studio</label>
