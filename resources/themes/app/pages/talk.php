@@ -43,6 +43,13 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
                 <textarea id="talk-message-body" name="body" rows="1" maxlength="4000" placeholder="Digite uma mensagem" required data-talk-composer-body></textarea>
                 <button type="submit" data-talk-send>Enviar</button>
             </form>
+            <form class="talk-attachment-form" method="post" enctype="multipart/form-data" data-talk-attachment-form>
+                <input type="hidden" name="_token" value="<?= htmlspecialchars(\Moves\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="action" value="attachment">
+                <label><span class="sr-only">Selecionar anexo</span><input type="file" name="attachment" required accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.mp3,.ogg,.m4a,.mp4" data-talk-attachment></label>
+                <button type="submit">Anexar</button>
+                <small>Até 10 MB. Imagem, PDF, texto, áudio ou vídeo.</small>
+            </form>
             <?php else: ?><p class="talk-composer-feedback" role="status">Assuma este atendimento para responder.</p><?php endif; ?>
         <?php endif; ?>
     </main>
