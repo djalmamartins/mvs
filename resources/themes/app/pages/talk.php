@@ -35,13 +35,13 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
             </div>
             <?php if (!empty($selectedConversation['attachments'])): ?><div class="talk-attachments" aria-label="Anexos"><?php foreach ($selectedConversation['attachments'] as $attachment): ?><a href="/talk/attachments/<?= (int)$attachment['id'] ?>" target="_blank" rel="noopener"><?= htmlspecialchars((string)$attachment['original_name'], ENT_QUOTES, 'UTF-8') ?> <small><?= number_format(((int)$attachment['size_bytes']) / 1024, 0, ',', '.') ?> KB</small></a><?php endforeach; ?></div><?php endif; ?>
             <?php if (!empty($selectedConversation['action_status'])): ?><p class="talk-composer-feedback" role="status"><?= htmlspecialchars((string)$selectedConversation['action_status'], ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
-            <?php if (!empty($selectedConversation['outbound_error'])): ?><p class="talk-composer-feedback is-error" role="alert"><?= htmlspecialchars((string)$selectedConversation['outbound_error'], ENT_QUOTES, 'UTF-8') ?></p><?php elseif (!empty($selectedConversation['outbound_status'])): ?><p class="talk-composer-feedback" role="status">Mensagem enviada.</p><?php endif; ?>
+            <?php if (!empty($selectedConversation['outbound_error'])): ?><p class="talk-composer-feedback is-error" role="alert"><?= htmlspecialchars((string)$selectedConversation['outbound_error'], ENT_QUOTES, 'UTF-8') ?><?php if (!empty($selectedConversation['outbound_draft'])): ?> A mensagem foi preservada para tentar novamente.<?php endif; ?></p><?php elseif (!empty($selectedConversation['outbound_status'])): ?><p class="talk-composer-feedback" role="status">Mensagem enviada.</p><?php endif; ?>
             <?php if (!empty($canOperateTicket)): ?>
             <form class="talk-composer" method="post" data-talk-composer>
                 <input type="hidden" name="_token" value="<?= htmlspecialchars(\Moves\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="action" value="send">
                 <label class="sr-only" for="talk-message-body">Mensagem</label>
-                <textarea id="talk-message-body" name="body" rows="1" maxlength="4000" placeholder="Digite uma mensagem" required data-talk-composer-body></textarea>
+                <textarea id="talk-message-body" name="body" rows="1" maxlength="4000" placeholder="Digite uma mensagem" required data-talk-composer-body><?= htmlspecialchars((string)($selectedConversation['outbound_draft'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
                 <button type="submit" data-talk-send>Enviar</button>
             </form>
             <form class="talk-attachment-form" method="post" enctype="multipart/form-data" data-talk-attachment-form>
