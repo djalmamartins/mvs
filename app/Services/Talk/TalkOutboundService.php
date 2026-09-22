@@ -18,84 +18,18 @@ final class TalkOutboundService
 {
     public function __construct(private ?WhatsAppTransport $whatsApp = null) {}
 
-    public function sendText(int $ticketId, int $userId, string $body): int
+    public function sendText(int $ticketId, int $userId, string $body, ?int $retryMessageId = null): int
     {
-        $body = mb_substr(trim($body), 0, 4000);
-        if ($body === '') {
-            throw new RuntimeException('Digite uma mensagem antes de enviar.');
-        }
-
-        $pdo = Connection::getInstance();
-        $statement = $pdo->prepare("SELECT t.id,t.tenant_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,cv.channel_id,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.id=:id LIMIT 1");
-        $statement->execute(['id' => $ticketId]);
-        $ticket = $statement->fetch(PDO::FETCH_ASSOC);
-
-        if (!$ticket || (int)($ticket['assigned_user_id'] ?? 0) !== $userId || !in_array((string)$ticket['status'], ['assigned', 'open'], true)) {
-            throw new RuntimeException('Atendimento indisponível para envio.');
-        }
-
-        $channel = (string)($ticket['channel'] ?: $ticket['source']);
-        $externalId = null;
-        $deliveryStatus = 'sent';
-        $metadata = ['channel' => $channel, 'delivery_status' => $deliveryStatus];
-
-        if ($channel === 'whatsapp') {
-            $recipient = trim((string)($ticket['phone'] ?: $ticket['contact_external_id']));
-            if ($recipient === '') {
-                throw new RuntimeException('Contato sem número de WhatsApp válido.');
-            }
-            $channelId=(int)($ticket['channel_id']??0);if($channelId<=0)throw new RuntimeException('Conversa sem número de WhatsApp de origem.');
-            $channelStmt=$pdo->prepare("SELECT id,tenant_id,type,provider,name,phone_number,external_account_id,session_key,status FROM talk_channels WHERE id=:id AND tenant_id=:tenant_id AND type='whatsapp' LIMIT 1");$channelStmt->execute(['id'=>$channelId,'tenant_id'=>$ticket['tenant_id']]);$channelConfig=$channelStmt->fetch(PDO::FETCH_ASSOC);if(!$channelConfig||$channelConfig['status']!=='active')throw new RuntimeException('O número de WhatsApp desta conversa não está conectado.');
-            $transport=$this->whatsApp ?? WhatsAppTransportFactory::make($channelConfig);
-            $result = $transport->sendText($recipient, $body);
-            $externalId = trim((string)$result['message_id']);
-            $deliveryStatus = trim((string)$result['status']) ?: 'sent';
-            $metadata['delivery_status'] = $deliveryStatus;
-            $metadata['transport'] = 'whatsapp';$metadata['channel_id']=$channelId;$metadata['from_number']=$channelConfig['phone_number']??null;
-        } elseif ($channel !== 'simulation') {
-            throw new RuntimeException('Canal de saída ainda não suportado: '.$channel.'.');
-        } else {
-            $metadata['simulation'] = true;
-        }
-
-        $now = date('Y-m-d H:i:s');
-        $pdo->beginTransaction();
-        try {
-            $insert = $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,:sent_at)");
-            $insert->execute([
-                'conversation_id' => (int)$ticket['conversation_id'],
-                'ticket_id' => $ticketId,
-                'user_id' => $userId,
-                'external_id' => $externalId !== '' ? $externalId : null,
-                'body' => $body,
-                'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-                'sent_at' => $now,
-            ]);
-            $messageId = (int)$pdo->lastInsertId();
-            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,:first_response_at),last_activity_at=:last_activity_at,updated_at=:updated_at WHERE id=:id")->execute([
-                'first_response_at' => $now,
-                'last_activity_at' => $now,
-                'updated_at' => $now,
-                'id' => $ticketId,
-            ]);
-            $pdo->prepare("UPDATE talk_conversations SET last_message_at=:last_message_at,updated_at=:updated_at WHERE id=:id")->execute([
-                'last_message_at' => $now,
-                'updated_at' => $now,
-                'id' => (int)$ticket['conversation_id'],
-            ]);
-            $pdo->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,'user','message.sent',:payload)")->execute([
-                'ticket_id' => $ticketId,
-                'user_id' => $userId,
-                'payload' => json_encode(['message_id' => $messageId, 'channel' => $channel, 'delivery_status' => $deliveryStatus], JSON_THROW_ON_ERROR),
-            ]);
-            $pdo->commit();
-            return $messageId;
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
+        $body=mb_substr(trim($body),0,4000);if($body==='')throw new RuntimeException('Digite uma mensagem antes de enviar.');
+        $pdo=Connection::getInstance();$statement=$pdo->prepare("SELECT t.id,t.tenant_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,cv.channel_id,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.id=:id LIMIT 1");$statement->execute(['id'=>$ticketId]);$ticket=$statement->fetch(PDO::FETCH_ASSOC);
+        if(!$ticket||(int)($ticket['assigned_user_id']??0)!==$userId||!in_array((string)$ticket['status'],['assigned','open'],true))throw new RuntimeException('Atendimento indisponível para envio.');
+        if($retryMessageId!==null){$retry=$pdo->prepare("SELECT id,body,metadata FROM talk_messages WHERE id=:id AND ticket_id=:ticket_id AND direction='outbound' LIMIT 1");$retry->execute(['id'=>$retryMessageId,'ticket_id'=>$ticketId]);$retryRow=$retry->fetch(PDO::FETCH_ASSOC);$retryMetadata=$retryRow?json_decode((string)($retryRow['metadata']??''),true):null;if(!$retryRow||!is_array($retryMetadata)||($retryMetadata['delivery_status']??'')!=='failed')throw new RuntimeException('Somente mensagens com falha podem ser reenviadas.');$body=(string)$retryRow['body'];}
+        $channel=(string)($ticket['channel']?:$ticket['source']);$externalId=null;$deliveryStatus='sent';$metadata=['channel'=>$channel,'delivery_status'=>$deliveryStatus];
+        if($channel==='whatsapp'){$recipient=trim((string)($ticket['phone']?:$ticket['contact_external_id']));if($recipient==='')throw new RuntimeException('Contato sem número de WhatsApp válido.');$channelId=(int)($ticket['channel_id']??0);if($channelId<=0)throw new RuntimeException('Conversa sem número de WhatsApp de origem.');$channelStmt=$pdo->prepare("SELECT id,tenant_id,type,provider,name,phone_number,external_account_id,session_key,status FROM talk_channels WHERE id=:id AND tenant_id=:tenant_id AND type='whatsapp' LIMIT 1");$channelStmt->execute(['id'=>$channelId,'tenant_id'=>$ticket['tenant_id']]);$channelConfig=$channelStmt->fetch(PDO::FETCH_ASSOC);if(!$channelConfig||$channelConfig['status']!=='active')throw new RuntimeException('O número de WhatsApp desta conversa não está conectado.');$transport=$this->whatsApp??WhatsAppTransportFactory::make($channelConfig);$result=$transport->sendText($recipient,$body);$externalId=trim((string)$result['message_id']);$deliveryStatus=trim((string)$result['status'])?:'sent';$metadata['delivery_status']=$deliveryStatus;$metadata['transport']='whatsapp';$metadata['channel_id']=$channelId;$metadata['from_number']=$channelConfig['phone_number']??null;}elseif($channel!=='simulation')throw new RuntimeException('Canal de saída ainda não suportado: '.$channel.'.');else $metadata['simulation']=true;
+        $now=date('Y-m-d H:i:s');$pdo->beginTransaction();try{
+            if($retryMessageId!==null){$metadata['retry_of']=$retryMessageId;$metadata['retried_at']=$now;$update=$pdo->prepare("UPDATE talk_messages SET external_id=:external_id,body=:body,metadata=:metadata,sent_at=:sent_at WHERE id=:id AND ticket_id=:ticket_id");$update->execute(['external_id'=>$externalId!==''?$externalId:null,'body'=>$body,'metadata'=>json_encode($metadata,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE),'sent_at'=>$now,'id'=>$retryMessageId,'ticket_id'=>$ticketId]);$messageId=$retryMessageId;$eventType='message.retried';}else{$insert=$pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,:sent_at)");$insert->execute(['conversation_id'=>(int)$ticket['conversation_id'],'ticket_id'=>$ticketId,'user_id'=>$userId,'external_id'=>$externalId!==''?$externalId:null,'body'=>$body,'metadata'=>json_encode($metadata,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE),'sent_at'=>$now]);$messageId=(int)$pdo->lastInsertId();$eventType='message.sent';}
+            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,:first_response_at),last_activity_at=:last_activity_at,updated_at=:updated_at WHERE id=:id")->execute(['first_response_at'=>$now,'last_activity_at'=>$now,'updated_at'=>$now,'id'=>$ticketId]);$pdo->prepare("UPDATE talk_conversations SET last_message_at=:last_message_at,updated_at=:updated_at WHERE id=:id")->execute(['last_message_at'=>$now,'updated_at'=>$now,'id'=>(int)$ticket['conversation_id']]);$pdo->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,'user',:event_type,:payload)")->execute(['ticket_id'=>$ticketId,'user_id'=>$userId,'event_type'=>$eventType,'payload'=>json_encode(['message_id'=>$messageId,'channel'=>$channel,'delivery_status'=>$deliveryStatus],JSON_THROW_ON_ERROR)]);$pdo->commit();return $messageId;
+        }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
 
     /** @return array{status:string,connected:bool,detail:?string} */
