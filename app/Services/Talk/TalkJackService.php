@@ -15,7 +15,7 @@ final class TalkJackService
         $settings=$this->settings();
         if(($settings['jack.enabled']??'0')!=='1'){return 0;}
         $wait=max(0,(int)($settings['jack.wait_seconds']??60));$limit=max(1,min(25,$limit));
-        $sql="SELECT t.id,t.conversation_id,t.protocol,c.name contact_name FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.status='queued' AND TIMESTAMPDIFF(SECOND,COALESCE(t.queued_at,t.created_at),NOW())>=:wait AND NOT EXISTS(SELECT 1 FROM talk_jack_interactions ji WHERE ji.ticket_id=t.id AND ji.action='jack.reply') ORDER BY COALESCE(t.queued_at,t.created_at),t.id LIMIT {$limit}";
+        $sql="SELECT t.id,t.conversation_id,t.protocol,c.name contact_name FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.status='queued' AND t.assigned_user_id IS NULL AND TIMESTAMPDIFF(SECOND,COALESCE(t.queued_at,t.created_at),NOW())>=:wait AND NOT EXISTS(SELECT 1 FROM talk_jack_interactions ji WHERE ji.ticket_id=t.id AND ji.action='jack.reply') AND NOT EXISTS(SELECT 1 FROM talk_messages hm WHERE hm.ticket_id=t.id AND hm.direction='outbound' AND hm.sender_type='user') ORDER BY COALESCE(t.queued_at,t.created_at),t.id LIMIT {$limit}";
         $s=$pdo->prepare($sql);$s->execute(['wait'=>$wait]);$tickets=$s->fetchAll(PDO::FETCH_ASSOC);$done=0;
         foreach($tickets as $ticket){if($this->reply($ticket)){$done++;}}
         return $done;
@@ -34,6 +34,13 @@ final class TalkJackService
         $body=($first!==''?$first.', ':'').'recebi sua mensagem sobre "'.$excerpt.'". Já organizei o contexto deste atendimento para que ele siga sem você precisar repetir as informações.';
         $pdo->beginTransaction();
         try{
+            $lock=$pdo->prepare("SELECT status,assigned_user_id FROM talk_tickets WHERE id=:id FOR UPDATE");
+            $lock->execute(['id'=>$ticket['id']]);$current=$lock->fetch(PDO::FETCH_ASSOC);
+            if(!$current||$current['status']!=='queued'||$current['assigned_user_id']!==null){$pdo->rollBack();return false;}
+            $duplicate=$pdo->prepare("SELECT COUNT(*) FROM talk_jack_interactions WHERE ticket_id=:id AND action='jack.reply'");
+            $duplicate->execute(['id'=>$ticket['id']]);if((int)$duplicate->fetchColumn()>0){$pdo->rollBack();return false;}
+            $human=$pdo->prepare("SELECT COUNT(*) FROM talk_messages WHERE ticket_id=:id AND direction='outbound' AND sender_type='user'");
+            $human->execute(['id'=>$ticket['id']]);if((int)$human->fetchColumn()>0){$pdo->rollBack();return false;}
             $insert=$pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'jack',NULL,'outbound','text',:body,:metadata,NOW())");
             $insert->execute(['conversation_id'=>$ticket['conversation_id'],'ticket_id'=>$ticket['id'],'body'=>$body,'metadata'=>json_encode(['engine'=>'jack-v1','context_read'=>true],JSON_THROW_ON_ERROR)]);
             $messageId=(int)$pdo->lastInsertId();
