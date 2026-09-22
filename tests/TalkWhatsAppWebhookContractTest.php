@@ -18,7 +18,7 @@ final class TalkWhatsAppWebhookContractTest extends TestCase
         self::assertStringContainsString("\$value['statuses']",$source);
         self::assertStringContainsString("['sent','delivered','read','failed']",$source);
         self::assertStringContainsString("delivery_updated_at",$source);
-        self::assertStringContainsString("(int)(\$metadata['channel_id']??0)!==\$channelId",$source);
+        self::assertStringContainsString("(int)(\$messageMetadata['channel_id']??0)!==\$channelId",$source);
         self::assertStringContainsString("TalkDeliveryStatus::accepts(\$current,\$delivery)",$source);
     }
 
