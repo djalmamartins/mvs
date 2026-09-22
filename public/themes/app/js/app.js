@@ -287,11 +287,30 @@ if (talkWorkspace?.dataset.syncUrl) {
                 notificationCount.parentElement?.setAttribute('aria-label', unread === 1 ? '1 notificação não lida' : unread + ' notificações não lidas');
             }
             renderTalkConversations(state.conversations || []);
+            const messageList = talkWorkspace.querySelector('[data-talk-messages]');
+            if (messageList && Number(messageList.dataset.ticketId || 0) === Number(state.active_ticket_id || 0) && Array.isArray(state.messages)) {
+                const currentIds = [...messageList.querySelectorAll('[data-message-id]')].map(item => Number(item.dataset.messageId || 0));
+                const nextIds = state.messages.map(item => Number(item.id || 0));
+                if (currentIds.length !== nextIds.length || currentIds.some((id,index) => id !== nextIds[index])) {
+                    messageList.innerHTML = '';
+                    state.messages.forEach(message => {
+                        const article = document.createElement('article');
+                        article.className = 'talk-message ' + (message.direction === 'outbound' ? 'is-outbound' : 'is-inbound');
+                        article.dataset.messageId = String(Number(message.id || 0));
+                        const body = document.createElement('p');
+                        body.textContent = message.body || '';
+                        const meta = document.createElement('small');
+                        meta.textContent = [message.sender_name || 'Contato', message.sent_at || '', message.direction === 'outbound' ? (message.delivery_status || 'enviado') : ''].filter(Boolean).join(' · ');
+                        article.append(body, meta); messageList.appendChild(article);
+                    });
+                    messageList.scrollTop = messageList.scrollHeight;
+                }
+            }
             const revision = Number(state.revision || 0);
             if (lastRevision > 0 && revision > lastRevision) {
                 const composerBody = talkWorkspace.querySelector('[data-talk-composer-body]');
                 const hasDraft = Boolean(composerBody?.value.trim());
-                if (!hasDraft) window.location.reload();
+                if (!hasDraft && !messageList) window.location.reload();
             }
             lastRevision = Math.max(lastRevision, revision);
         } catch (error) {
