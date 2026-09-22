@@ -430,3 +430,13 @@ html[data-theme="dark"] .studio-v2 .studio-global-search input, html[data-theme=
 @media (max-width:760px) {
     .studio-v2 .studio-notification-panel { position:fixed; top:66px; right:10px; left:10px; width:auto }
 }
+
+.studio-v2 .studio-notification-list { display:grid; max-height:360px; overflow:auto; padding:6px }
+.studio-v2 .studio-notification-list > a { position:relative; display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; align-items:start; padding:10px; border-radius:var(--studio-radius); color:var(--studio-text) }
+.studio-v2 .studio-notification-list > a:hover { background:var(--studio-surface-soft) }
+.studio-v2 .studio-notification-list > a.unread { background:var(--studio-primary-soft) }
+.studio-v2 .studio-notification-list > a.unread::after { position:absolute; top:15px; right:10px; width:6px; height:6px; border-radius:50%; background:var(--studio-primary); content:"" }
+.studio-v2 .studio-notification-list > a > span:first-child { display:grid; width:30px; height:30px; place-items:center; border-radius:50%; background:var(--studio-surface-soft); color:var(--studio-primary) }
+.studio-v2 .studio-notification-list > a > span:last-child { display:grid; gap:2px; padding-right:10px }
+.studio-v2 .studio-notification-list strong { overflow:hidden; color:var(--studio-ink); font-size:.82rem; text-overflow:ellipsis; white-space:nowrap }
+.studio-v2 .studio-notification-list small { display:-webkit-box; overflow:hidden; color:var(--studio-muted); font-size:.76rem; line-height:1.4; -webkit-box-orient:vertical; -webkit-line-clamp:2 }
