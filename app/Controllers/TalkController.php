@@ -12,6 +12,7 @@ use Moves\Services\Talk\TalkAttachmentService;
 use Moves\Services\Talk\TalkNotificationService;
 use Moves\Services\Talk\TalkOutboundService;
 use Moves\Services\Talk\TalkService;
+use Moves\Services\Talk\TalkTenantContext;
 
 final class TalkController extends Controller
 {
@@ -61,6 +62,17 @@ final class TalkController extends Controller
         exit;
     }
 
+
+    public function context(): never
+    {
+        $user=Auth::user();
+        if($user===null||!Csrf::validate((string)Request::post('_token','')))Response::to('/talk');
+        $tenantId=(int)Request::post('tenant_id',0);
+        if($tenantId<=0||!(new TalkTenantContext())->select((int)$user->id,$tenantId)){
+            Response::to('/talk?error=context');
+        }
+        Response::to('/talk');
+    }
 
     public function notificationsRead(): never
     {
