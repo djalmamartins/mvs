@@ -27,6 +27,6 @@ final class WhatsAppTransportFactory
     private static function env(string $key, string $default = ''): string
     {
         $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
-        return $value === false || $value === null ? $default : (string)$value;
+        return $value === false ? $default : (string)$value;
     }
 }
