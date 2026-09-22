@@ -8,6 +8,7 @@ use Moves\Core\Controller;
 use Moves\Core\Csrf;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Services\Talk\TalkAttachmentService;
 use Moves\Services\Talk\TalkNotificationService;
 use Moves\Services\Talk\TalkOutboundService;
 use Moves\Services\Talk\TalkService;
@@ -98,6 +99,9 @@ final class TalkController extends Controller
                 } elseif ($action === 'note') {
                     $talk->addNote($id, (int)$user->id, (string)Request::post('note', ''));
                     $_SESSION['talk_action_status'] = 'Nota adicionada.';
+                } elseif ($action === 'attachment') {
+                    (new TalkAttachmentService())->store($id, (int)$user->id, $_FILES['attachment'] ?? []);
+                    $_SESSION['talk_action_status'] = 'Anexo adicionado.';
                 } elseif ($action === 'reopen') {
                     $talk->reopen($id, (int)$user->id);
                     $_SESSION['talk_action_status'] = 'Atendimento reaberto.';
