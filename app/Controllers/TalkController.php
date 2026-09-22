@@ -152,6 +152,7 @@ final class TalkController extends Controller
         $ticket['outbound_error'] = $_SESSION['talk_outbound_error'] ?? null;
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
         $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
+        $ticket['attachments'] = (new TalkAttachmentService())->forTicket($id);
         unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_action_status']);
 
         $mine = $talk->myTickets((int)$user->id);
