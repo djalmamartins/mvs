@@ -18,6 +18,8 @@ final class TalkWhatsAppWebhookContractTest extends TestCase
         self::assertStringContainsString("\$value['statuses']",$source);
         self::assertStringContainsString("['sent','delivered','read','failed']",$source);
         self::assertStringContainsString("delivery_updated_at",$source);
+        self::assertStringContainsString("(int)(\$metadata['channel_id']??0)!==\$channelId",$source);
+        self::assertStringContainsString("TalkDeliveryStatus::accepts(\$current,\$delivery)",$source);
     }
 
     public function testChannelActivationRequiresSuccessfulProviderStatus(): void
@@ -35,5 +37,17 @@ final class TalkWhatsAppWebhookContractTest extends TestCase
         self::assertStringContainsString('name="action" value="channel_test"', $view);
         self::assertStringNotContainsString('name="access_token"', $view);
         self::assertStringNotContainsString('name="app_secret"', $view);
+    }
+
+    public function testDeliveryChangesParticipateInLiveSync(): void
+    {
+        $service=(string)file_get_contents(__DIR__.'/../app/Services/Talk/TalkService.php');
+        $javascript=(string)file_get_contents(__DIR__.'/../public/themes/app/js/app.js');
+
+        self::assertStringContainsString('MAX(m.updated_at)', $service);
+        self::assertStringContainsString('delivery_status', $service);
+        self::assertStringContainsString('item.dataset.deliveryStatus', $javascript);
+        self::assertStringContainsString('item.delivery !== nextMessages[index].delivery', $javascript);
+        self::assertStringContainsString("cache: 'no-store'", $javascript);
     }
 }
