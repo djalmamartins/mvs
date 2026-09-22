@@ -84,14 +84,15 @@ final class TalkService
     private function event(int $ticketId,?int $userId,string $type,array $payload): void { $s=Connection::getInstance()->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,:actor_type,:event_type,:payload)");$s->execute(['ticket_id'=>$ticketId,'user_id'=>$userId,'actor_type'=>$userId===null?'system':'user','event_type'=>$type,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]); }
     public function syncState(int $userId): array
     {
-        $pdo=Connection::getInstance();$params=[];
+        $pdo=Connection::getInstance();$tenantId=$this->tenantId($userId);
         if($this->canManage($userId)){
-            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(created_at)),0) FROM talk_messages";
+            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id WHERE t.tenant_id=:tenant_id";
+            $params=['tenant_id'=>$tenantId];
         }else{
-            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(t.updated_at)),0) FROM talk_tickets t LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL)";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL)";
-            $params=['user_id'=>$userId];
+            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(t.updated_at)),0) FROM talk_tickets t LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))";
+            $params=['tenant_id'=>$tenantId,'user_id'=>$userId];
         }
         $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
         $s=$pdo->prepare($messageSql);$s->execute($params);$messages=(int)$s->fetchColumn();
