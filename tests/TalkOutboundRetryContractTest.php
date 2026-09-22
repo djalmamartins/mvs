@@ -12,7 +12,7 @@ final class TalkOutboundRetryContractTest extends TestCase
         self::assertStringContainsString("['delivery_status']??'')!=='failed'", $service);
         self::assertStringContainsString('Somente mensagens com falha podem ser reenviadas.', $service);
         self::assertStringContainsString('UPDATE talk_messages SET external_id=:external_id', $service);
-        self::assertStringContainsString("'retry_of'=>\$retryMessageId", $service);
+        self::assertStringContainsString("['retry_of']=\$retryMessageId", $service);
         self::assertStringContainsString("'message.retried'", $service);
     }
 
