@@ -70,6 +70,20 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
         return $this->deliveryResult($response);
     }
 
+    /** @return array{bytes:string,mime_type:string} */
+    public function downloadMedia(string $mediaId): array
+    {
+        $mediaId=trim($mediaId);if($mediaId==='')throw new RuntimeException('Identificador de mídia do WhatsApp ausente.');
+        $metadata=$this->request('GET',rawurlencode($mediaId));$url=trim((string)($metadata['url']??''));$mime=trim((string)($metadata['mime_type']??'application/octet-stream'));
+        if($url===''||!str_starts_with($url,'https://'))throw new RuntimeException('WhatsApp não retornou uma URL de mídia válida.');
+        $ch=curl_init($url);if($ch===false)throw new RuntimeException('Não foi possível iniciar o download da mídia.');
+        curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>30,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$this->accessToken]]);
+        $bytes=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$error=curl_error($ch);curl_close($ch);
+        if(!is_string($bytes)||$status<200||$status>=300)throw new RuntimeException($this->errorMessage('', $status, $error));
+        if($bytes===''||strlen($bytes)>10_485_760)throw new RuntimeException('Mídia recebida vazia ou maior que 10 MB.');
+        return ['bytes'=>$bytes,'mime_type'=>$mime];
+    }
+
     public function status(): array
     {
         try {
