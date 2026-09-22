@@ -173,7 +173,7 @@ if (talkWorkspace) {
         filters.filter(item => item !== button).forEach(item => item.setAttribute('aria-pressed', 'false'));
         talkWorkspace.dataset.filter = button.dataset.talkFilter || 'all';
     }));
-    const conversations = [...talkWorkspace.querySelectorAll('[data-talk-conversation]')];
+    let conversations = [...talkWorkspace.querySelectorAll('[data-talk-conversation]')];
     const applyTalkFilters = () => {
         const filter = talkWorkspace.dataset.filter || 'all';
         const query = search?.value.trim().toLocaleLowerCase('pt-BR') || '';
@@ -189,6 +189,28 @@ if (talkWorkspace) {
             if (!item.hidden) visible += 1;
         });
         talkWorkspace.querySelector('[data-talk-filter-empty]')?.toggleAttribute('hidden', visible !== 0);
+    };
+    const escapeTalkHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    const renderTalkConversations = items => {
+        const body = talkWorkspace.querySelector('.talk-list-body');
+        if (!body || !Array.isArray(items)) return;
+        const selected = talkWorkspace.querySelector('[data-talk-conversation][aria-current="true"]')?.getAttribute('href') || '';
+        body.querySelectorAll('[data-talk-conversation]').forEach(item => item.remove());
+        items.forEach(item => {
+            const link = document.createElement('a');
+            const href = '/talk/tickets/' + Number(item.id || 0);
+            link.className = 'talk-conversation' + (selected === href ? ' is-selected' : '');
+            link.href = href; link.dataset.talkConversation = ''; link.dataset.scope = item.scope || '';
+            link.dataset.queue = item.queue_name || ''; link.dataset.priority = item.priority || 'normal';
+            link.dataset.search = [item.contact_name,item.contact_phone,item.protocol,item.subject].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR');
+            if (selected === href) link.setAttribute('aria-current','true');
+            const owner = item.scope === 'queue' ? 'Fila' : (item.assigned_name || 'Meu atendimento');
+            link.innerHTML = '<span class="talk-conversation-main"><strong>'+escapeTalkHtml(item.contact_name || 'Contato')+'</strong><small>'+escapeTalkHtml(item.subject || item.protocol || '')+'</small></span><span class="talk-conversation-meta"><small>'+escapeTalkHtml(owner)+'</small><small>'+escapeTalkHtml(item.priority || 'normal')+'</small></span>';
+            body.insertBefore(link, body.querySelector('[data-talk-filter-empty]'));
+        });
+        conversations = [...body.querySelectorAll('[data-talk-conversation]')];
+        body.querySelector('.talk-empty:not([data-talk-filter-empty])')?.remove();
+        applyTalkFilters();
     };
     filters.forEach(button => button.addEventListener('click', applyTalkFilters));
     search?.addEventListener('input', () => {
@@ -264,6 +286,7 @@ if (talkWorkspace?.dataset.syncUrl) {
                 notificationCount.hidden = unread === 0;
                 notificationCount.parentElement?.setAttribute('aria-label', unread === 1 ? '1 notificação não lida' : unread + ' notificações não lidas');
             }
+            renderTalkConversations(state.conversations || []);
             const revision = Number(state.revision || 0);
             if (lastRevision > 0 && revision > lastRevision) {
                 const composerBody = talkWorkspace.querySelector('[data-talk-composer-body]');
