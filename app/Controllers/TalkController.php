@@ -26,7 +26,7 @@ final class TalkController extends Controller
         $talk = new TalkService();
         $userId = (int) $user->id;
         $talk->heartbeat($userId);
-        $talk->autoAssign();
+        $talk->autoAssign($userId);
 
         $queue = $talk->queueForUser($userId);
         $mine = $talk->myTickets($userId);
@@ -53,7 +53,7 @@ final class TalkController extends Controller
         $talk = new TalkService();
         $userId = (int)$user->id;
         $talk->heartbeat($userId);
-        $talk->autoAssign();
+        $talk->autoAssign($userId);
         $state = $talk->syncState($userId);
         $state['notifications'] = (new TalkNotificationService())->unreadCount($userId);
         header('Content-Type: application/json; charset=utf-8');
