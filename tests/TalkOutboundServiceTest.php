@@ -73,7 +73,8 @@ final class TalkOutboundServiceTest extends TestCase
         $pdo->exec('CREATE TABLE talk_contacts (id INTEGER PRIMARY KEY, tenant_id INTEGER, phone TEXT, external_id TEXT)');
         $pdo->exec('CREATE TABLE talk_conversations (id INTEGER PRIMARY KEY, tenant_id INTEGER, channel_id INTEGER, contact_id INTEGER, channel TEXT, last_message_at TEXT, updated_at TEXT)');
         $pdo->exec('CREATE TABLE talk_tickets (id INTEGER PRIMARY KEY, tenant_id INTEGER, conversation_id INTEGER, assigned_user_id INTEGER, status TEXT, source TEXT, first_response_at TEXT, last_activity_at TEXT, updated_at TEXT)');
-        $pdo->exec('CREATE TABLE talk_channels (id INTEGER PRIMARY KEY, tenant_id INTEGER, type TEXT, provider TEXT, name TEXT, phone_number TEXT, external_account_id TEXT, session_key TEXT, status TEXT);\n        $pdo->exec('CREATE TABLE talk_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id INTEGER, ticket_id INTEGER, sender_type TEXT, sender_user_id INTEGER, external_id TEXT, direction TEXT, type TEXT, body TEXT, metadata TEXT, sent_at TEXT)');
+        $pdo->exec('CREATE TABLE talk_channels (id INTEGER PRIMARY KEY, tenant_id INTEGER, type TEXT, provider TEXT, name TEXT, phone_number TEXT, external_account_id TEXT, session_key TEXT, status TEXT)');
+        $pdo->exec('CREATE TABLE talk_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id INTEGER, ticket_id INTEGER, sender_type TEXT, sender_user_id INTEGER, external_id TEXT, direction TEXT, type TEXT, body TEXT, metadata TEXT, sent_at TEXT)');
         $pdo->exec('CREATE TABLE talk_events (id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER, user_id INTEGER, actor_type TEXT, event_type TEXT, payload TEXT)');
         $pdo->exec("INSERT INTO talk_contacts(id,tenant_id,phone,external_id) VALUES(1,1,'5511999999999','contact-1')");
         $pdo->exec("INSERT INTO talk_conversations(id,tenant_id,channel_id,contact_id,channel) VALUES(1,1,1,1,".$pdo->quote($channel).")");
