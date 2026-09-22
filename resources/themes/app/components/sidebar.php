@@ -1,20 +1,28 @@
 <?php
+use Moves\Core\Access;
 
-/** Moves | Customer Area navigation. */
-
-$groups = [
-    'Visão geral' => [['label'=>'Início','icon'=>'⌂','href'=>'/app','key'=>'dashboard']],
-    'Serviços' => [
-        ['label'=>'Meus serviços','icon'=>'◇'],['label'=>'Projetos','icon'=>'▧'],
-        ['label'=>'Hospedagem','icon'=>'≋'],['label'=>'Domínios','icon'=>'◎'],
-    ],
-    'Atendimento' => [['label'=>'Chamados','icon'=>'◌']],
-    'Financeiro' => [['label'=>'Faturas','icon'=>'▤']],
-    'Arquivos' => [['label'=>'Documentos','icon'=>'□']],
-    'Conta' => [['label'=>'Notificações','icon'=>'•'],['label'=>'Meu perfil','icon'=>'○','href'=>'/app/profile','key'=>'profile']],
+/** Moves | Global rail + contextual navigation. */
+$apps = [
+    ['label'=>'Meu Dia','href'=>'/app','show'=>true],
+    ['label'=>'Talk','href'=>'/talk','show'=>Access::can('talk.access')],
+    ['label'=>'Studio','href'=>'/studio','show'=>Access::can('studio.dashboard')],
 ];
+$talk = ($currentPage ?? null) === 'talk';
 ?>
-<aside class="customer-sidebar" id="customer-sidebar" aria-label="Navegação da Área do Cliente">
-    <a class="customer-brand" href="/app"><img src="/themes/site/images/brand/moves-logo.svg" alt="MOVES" width="116" height="17"><small>Área do Cliente</small></a>
-    <nav><?php foreach($groups as $group=>$items):?><section class="customer-nav-group"><h2><?= $this->e($group) ?></h2><?php foreach($items as $item):?><?php if(isset($item['href'])):?><a href="<?= $this->e($item['href']) ?>"<?= ($currentPage??null)===$item['key']?' class="active" aria-current="page"':'' ?>><span aria-hidden="true"><?= $this->e($item['icon']) ?></span><?= $this->e($item['label']) ?></a><?php else:?><span class="customer-nav-disabled" aria-disabled="true" title="Disponível quando houver dados vinculados à sua conta"><span aria-hidden="true"><?= $this->e($item['icon']) ?></span><?= $this->e($item['label']) ?><small>Em breve</small></span><?php endif;?><?php endforeach;?></section><?php endforeach;?></nav>
+<div class="moves-global-rail" aria-label="Aplicativos Moves">
+    <button class="moves-app-launcher" type="button" aria-expanded="false" aria-controls="moves-app-menu" aria-label="Abrir aplicativos Moves"><span aria-hidden="true" class="moves-nine-dots"><?php for($i=0;$i<9;$i++): ?><i></i><?php endfor; ?></span></button>
+    <div class="moves-app-menu" id="moves-app-menu" hidden role="menu">
+        <?php foreach($apps as $app): if(!$app['show']) continue; ?><a role="menuitem" href="<?= $this->e($app['href']) ?>"><?= $this->e($app['label']) ?></a><?php endforeach; ?>
+    </div>
+</div>
+<aside class="customer-sidebar" id="customer-sidebar" aria-label="<?= $talk ? 'Navegação do Talk' : 'Navegação da Área do Cliente' ?>">
+    <div class="customer-brand"><a href="<?= $talk ? '/talk' : '/app' ?>"><img src="/themes/site/images/brand/moves-logo.svg" alt="MOVES" width="116" height="17"></a><button class="customer-nav-collapse" type="button" aria-expanded="true" aria-controls="customer-sidebar-nav" aria-label="Recolher navegação">‹</button></div>
+    <nav id="customer-sidebar-nav">
+    <?php if($talk): ?>
+        <section class="customer-nav-group"><h2>Talk</h2><a href="/talk" class="active" aria-current="page"><span aria-hidden="true">◌</span><span>Conversas</span></a><a href="/talk/queue"><span aria-hidden="true">≋</span><span>Fila</span></a></section>
+    <?php else: ?>
+        <section class="customer-nav-group"><h2>Visão geral</h2><a href="/app"<?= ($currentPage??null)==='dashboard'?' class="active" aria-current="page"':'' ?>><span aria-hidden="true">⌂</span><span>Meu Dia</span></a></section>
+        <section class="customer-nav-group"><h2>Conta</h2><a href="/app/profile"<?= ($currentPage??null)==='profile'?' class="active" aria-current="page"':'' ?>><span aria-hidden="true">○</span><span>Meu perfil</span></a></section>
+    <?php endif; ?>
+    </nav>
 </aside><button class="customer-backdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button>
