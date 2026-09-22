@@ -102,11 +102,11 @@ final class TalkService
         $pdo=Connection::getInstance();$tenantId=$this->tenantId($userId);
         if($this->canManage($userId)){
             $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id WHERE t.tenant_id=:tenant_id";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(GREATEST(m.created_at,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(m.metadata,'$.delivery_updated_at')),'1970-01-01')))),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id WHERE t.tenant_id=:tenant_id";
             $params=['tenant_id'=>$tenantId];
         }else{
             $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(t.updated_at)),0) FROM talk_tickets t LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(GREATEST(m.created_at,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(m.metadata,'$.delivery_updated_at')),'1970-01-01')))),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL))";
             $params=['tenant_id'=>$tenantId,'user_id'=>$userId];
         }
         $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
