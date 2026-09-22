@@ -20,6 +20,6 @@ final class TalkProtocolService
             $lock=$pdo->prepare("SELECT last_number FROM talk_protocol_sequences WHERE tenant_id=:tenant_id AND year=:year FOR UPDATE");$lock->execute(['tenant_id'=>$tenantId,'year'=>$year]);$sequence=(int)$lock->fetchColumn()+1;
             $pdo->prepare("UPDATE talk_protocol_sequences SET last_number=:number WHERE tenant_id=:tenant_id AND year=:year")->execute(['number'=>$sequence,'tenant_id'=>$tenantId,'year'=>$year]);
             $number=str_pad((string)$sequence,$digits,'0',STR_PAD_LEFT);$identified=$condominiumId!==null&&$condominiumId>0;$prefix=$identified?$configuredPrefix:'TK';$scope=$identified?(string)$condominiumId:'00';$protocol=$prefix.'-'.$year.'-'.$number.'-'.$scope;if($ownsTransaction)$pdo->commit();return $protocol;
-        }catch(\Throwable $e){if($ownsTransaction&&$pdo->inTransaction())$pdo->rollBack();throw $e;}
+        }catch(\Throwable $e){if($ownsTransaction)$pdo->rollBack();throw $e;}
     }
 }
