@@ -16,10 +16,7 @@ use RuntimeException;
  */
 final class TalkOutboundService
 {
-    public function __construct(private ?WhatsAppTransport $whatsApp = null)
-    {
-        $this->whatsApp ??= WhatsAppTransportFactory::make();
-    }
+    public function __construct(private ?WhatsAppTransport $whatsApp = null) {}
 
     public function sendText(int $ticketId, int $userId, string $body): int
     {
@@ -29,7 +26,7 @@ final class TalkOutboundService
         }
 
         $pdo = Connection::getInstance();
-        $statement = $pdo->prepare("SELECT t.id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.id=:id LIMIT 1");
+        $statement = $pdo->prepare("SELECT t.id,t.tenant_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,cv.channel_id,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.id=:id LIMIT 1");
         $statement->execute(['id' => $ticketId]);
         $ticket = $statement->fetch(PDO::FETCH_ASSOC);
 
@@ -47,11 +44,14 @@ final class TalkOutboundService
             if ($recipient === '') {
                 throw new RuntimeException('Contato sem número de WhatsApp válido.');
             }
-            $result = $this->whatsApp->sendText($recipient, $body);
+            $channelId=(int)($ticket['channel_id']??0);if($channelId<=0)throw new RuntimeException('Conversa sem número de WhatsApp de origem.');
+            $channelStmt=$pdo->prepare("SELECT id,tenant_id,type,provider,name,phone_number,external_account_id,session_key,status FROM talk_channels WHERE id=:id AND tenant_id=:tenant_id AND type='whatsapp' LIMIT 1");$channelStmt->execute(['id'=>$channelId,'tenant_id'=>$ticket['tenant_id']]);$channelConfig=$channelStmt->fetch(PDO::FETCH_ASSOC);if(!$channelConfig||$channelConfig['status']!=='active')throw new RuntimeException('O número de WhatsApp desta conversa não está conectado.');
+            $transport=$this->whatsApp ?? WhatsAppTransportFactory::make($channelConfig);
+            $result = $transport->sendText($recipient, $body);
             $externalId = trim((string)$result['message_id']);
             $deliveryStatus = trim((string)$result['status']) ?: 'sent';
             $metadata['delivery_status'] = $deliveryStatus;
-            $metadata['transport'] = 'whatsapp';
+            $metadata['transport'] = 'whatsapp';$metadata['channel_id']=$channelId;$metadata['from_number']=$channelConfig['phone_number']??null;
         } elseif ($channel !== 'simulation') {
             throw new RuntimeException('Canal de saída ainda não suportado: '.$channel.'.');
         } else {
@@ -101,6 +101,6 @@ final class TalkOutboundService
     /** @return array{status:string,connected:bool,detail:?string} */
     public function whatsAppStatus(): array
     {
-        return $this->whatsApp->status();
+        return ($this->whatsApp ?? WhatsAppTransportFactory::make())->status();
     }
 }
