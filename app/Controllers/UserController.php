@@ -52,6 +52,24 @@ final class UserController extends Controller
         );
     }
 
+    public function security(): never
+    {
+        $user=Auth::user();
+        if($user===null)Response::to('/login');
+        $token=Request::post('_token');
+        if(!is_string($token)||!Csrf::validate($token)){Flash::set('error','Token de segurança inválido.');Response::to('/app/profile#security');}
+        $current=(string)Request::post('current_password','');
+        $password=(string)Request::post('password','');
+        $confirmation=(string)Request::post('password_confirmation','');
+        if(strlen($password)<8||$password!==$confirmation){Flash::set('error','A nova senha deve ter ao menos 8 caracteres e a confirmação deve ser igual.');Response::to('/app/profile#security');}
+        $pdo=Connection::getInstance();$s=$pdo->prepare('SELECT password FROM users WHERE id=? AND status=\'active\'');$s->execute([(int)$user->id]);$hash=(string)$s->fetchColumn();
+        if($hash===''||!password_verify($current,$hash)){Flash::set('error','A senha atual não confere.');Response::to('/app/profile#security');}
+        $pdo->prepare('UPDATE users SET password=? WHERE id=?')->execute([password_hash($password,PASSWORD_DEFAULT),(int)$user->id]);
+        Logger::info('Senha da própria conta atualizada.',['actor_id'=>(int)$user->id]);
+        Flash::set('success','Senha atualizada com sucesso.');
+        Response::to('/app/profile#security');
+    }
+
     /**
      * Exibe a listagem paginada de usuários.
      *
