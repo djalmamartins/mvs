@@ -27,7 +27,7 @@ final class Theme
             return 'admin';
         }
 
-        if ($path === '/app' || str_starts_with($path, '/app/')) {
+        if ($path === '/app' || str_starts_with($path, '/app/') || $path === '/talk' || str_starts_with($path, '/talk/')) {
             return 'app';
         }
 
