@@ -132,6 +132,8 @@ const talkWorkspace = document.querySelector('[data-talk-workspace]');
 if (talkWorkspace) {
     const search = talkWorkspace.querySelector('[data-talk-search]');
     const filters = [...talkWorkspace.querySelectorAll('[data-talk-filter]')];
+    const queueFilter = talkWorkspace.querySelector('[data-talk-filter-queue]');
+    const priorityFilter = talkWorkspace.querySelector('[data-talk-filter-priority]');
     filters.forEach(button => button.addEventListener('click', () => {
         filters.forEach(item => item.classList.toggle('active', item === button));
         button.setAttribute('aria-pressed', 'true');
@@ -142,19 +144,26 @@ if (talkWorkspace) {
     const applyTalkFilters = () => {
         const filter = talkWorkspace.dataset.filter || 'all';
         const query = search?.value.trim().toLocaleLowerCase('pt-BR') || '';
+        let visible = 0;
         conversations.forEach(item => {
             const scope = item.dataset.scope || '';
             const haystack = (item.dataset.search || '').toLocaleLowerCase('pt-BR');
             const matchesFilter = filter === 'all' || filter === scope;
             const matchesQuery = query === '' || haystack.includes(query);
-            item.hidden = !(matchesFilter && matchesQuery);
+            const matchesQueue = !queueFilter?.value || item.dataset.queue === queueFilter.value;
+            const matchesPriority = !priorityFilter?.value || item.dataset.priority === priorityFilter.value;
+            item.hidden = !(matchesFilter && matchesQuery && matchesQueue && matchesPriority);
+            if (!item.hidden) visible += 1;
         });
+        talkWorkspace.querySelector('[data-talk-filter-empty]')?.toggleAttribute('hidden', visible !== 0);
     };
     filters.forEach(button => button.addEventListener('click', applyTalkFilters));
     search?.addEventListener('input', () => {
         talkWorkspace.dataset.query = search.value.trim().toLocaleLowerCase('pt-BR');
         applyTalkFilters();
     });
+    queueFilter?.addEventListener('change', applyTalkFilters);
+    priorityFilter?.addEventListener('change', applyTalkFilters);
 }
 
 const talkComposer = document.querySelector('[data-talk-composer]');
