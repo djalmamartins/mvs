@@ -67,11 +67,16 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         $this->repository->enrollTotp(0, 'GEZDGNBVGY3TQOJQ');
     }
 
-    public function testDuplicateEnrollmentIsRejectedInsteadOfOverwritingSecret(): void
+    public function testReenrollmentReactivatesEnrollmentAndReplacesSecret(): void
     {
         $this->repository->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
+        self::assertTrue($this->repository->disableTotp(7));
 
-        $this->expectException(PDOException::class);
         $this->repository->enrollTotp(7, 'JBSWY3DPEHPK3PXP');
+
+        self::assertSame('JBSWY3DPEHPK3PXP', $this->repository->activeTotpSecret(7));
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM erp_mfa_enrollments')->fetchColumn());
+        $disabledAt = $this->pdo->query("SELECT disabled_at FROM erp_mfa_enrollments WHERE user_id = 7 AND method = 'totp'")->fetchColumn();
+        self::assertNull($disabledAt);
     }
 }

@@ -24,11 +24,26 @@ final readonly class MfaEnrollmentRepository
         }
 
         $encrypted = $this->cipher->encrypt($secret);
-        $statement = $this->pdo->prepare(
-            "INSERT INTO erp_mfa_enrollments
+        $driver = (string) $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $upsert = $driver === 'sqlite'
+            ? "INSERT INTO erp_mfa_enrollments
                 (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
-             VALUES (:user_id, 'totp', :ciphertext, :key_id, CURRENT_TIMESTAMP, NULL)"
-        );
+               VALUES (:user_id, 'totp', :ciphertext, :key_id, CURRENT_TIMESTAMP, NULL)
+               ON CONFLICT(user_id, method) DO UPDATE SET
+                  secret_ciphertext = excluded.secret_ciphertext,
+                  secret_key_id = excluded.secret_key_id,
+                  enabled_at = CURRENT_TIMESTAMP,
+                  disabled_at = NULL"
+            : "INSERT INTO erp_mfa_enrollments
+                (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
+               VALUES (:user_id, 'totp', :ciphertext, :key_id, CURRENT_TIMESTAMP, NULL)
+               ON DUPLICATE KEY UPDATE
+                  secret_ciphertext = VALUES(secret_ciphertext),
+                  secret_key_id = VALUES(secret_key_id),
+                  enabled_at = CURRENT_TIMESTAMP,
+                  disabled_at = NULL";
+
+        $statement = $this->pdo->prepare($upsert);
         $statement->execute([
             'user_id' => $userId,
             'ciphertext' => $encrypted['ciphertext'],
