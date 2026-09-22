@@ -34,8 +34,8 @@ final class TalkJackService
         $body=str_starts_with($excerpt,'[')?(($first!==''?$first.', ':'').'recebi sua mensagem. Já organizei este atendimento para que a equipe possa continuar com o contexto disponível.'):(($first!==''?$first.', ':'').'recebi sua mensagem sobre "'.$excerpt.'". Já organizei o contexto deste atendimento para que ele siga sem você precisar repetir as informações.');
         $pdo->beginTransaction();
         try{
-            $lock=$pdo->prepare("SELECT status,assigned_user_id,tenant_id FROM talk_tickets WHERE id=:id FOR UPDATE");
-            $lock->execute(['id'=>$ticket['id']]);$current=$lock->fetch(PDO::FETCH_ASSOC);
+            $lock=$pdo->prepare("SELECT status,assigned_user_id,tenant_id FROM talk_tickets WHERE id=:id AND tenant_id=:tenant_id FOR UPDATE");
+            $lock->execute(['id'=>$ticket['id'],'tenant_id'=>$ticket['tenant_id']]);$current=$lock->fetch(PDO::FETCH_ASSOC);
             if(!$current||$current['status']!=='queued'||$current['assigned_user_id']!==null||($ticket['tenant_id']??$current['tenant_id'])!=$current['tenant_id']){$pdo->rollBack();return false;}
             $duplicate=$pdo->prepare("SELECT COUNT(*) FROM talk_jack_interactions WHERE ticket_id=:id AND action='jack.reply'");
             $duplicate->execute(['id'=>$ticket['id']]);if((int)$duplicate->fetchColumn()>0){$pdo->rollBack();return false;}
