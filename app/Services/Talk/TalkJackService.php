@@ -23,15 +23,15 @@ final class TalkJackService
 
     private function reply(array $ticket): bool
     {
-        $pdo=Connection::getInstance();$messages=$pdo->prepare("SELECT sender_type,direction,body,sent_at FROM talk_messages WHERE conversation_id=:conversation_id AND type='text' ORDER BY sent_at,id");
+        $pdo=Connection::getInstance();$messages=$pdo->prepare("SELECT sender_type,direction,type,body,sent_at FROM talk_messages WHERE conversation_id=:conversation_id ORDER BY sent_at,id");
         $messages->execute(['conversation_id'=>$ticket['conversation_id']]);$history=$messages->fetchAll(PDO::FETCH_ASSOC);
         $parts=[];$lastInbound='';
-        foreach($history as $row){$body=trim((string)($row['body']??''));if($body==='')continue;$parts[]=(($row['direction']??'')==='inbound'?'Cliente':'Atendimento').': '.$body;if(($row['direction']??'')==='inbound')$lastInbound=$body;}
-        if($lastInbound===''){return false;}
+        foreach($history as $row){$body=trim((string)($row['body']??''));$type=(string)($row['type']??'text');if($body==='')$body=$type==='text'?'':'['.$type.']';if($body==='')continue;$parts[]=(($row['direction']??'')==='inbound'?'Cliente':'Atendimento').': '.$body;if(($row['direction']??'')==='inbound')$lastInbound=$body;}
+        if($lastInbound===''){$lastInbound='[mensagem sem texto]';$parts[]='Cliente: '.$lastInbound;}
         $context=mb_substr(implode("\n",$parts),0,6000);
         $excerpt=mb_substr(preg_replace('/\s+/u',' ',trim($lastInbound))?:trim($lastInbound),0,180);
         $name=trim((string)($ticket['contact_name']??''));$first=$name!==''?preg_split('/\s+/',$name)[0]:'';
-        $body=($first!==''?$first.', ':'').'recebi sua mensagem sobre "'.$excerpt.'". Já organizei o contexto deste atendimento para que ele siga sem você precisar repetir as informações.';
+        $body=str_starts_with($excerpt,'[')?(($first!==''?$first.', ':'').'recebi sua mensagem. Já organizei este atendimento para que a equipe possa continuar com o contexto disponível.'):(($first!==''?$first.', ':'').'recebi sua mensagem sobre "'.$excerpt.'". Já organizei o contexto deste atendimento para que ele siga sem você precisar repetir as informações.');
         $pdo->beginTransaction();
         try{
             $lock=$pdo->prepare("SELECT status,assigned_user_id,tenant_id FROM talk_tickets WHERE id=:id FOR UPDATE");
