@@ -81,7 +81,7 @@ final class TalkService
         }
         $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
         $s=$pdo->prepare($messageSql);$s->execute($params);$messages=(int)$s->fetchColumn();
-        return ['revision'=>max($tickets,$messages),'server_time'=>time()];
+        return ['revision'=>max($tickets,$messages),'server_time'=>time(),'queue_count'=>count($this->queueForUser($userId)),'mine_count'=>count($this->myTickets($userId))];
     }
     public function conversations(): array { return Connection::getInstance()->query("SELECT cv.id,cv.channel,cv.status,cv.last_message_at,c.name contact_name,c.phone,t.protocol,t.status ticket_status,q.name queue_name,u.name assigned_name FROM talk_conversations cv INNER JOIN talk_contacts c ON c.id=cv.contact_id LEFT JOIN talk_tickets t ON t.id=(SELECT tt.id FROM talk_tickets tt WHERE tt.conversation_id=cv.id ORDER BY tt.id DESC LIMIT 1) LEFT JOIN talk_queues q ON q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id ORDER BY COALESCE(cv.last_message_at,cv.created_at) DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
     public function contacts(): array { return Connection::getInstance()->query("SELECT id,name,phone,email,channel,created_at,updated_at FROM talk_contacts ORDER BY updated_at DESC,id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
