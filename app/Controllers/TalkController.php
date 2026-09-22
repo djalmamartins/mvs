@@ -26,7 +26,7 @@ final class TalkController extends Controller
         $talk->heartbeat($userId);
         $talk->autoAssign();
 
-        $queue = $talk->queue();
+        $queue = $talk->queueForUser($userId);
         $mine = $talk->myTickets($userId);
 
         echo $this->view->render('pages/talk', [
@@ -96,8 +96,9 @@ final class TalkController extends Controller
         echo $this->view->render('pages/talk', [
             'title' => 'Talk',
             'user' => $user,
-            'conversations' => array_merge($talk->myTickets((int)$user->id), $talk->queue()),
+            'conversations' => array_merge($talk->myTickets((int)$user->id), $talk->queueForUser((int)$user->id)),
             'selectedConversation' => $ticket,
+            'canOperateTicket' => $talk->canOperateTicket($id, (int)$user->id),
         ]);
     }
 }
