@@ -1,6 +1,7 @@
 <?php
 
 use Moves\Core\Auth;
+use Moves\Core\Access;
 use Moves\Core\NotificationCounter;
 
 /** Moves Studio | Reusable top bar. */
@@ -16,10 +17,8 @@ $recentNotifications = $user ? NotificationCounter::recentFor((int) $user->id) :
             <header><strong>Moves</strong><small>Aplicativos</small></header>
             <nav>
                 <a role="menuitem" href="/app"><?= studio_icon('calendar') ?><span>Meu Dia</span></a>
-                <a role="menuitem" href="/talk"><?= studio_icon('message-square') ?><span>Talk</span></a>
-                <a role="menuitem" href="/support"><?= studio_icon('headphones') ?><span>Suporte</span></a>
-                <a role="menuitem" href="/erp"><?= studio_icon('briefcase') ?><span>ERP</span></a>
-                <a role="menuitem" href="/studio" aria-current="page"><?= studio_icon('sparkles') ?><span>Studio</span></a>
+                <?php if (Access::can('talk.access')): ?><a role="menuitem" href="/talk"><?= studio_icon('message-square') ?><span>Talk</span></a><?php endif; ?>
+                <?php if (Access::can('studio.dashboard')): ?><a role="menuitem" href="/studio" aria-current="page"><?= studio_icon('sparkles') ?><span>Studio</span></a><?php endif; ?>
             </nav>
         </div>
     </div>
