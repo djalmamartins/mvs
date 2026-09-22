@@ -180,6 +180,9 @@ final class TalkController extends Controller
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
         $ticket['outbound_draft'] = $_SESSION['talk_outbound_draft'] ?? null;
         $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
+        $transferOptions = $talk->ticketTransferOptions($id, (int)$user->id);
+        $ticket['queues'] = $transferOptions['queues'];
+        $ticket['eligible_users'] = $transferOptions['eligible_users'];
         $ticket['attachments'] = (new TalkAttachmentService())->forTicket($id);
         $ticket['tags'] = $talk->ticketTags($id);
         $ticket['available_tags'] = $talk->availableTags();
