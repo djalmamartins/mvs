@@ -16,6 +16,8 @@ final class TalkModule
             'talk',
             static function (Router $router): void {
                 $middleware = [AuthMiddleware::class, new PermissionMiddleware('talk.access')];
+                $router->get('/talk/webhook/whatsapp', 'TalkWebhookController:verify', 'talk.webhook.whatsapp.verify');
+                $router->post('/talk/webhook/whatsapp', 'TalkWebhookController:receive', 'talk.webhook.whatsapp.receive');
                 $router->get('/talk', 'TalkController:index', 'talk.home', $middleware);
                 $router->get('/talk/queue', 'TalkController:index', 'talk.queue', $middleware);
                 $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', $middleware);
