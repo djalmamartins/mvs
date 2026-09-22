@@ -174,6 +174,10 @@ final class TalkController extends Controller
                 } elseif ($action === 'note') {
                     $talk->addNote($id, (int)$user->id, (string)Request::post('note', ''));
                     $_SESSION['talk_action_status'] = 'Nota adicionada.';
+                } elseif ($action === 'condominium') {
+                    $condominiumId=(int)Request::post('condominium_id',0);
+                    $talk->bindCondominium($id,(int)$user->id,$condominiumId>0?$condominiumId:null);
+                    $_SESSION['talk_action_status']=$condominiumId>0?'Condomínio vinculado ao contato.':'Vínculo de condomínio removido.';
                 } elseif ($action === 'tags') {
                     $tagIds = Request::post('tag_ids', []);
                     $talk->setTicketTags($id, (int)$user->id, is_array($tagIds) ? $tagIds : []);
