@@ -30,6 +30,9 @@ final class TalkController extends Controller
 
         $queue = $talk->queueForUser($userId);
         $mine = $talk->myTickets($userId);
+        $settings=$talk->settings($userId);
+        $channels=$talk->channels($userId);
+        $queues=$talk->queues($userId);
 
         echo $this->view->render('pages/talk', [
             'title' => 'Talk',
@@ -38,6 +41,10 @@ final class TalkController extends Controller
             'selectedConversation' => null,
             'queueCount' => count($queue),
             'mineCount' => count($mine),
+            'talkSettings'=>$settings,
+            'channels'=>$channels,
+            'tenantQueues'=>$queues,
+            'canManageTalk'=>$talk->canManage($userId),
         ]);
     }
     public function sync(): never
@@ -174,6 +181,16 @@ final class TalkController extends Controller
                 } elseif ($action === 'attachment') {
                     (new TalkAttachmentService())->store($id, (int)$user->id, $_FILES['attachment'] ?? []);
                     $_SESSION['talk_action_status'] = 'Anexo adicionado.';
+                } elseif ($action === 'channel_save') {
+                    if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem gerenciar canais.');
+                    $channelId=(int)Request::post('channel_id',0);$queueId=(int)Request::post('channel_queue_id',0);
+                    $talk->saveChannel((int)$user->id,$channelId,(string)Request::post('channel_name',''),(string)Request::post('phone_number',''),$queueId>0?$queueId:null,'inactive');
+                    $_SESSION['talk_action_status']='Número do WhatsApp salvo.';
+                } elseif ($action === 'jack_settings') {
+                    if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem configurar o agente virtual.');
+                    $jackName=mb_substr(trim(strip_tags((string)Request::post('jack_name','Jack'))),0,60);if($jackName==='')$jackName='Jack';
+                    $talk->saveSettings(['jack.name'=>$jackName],(int)$user->id);
+                    $_SESSION['talk_action_status']='Nome do agente virtual atualizado.';
                 } elseif ($action === 'reopen') {
                     $talk->reopen($id, (int)$user->id);
                     $_SESSION['talk_action_status'] = 'Atendimento reaberto.';
