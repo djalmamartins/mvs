@@ -69,6 +69,7 @@ final class TalkOutboundServiceTest extends TestCase
     {
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->sqliteCreateFunction('NOW', static fn (): string => '2026-09-22 00:00:00');
         $pdo->exec('CREATE TABLE talk_contacts (id INTEGER PRIMARY KEY, phone TEXT, external_id TEXT)');
         $pdo->exec('CREATE TABLE talk_conversations (id INTEGER PRIMARY KEY, contact_id INTEGER, channel TEXT, last_message_at TEXT, updated_at TEXT)');
         $pdo->exec('CREATE TABLE talk_tickets (id INTEGER PRIMARY KEY, conversation_id INTEGER, assigned_user_id INTEGER, status TEXT, source TEXT, first_response_at TEXT, last_activity_at TEXT, updated_at TEXT)');
