@@ -189,7 +189,11 @@ final class TalkController extends Controller
                     if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem gerenciar canais.');
                     $channelId=(int)Request::post('channel_id',0);$queueId=(int)Request::post('channel_queue_id',0);
                     $talk->saveChannel((int)$user->id,$channelId,(string)Request::post('channel_name',''),(string)Request::post('phone_number',''),$queueId>0?$queueId:null,'inactive',(string)Request::post('external_account_id',''));
-                    $_SESSION['talk_action_status']='Número do WhatsApp salvo.';
+                    $_SESSION['talk_action_status']='Número do WhatsApp salvo como inativo. Teste a conexão para ativá-lo.';
+                } elseif ($action === 'channel_test') {
+                    if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem testar canais.');
+                    $result=$talk->testChannelConnection((int)$user->id,(int)Request::post('channel_id',0));
+                    $_SESSION['talk_action_status']=($result['connected']??false)?'Conexão com a Meta confirmada. Canal WhatsApp ativado.':'Não foi possível validar a conexão com a Meta. O canal permanece inativo.';
                 } elseif ($action === 'jack_settings') {
                     if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem configurar o agente virtual.');
                     $jackName=mb_substr(trim(strip_tags((string)Request::post('jack_name','Jack'))),0,60);if($jackName==='')$jackName='Jack';
