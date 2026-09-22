@@ -62,6 +62,26 @@ final class TalkController extends Controller
     }
 
 
+    public function notificationsRead(): never
+    {
+        $user = Auth::user();
+        if ($user === null || !Csrf::validate((string)Request::post('_token', ''))) {
+            Response::to('/talk');
+        }
+        $notifications = new TalkNotificationService();
+        $id = (int)Request::post('notification_id', 0);
+        if ($id > 0) {
+            $notifications->markRead($id, (int)$user->id);
+        } else {
+            $notifications->markAllRead((int)$user->id);
+        }
+        $returnTo = (string)Request::post('return_to', '/talk');
+        if (!str_starts_with($returnTo, '/talk')) {
+            $returnTo = '/talk';
+        }
+        Response::to($returnTo);
+    }
+
     /** @param array<string,string> $data */
     public function attachment(array $data = []): never
     {
