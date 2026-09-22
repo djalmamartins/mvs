@@ -50,4 +50,21 @@ final class TalkWhatsAppWebhookContractTest extends TestCase
         self::assertStringContainsString('item.delivery !== nextMessages[index].delivery', $javascript);
         self::assertStringContainsString("cache: 'no-store'", $javascript);
     }
+
+    public function testInboundMediaIsParsedDownloadedAndPersisted(): void
+    {
+        $webhook=(string)file_get_contents(__DIR__.'/../app/Controllers/TalkWebhookController.php');
+        $inbound=(string)file_get_contents(__DIR__.'/../app/Services/Talk/TalkInboundService.php');
+        $transport=(string)file_get_contents(__DIR__.'/../app/Services/Talk/Transport/MetaCloudWhatsAppTransport.php');
+
+        self::assertStringContainsString("['image','document','audio','video']", $webhook);
+        self::assertStringContainsString("'media_id'=>(string)(\$media['id']??'')", $webhook);
+        self::assertStringContainsString("'mime_type'=>(string)(\$media['mime_type']??'')", $webhook);
+        self::assertStringContainsString("'filename'=>(string)(\$media['filename']??'')", $webhook);
+        self::assertStringContainsString('downloadMedia($mediaId)', $inbound);
+        self::assertStringContainsString('INSERT INTO talk_attachments', $inbound);
+        self::assertStringContainsString('UPDATE talk_messages SET media_url=:path', $inbound);
+        self::assertStringContainsString('public function downloadMedia(string $mediaId)', $transport);
+        self::assertStringContainsString("strlen(\$bytes)>10_485_760", $transport);
+    }
 }
