@@ -12,7 +12,7 @@ final class TalkJackService
     public function processEligible(int $limit=10, ?int $tenantId=null): int
     {
         $pdo=Connection::getInstance();
-        $settings=$this->settings();
+        $settings=$this->settings($tenantId);
         if(($settings['jack.enabled']??'0')!=='1'){return 0;}
         $wait=max(0,(int)($settings['jack.wait_seconds']??60));$limit=max(1,min(25,$limit));
         $sql="SELECT t.id,t.tenant_id,t.conversation_id,t.protocol,c.name contact_name FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE (:tenant_id IS NULL OR t.tenant_id=:tenant_id) AND t.status='queued' AND t.assigned_user_id IS NULL AND TIMESTAMPDIFF(SECOND,COALESCE(t.queued_at,t.created_at),NOW())>=:wait AND NOT EXISTS(SELECT 1 FROM talk_jack_interactions ji WHERE ji.ticket_id=t.id AND ji.action='jack.reply') AND NOT EXISTS(SELECT 1 FROM talk_messages hm WHERE hm.ticket_id=t.id AND hm.direction='outbound' AND hm.sender_type='user') ORDER BY COALESCE(t.queued_at,t.created_at),t.id LIMIT {$limit}";
@@ -54,8 +54,8 @@ final class TalkJackService
         }catch(\Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
 
-    private function settings(): array
+    private function settings(?int $tenantId): array
     {
-        $rows=Connection::getInstance()->query("SELECT setting_key,setting_value FROM talk_settings WHERE setting_key IN ('jack.enabled','jack.wait_seconds')")->fetchAll(PDO::FETCH_ASSOC);$out=[];foreach($rows as $row){$out[$row['setting_key']]=$row['setting_value'];}return $out;
+        $tenantId=$tenantId??1;$s=Connection::getInstance()->prepare("SELECT setting_key,setting_value FROM talk_settings WHERE tenant_id=:tenant_id AND setting_key IN ('jack.enabled','jack.wait_seconds')");$s->execute(['tenant_id'=>$tenantId]);$rows=$s->fetchAll(PDO::FETCH_ASSOC);$out=[];foreach($rows as $row){$out[$row['setting_key']]=$row['setting_value'];}return $out;
     }
 }
