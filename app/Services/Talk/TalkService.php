@@ -13,6 +13,15 @@ final class TalkService
 
     public function dashboard(): array { $pdo=Connection::getInstance(); return ['counts'=>['queued'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status='queued'"),'active'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status IN ('assigned','open')"),'closed_today'=>$this->count($pdo,"SELECT COUNT(*) FROM talk_tickets WHERE status='closed' AND DATE(closed_at)=CURRENT_DATE"),'contacts'=>$this->count($pdo,'SELECT COUNT(*) FROM talk_contacts')],'queue'=>$this->queue()]; }
     public function queue(): array { return Connection::getInstance()->query("SELECT t.id,t.protocol,t.subject,t.priority,t.status,t.queued_at,t.created_at,c.name contact_name,c.phone contact_phone,q.name queue_name,u.name assigned_name,cv.channel FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id LEFT JOIN talk_queues q ON q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.status='queued' ORDER BY FIELD(t.priority,'urgent','high','normal','low'),COALESCE(t.queued_at,t.created_at),t.id LIMIT 100")->fetchAll(PDO::FETCH_ASSOC); }
+    public function queueForUser(int $userId): array
+    {
+        if ($this->canManage($userId)) {
+            return $this->queue();
+        }
+        $s=Connection::getInstance()->prepare("SELECT t.id,t.protocol,t.subject,t.priority,t.status,t.queued_at,t.created_at,c.name contact_name,c.phone contact_phone,q.name queue_name,u.name assigned_name,cv.channel FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id INNER JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' LEFT JOIN talk_queues q ON q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id WHERE t.status='queued' ORDER BY FIELD(t.priority,'urgent','high','normal','low'),COALESCE(t.queued_at,t.created_at),t.id LIMIT 100");
+        $s->execute(['user_id'=>$userId]);
+        return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
     public function heartbeat(int $userId): void { Connection::getInstance()->prepare("INSERT INTO talk_presence(user_id,status,last_seen_at) VALUES(:user_id,'online',NOW()) ON DUPLICATE KEY UPDATE status='online',last_seen_at=NOW()")->execute(['user_id'=>$userId]); }
     public function permissions(int $userId): array { $s=Connection::getInstance()->prepare("SELECT COALESCE(tus.talk_role,IF(u.role='admin','admin','agent')) talk_role,COALESCE(tus.max_active_tickets,5) max_active_tickets FROM users u LEFT JOIN talk_user_settings tus ON tus.user_id=u.id WHERE u.id=:id");$s->execute(['id'=>$userId]);return $s->fetch(PDO::FETCH_ASSOC)?:['talk_role'=>'agent','max_active_tickets'=>5]; }
     public function canManage(int $userId): bool { return in_array((string)($this->permissions($userId)['talk_role']??'agent'),['supervisor','admin'],true); }
