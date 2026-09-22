@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
 use Moves\Modules\Erp\Security\MfaSecretCipher;
+use Moves\Modules\Erp\Security\SecurityAuditRepository;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
@@ -28,9 +29,20 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
                 UNIQUE (user_id, method)
             )'
         );
+        $this->pdo->exec(
+            'CREATE TABLE erp_security_audit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_type TEXT NOT NULL,
+                actor_user_id INTEGER NULL,
+                subject_user_id INTEGER NULL,
+                metadata_json TEXT NULL,
+                created_at TEXT NOT NULL
+            )'
+        );
         $this->repository = new MfaEnrollmentRepository(
             $this->pdo,
-            new MfaSecretCipher('mfa-key-v1', str_repeat('k', 32))
+            new MfaSecretCipher('mfa-key-v1', str_repeat('k', 32)),
+            new SecurityAuditRepository($this->pdo)
         );
     }
 
@@ -46,15 +58,29 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         self::assertNotSame($secret, $row['secret_ciphertext']);
         self::assertStringNotContainsString($secret, $row['secret_ciphertext']);
         self::assertSame($secret, $this->repository->activeTotpSecret(7));
+
+        $audit = $this->pdo->query('SELECT * FROM erp_security_audit')->fetch(PDO::FETCH_ASSOC);
+        self::assertIsArray($audit);
+        self::assertSame('mfa.totp.enrolled', $audit['event_type']);
+        self::assertSame(7, (int) $audit['actor_user_id']);
+        self::assertSame(7, (int) $audit['subject_user_id']);
+        self::assertSame('{"method":"totp"}', $audit['metadata_json']);
+        self::assertStringNotContainsString($secret, (string) $audit['metadata_json']);
     }
 
     public function testDisabledEnrollmentCannotBeReadAsActive(): void
     {
         $this->repository->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
 
-        self::assertTrue($this->repository->disableTotp(7));
+        self::assertTrue($this->repository->disableTotp(7, 9));
         self::assertNull($this->repository->activeTotpSecret(7));
-        self::assertFalse($this->repository->disableTotp(7));
+        self::assertFalse($this->repository->disableTotp(7, 9));
+
+        $audit = $this->pdo->query("SELECT * FROM erp_security_audit WHERE event_type = 'mfa.totp.disabled'")->fetch(PDO::FETCH_ASSOC);
+        self::assertIsArray($audit);
+        self::assertSame(9, (int) $audit['actor_user_id']);
+        self::assertSame(7, (int) $audit['subject_user_id']);
+        self::assertSame(1, (int) $this->pdo->query("SELECT COUNT(*) FROM erp_security_audit WHERE event_type = 'mfa.totp.disabled'")->fetchColumn());
     }
 
     public function testInvalidOrMissingUserFailsClosed(): void
@@ -72,11 +98,17 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         $this->repository->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
         self::assertTrue($this->repository->disableTotp(7));
 
-        $this->repository->enrollTotp(7, 'JBSWY3DPEHPK3PXP');
+        $this->repository->enrollTotp(7, 'JBSWY3DPEHPK3PXP', 9);
 
         self::assertSame('JBSWY3DPEHPK3PXP', $this->repository->activeTotpSecret(7));
         self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM erp_mfa_enrollments')->fetchColumn());
         $disabledAt = $this->pdo->query("SELECT disabled_at FROM erp_mfa_enrollments WHERE user_id = 7 AND method = 'totp'")->fetchColumn();
         self::assertNull($disabledAt);
+
+        $audit = $this->pdo->query("SELECT * FROM erp_security_audit WHERE event_type = 'mfa.totp.reenrolled'")->fetch(PDO::FETCH_ASSOC);
+        self::assertIsArray($audit);
+        self::assertSame(9, (int) $audit['actor_user_id']);
+        self::assertSame(7, (int) $audit['subject_user_id']);
+        self::assertStringNotContainsString('JBSWY3DPEHPK3PXP', (string) $audit['metadata_json']);
     }
 }

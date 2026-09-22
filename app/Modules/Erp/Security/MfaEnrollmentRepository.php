@@ -13,16 +13,18 @@ final readonly class MfaEnrollmentRepository
 {
     public function __construct(
         private PDO $pdo,
-        private MfaSecretCipher $cipher
+        private MfaSecretCipher $cipher,
+        private ?SecurityAuditRepository $audit = null
     ) {
     }
 
-    public function enrollTotp(int $userId, string $secret): void
+    public function enrollTotp(int $userId, string $secret, ?int $actorUserId = null): void
     {
         if ($userId <= 0) {
             throw new \InvalidArgumentException('Invalid MFA user.');
         }
 
+        $wasEnrolled = $this->hasTotpEnrollment($userId);
         $encrypted = $this->cipher->encrypt($secret);
         $driver = (string) $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         $upsert = $driver === 'sqlite'
@@ -49,6 +51,13 @@ final readonly class MfaEnrollmentRepository
             'ciphertext' => $encrypted['ciphertext'],
             'key_id' => $encrypted['key_id'],
         ]);
+
+        $this->audit?->append(
+            $wasEnrolled ? 'mfa.totp.reenrolled' : 'mfa.totp.enrolled',
+            $actorUserId ?? $userId,
+            $userId,
+            ['method' => 'totp']
+        );
     }
 
     public function activeTotpSecret(int $userId): ?string
@@ -79,7 +88,7 @@ final readonly class MfaEnrollmentRepository
         );
     }
 
-    public function disableTotp(int $userId): bool
+    public function disableTotp(int $userId, ?int $actorUserId = null): bool
     {
         if ($userId <= 0) {
             return false;
@@ -93,7 +102,29 @@ final readonly class MfaEnrollmentRepository
                AND disabled_at IS NULL"
         );
         $statement->execute(['user_id' => $userId]);
+        $disabled = $statement->rowCount() > 0;
 
-        return $statement->rowCount() > 0;
+        if ($disabled) {
+            $this->audit?->append(
+                'mfa.totp.disabled',
+                $actorUserId ?? $userId,
+                $userId,
+                ['method' => 'totp']
+            );
+        }
+
+        return $disabled;
+    }
+
+    private function hasTotpEnrollment(int $userId): bool
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT 1 FROM erp_mfa_enrollments
+             WHERE user_id = :user_id AND method = 'totp'
+             LIMIT 1"
+        );
+        $statement->execute(['user_id' => $userId]);
+
+        return $statement->fetchColumn() !== false;
     }
 }
