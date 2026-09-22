@@ -69,6 +69,8 @@ launcherTrigger?.addEventListener('click', () => {
         launcherItems()[0]?.focus();
         profile?.classList.remove('open');
         profileTrigger?.setAttribute('aria-expanded', 'false');
+        notifications?.classList.remove('open');
+        notificationTrigger?.setAttribute('aria-expanded', 'false');
     }
 });
 notificationTrigger?.addEventListener('click', () => {
