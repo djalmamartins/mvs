@@ -61,6 +61,39 @@ final class TalkController extends Controller
         exit;
     }
 
+
+    /** @param array<string,string> $data */
+    public function attachment(array $data = []): never
+    {
+        $id = max(0, (int)($data['id'] ?? 0));
+        $user = Auth::user();
+        $attachments = new TalkAttachmentService();
+        $attachment = $id > 0 ? $attachments->find($id) : null;
+        $talk = new TalkService();
+        if ($user === null || $attachment === null || !$talk->canViewTicket((int)$attachment['ticket_id'], (int)$user->id)) {
+            http_response_code(404);
+            exit;
+        }
+        $root = realpath(dirname(__DIR__, 2));
+        $storageRoot = $root !== false ? realpath($root.'/storage/talk') : false;
+        $path = $root !== false ? realpath($root.'/'.ltrim((string)$attachment['storage_path'], '/')) : false;
+        if ($path === false || $storageRoot === false || !str_starts_with($path, $storageRoot.DIRECTORY_SEPARATOR) || !is_file($path)) {
+            http_response_code(404);
+            exit;
+        }
+        $mime = (string)$attachment['mime_type'];
+        $inline = str_starts_with($mime, 'image/') || str_starts_with($mime, 'audio/') || str_starts_with($mime, 'video/') || $mime === 'application/pdf';
+        $name = preg_replace('/[^\\pL\\pN._()\\- ]/u', '_', (string)$attachment['original_name']) ?: 'arquivo';
+        header_remove('X-Powered-By');
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, max-age=300');
+        header('Content-Type: '.$mime);
+        header('Content-Length: '.(string)filesize($path));
+        header('Content-Disposition: '.($inline ? 'inline' : 'attachment').'; filename="'.str_replace(['"', '\\\\'], '_', $name).'"');
+        readfile($path);
+        exit;
+    }
+
     /** @param array<string,string> $data */
     public function ticket(array $data = []): void
     {
