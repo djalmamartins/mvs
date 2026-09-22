@@ -88,7 +88,21 @@ if (talkWorkspace) {
         filters.filter(item => item !== button).forEach(item => item.setAttribute('aria-pressed', 'false'));
         talkWorkspace.dataset.filter = button.dataset.talkFilter || 'all';
     }));
+    const conversations = [...talkWorkspace.querySelectorAll('[data-talk-conversation]')];
+    const applyTalkFilters = () => {
+        const filter = talkWorkspace.dataset.filter || 'all';
+        const query = search?.value.trim().toLocaleLowerCase('pt-BR') || '';
+        conversations.forEach(item => {
+            const scope = item.dataset.scope || '';
+            const haystack = (item.dataset.search || '').toLocaleLowerCase('pt-BR');
+            const matchesFilter = filter === 'all' || filter === scope;
+            const matchesQuery = query === '' || haystack.includes(query);
+            item.hidden = !(matchesFilter && matchesQuery);
+        });
+    };
+    filters.forEach(button => button.addEventListener('click', applyTalkFilters));
     search?.addEventListener('input', () => {
         talkWorkspace.dataset.query = search.value.trim().toLocaleLowerCase('pt-BR');
+        applyTalkFilters();
     });
 }
