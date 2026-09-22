@@ -155,6 +155,10 @@ final class TalkController extends Controller
                     (new TalkOutboundService())->sendText($id, (int)$user->id, $body);
                     $_SESSION['talk_outbound_status'] = 'sent';
                     unset($_SESSION['talk_outbound_draft']);
+                } elseif ($action === 'retry_message') {
+                    $messageId=(int)Request::post('message_id',0);
+                    (new TalkOutboundService())->sendText($id,(int)$user->id,'retry',$messageId);
+                    $_SESSION['talk_action_status']='Mensagem reenviada ao WhatsApp.';
                 } elseif ($action === 'claim') {
                     if (!$talk->claim($id, (int)$user->id)) {
                         throw new \RuntimeException('Não foi possível assumir este atendimento.');
@@ -204,7 +208,8 @@ final class TalkController extends Controller
                     $_SESSION['talk_action_status'] = 'Atendimento reaberto.';
                 }
             } catch (\RuntimeException $e) {
-                $_SESSION['talk_outbound_error'] = 'A ação não pôde ser concluída. Verifique o estado do atendimento e tente novamente.';
+                $message=$e->getMessage();$safePrefixes=['WhatsApp Cloud API:','Falha de conexão com WhatsApp:','O número de WhatsApp','Contato sem número','Conversa sem número','Somente mensagens com falha','Atendimento indisponível'];$safe=false;foreach($safePrefixes as $prefix){if(str_starts_with($message,$prefix)){$safe=true;break;}}
+                $_SESSION['talk_outbound_error']=$safe?$message:'A ação não pôde ser concluída. Verifique o estado do atendimento e tente novamente.';
             }
             Response::to('/talk/tickets/'.$id);
         }
