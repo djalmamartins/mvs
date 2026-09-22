@@ -18,6 +18,8 @@ final class TalkModule
                 $middleware = [AuthMiddleware::class, new PermissionMiddleware('talk.access')];
                 $router->get('/talk', 'TalkController:index', 'talk.home', $middleware);
                 $router->get('/talk/queue', 'TalkController:index', 'talk.queue', $middleware);
+                $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', $middleware);
+                $router->post('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket.action', $middleware);
             },
             [
                 'admin' => ['talk.access'],
