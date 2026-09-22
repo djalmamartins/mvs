@@ -15,7 +15,7 @@ final class TalkWhatsAppWebhookContractTest extends TestCase
         self::assertStringContainsString("phone_number_id",$source);
         self::assertStringContainsString("external_account_id=:external_id",$source);
         self::assertStringContainsString("LIMIT 2",$source);
-        self::assertStringContainsString("$value['statuses']",$source);
+        self::assertStringContainsString("\$value['statuses']",$source);
         self::assertStringContainsString("['sent','delivered','read','failed']",$source);
         self::assertStringContainsString("delivery_updated_at",$source);
     }
