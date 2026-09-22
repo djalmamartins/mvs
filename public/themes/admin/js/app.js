@@ -3,6 +3,7 @@ const backdrop = document.querySelector('.studio-sidebar-backdrop');
 const profile = document.querySelector('.studio-header-profile');
 const launcher = document.querySelector('.studio-app-launcher');
 const launcherTrigger = launcher?.querySelector('.studio-app-launcher-trigger');
+const launcherItems = () => Array.from(launcher?.querySelectorAll('[role="menuitem"]') || []);
 const profileTrigger = profile?.querySelector('.studio-profile-trigger');
 const themeButton = document.querySelector('.studio-theme-toggle');
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
@@ -59,6 +60,7 @@ launcherTrigger?.addEventListener('click', () => {
     launcher.classList.toggle('open', open);
     launcherTrigger.setAttribute('aria-expanded', String(open));
     if (open) {
+        launcherItems()[0]?.focus();
         profile?.classList.remove('open');
         profileTrigger?.setAttribute('aria-expanded', 'false');
     }
@@ -79,7 +81,29 @@ document.addEventListener('click', event => {
     }
 });
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeOverlays();
+    if (event.key === 'Escape') {
+        closeOverlays();
+        return;
+    }
+    if (!launcher?.classList.contains('open')) return;
+    const items = launcherItems();
+    const current = items.indexOf(document.activeElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        items[(current + 1 + items.length) % items.length]?.focus();
+    }
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        items[(current - 1 + items.length) % items.length]?.focus();
+    }
+    if (event.key === 'Home') {
+        event.preventDefault();
+        items[0]?.focus();
+    }
+    if (event.key === 'End') {
+        event.preventDefault();
+        items[items.length - 1]?.focus();
+    }
 });
 window.addEventListener('resize', () => {
     if (!isMobile()) document.body.classList.remove('menu-open');
