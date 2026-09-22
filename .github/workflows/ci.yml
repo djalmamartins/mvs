@@ -70,6 +70,9 @@ jobs:
           grep -q 'Migrations concluídas.' /tmp/migrate-second-run.log
           grep -q 'SKIP:' /tmp/migrate-second-run.log
 
+      - name: Migration safety and upgrade tests
+        run: php scripts/test-migrations.php
+
       - name: Unit tests
         run: composer test
 
