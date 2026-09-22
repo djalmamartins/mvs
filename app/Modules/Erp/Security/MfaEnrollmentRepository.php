@@ -27,7 +27,12 @@ final readonly class MfaEnrollmentRepository
         $statement = $this->pdo->prepare(
             "INSERT INTO erp_mfa_enrollments
                 (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
-             VALUES (:user_id, 'totp', :ciphertext, :key_id, CURRENT_TIMESTAMP, NULL)"
+             VALUES (:user_id, 'totp', :ciphertext, :key_id, CURRENT_TIMESTAMP, NULL)
+             ON DUPLICATE KEY UPDATE
+                secret_ciphertext = VALUES(secret_ciphertext),
+                secret_key_id = VALUES(secret_key_id),
+                enabled_at = CURRENT_TIMESTAMP,
+                disabled_at = NULL"
         );
         $statement->execute([
             'user_id' => $userId,
