@@ -255,11 +255,29 @@ if (talkWorkspace?.dataset.syncUrl) {
     runTalkSync();
 }
 
+const confirmDialog = document.querySelector('[data-talk-confirm-dialog]');
+let pendingConfirmForm = null;
 document.querySelectorAll('form[data-confirm]').forEach(form => {
     form.addEventListener('submit', event => {
-        const message = form.dataset.confirm || 'Confirmar esta ação?';
-        if (!window.confirm(message)) event.preventDefault();
+        if (form.dataset.confirmed === 'true' || !confirmDialog?.showModal) return;
+        event.preventDefault();
+        pendingConfirmForm = form;
+        const message = confirmDialog.querySelector('[data-talk-confirm-message]');
+        if (message) message.textContent = form.dataset.confirm || 'Confirmar esta ação?';
+        confirmDialog.showModal();
+        confirmDialog.querySelector('button[value="cancel"]')?.focus();
     });
+});
+confirmDialog?.addEventListener('close', () => {
+    const form = pendingConfirmForm;
+    pendingConfirmForm = null;
+    if (!form) return;
+    if (confirmDialog.returnValue === 'confirm') {
+        form.dataset.confirmed = 'true';
+        form.requestSubmit();
+    } else {
+        form.querySelector('button[type="submit"]')?.focus();
+    }
 });
 
 const talkAttachmentForm = document.querySelector('[data-talk-attachment-form]');
