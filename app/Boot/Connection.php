@@ -20,6 +20,11 @@ final class Connection
 {
     private static ?PDO $instance = null;
 
+    public static function setInstance(?PDO $instance): void
+    {
+        self::$instance = $instance;
+    }
+
     public static function getInstance(): PDO
     {
         if (self::$instance instanceof PDO) {

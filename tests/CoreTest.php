@@ -41,6 +41,12 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/app/profile';
         self::assertSame('app', Theme::active());
 
+        $_SERVER['REQUEST_URI'] = '/talk';
+        self::assertSame('app', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/talk/queue';
+        self::assertSame('app', Theme::active());
+
         $_SERVER['REQUEST_URI'] = '/login';
         self::assertSame('site', Theme::active());
     }

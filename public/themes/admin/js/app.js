@@ -1,6 +1,11 @@
 const menuButton = document.querySelector('.studio-menu');
 const backdrop = document.querySelector('.studio-sidebar-backdrop');
 const profile = document.querySelector('.studio-header-profile');
+const notifications = document.querySelector('.studio-notifications');
+const notificationTrigger = notifications?.querySelector('.studio-notification-toggle');
+const launcher = document.querySelector('.studio-app-launcher');
+const launcherTrigger = launcher?.querySelector('.studio-app-launcher-trigger');
+const launcherItems = () => Array.from(launcher?.querySelectorAll('[role="menuitem"]') || []);
 const profileTrigger = profile?.querySelector('.studio-profile-trigger');
 const themeButton = document.querySelector('.studio-theme-toggle');
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
@@ -14,11 +19,19 @@ function setMenuState() {
 
 function closeOverlays() {
     const profileWasOpen = profile?.classList.contains('open');
+    const notificationsWereOpen = notifications?.classList.contains('open');
+    const launcherWasOpen = launcher?.classList.contains('open');
     document.body.classList.remove('menu-open');
     profile?.classList.remove('open');
+    notifications?.classList.remove('open');
+    launcher?.classList.remove('open');
     profileTrigger?.setAttribute('aria-expanded', 'false');
+    notificationTrigger?.setAttribute('aria-expanded', 'false');
+    launcherTrigger?.setAttribute('aria-expanded', 'false');
     setMenuState();
     if (profileWasOpen) profileTrigger?.focus();
+    if (notificationsWereOpen) notificationTrigger?.focus();
+    if (launcherWasOpen) launcherTrigger?.focus();
 }
 
 function applyTheme(theme) {
@@ -48,19 +61,78 @@ menuButton?.addEventListener('click', () => {
     setMenuState();
 });
 backdrop?.addEventListener('click', closeOverlays);
+launcherTrigger?.addEventListener('click', () => {
+    const open = !launcher.classList.contains('open');
+    launcher.classList.toggle('open', open);
+    launcherTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+        launcherItems()[0]?.focus();
+        profile?.classList.remove('open');
+        profileTrigger?.setAttribute('aria-expanded', 'false');
+        notifications?.classList.remove('open');
+        notificationTrigger?.setAttribute('aria-expanded', 'false');
+    }
+});
+notificationTrigger?.addEventListener('click', () => {
+    const open = !notifications.classList.contains('open');
+    notifications.classList.toggle('open', open);
+    notificationTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+        profile?.classList.remove('open');
+        profileTrigger?.setAttribute('aria-expanded', 'false');
+        launcher?.classList.remove('open');
+        launcherTrigger?.setAttribute('aria-expanded', 'false');
+    }
+});
 profileTrigger?.addEventListener('click', () => {
     const open = !profile.classList.contains('open');
     profile.classList.toggle('open', open);
+    if (open) {
+        notifications?.classList.remove('open');
+        notificationTrigger?.setAttribute('aria-expanded', 'false');
+        launcher?.classList.remove('open');
+        launcherTrigger?.setAttribute('aria-expanded', 'false');
+    }
     profileTrigger.setAttribute('aria-expanded', String(open));
 });
 document.addEventListener('click', event => {
+    if (!event.target.closest('.studio-app-launcher')) {
+        launcher?.classList.remove('open');
+        launcherTrigger?.setAttribute('aria-expanded', 'false');
+    }
+    if (!event.target.closest('.studio-notifications')) {
+        notifications?.classList.remove('open');
+        notificationTrigger?.setAttribute('aria-expanded', 'false');
+    }
     if (!event.target.closest('.studio-header-profile')) {
         profile?.classList.remove('open');
         profileTrigger?.setAttribute('aria-expanded', 'false');
     }
 });
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeOverlays();
+    if (event.key === 'Escape') {
+        closeOverlays();
+        return;
+    }
+    if (!launcher?.classList.contains('open')) return;
+    const items = launcherItems();
+    const current = items.indexOf(document.activeElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        items[(current + 1 + items.length) % items.length]?.focus();
+    }
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        items[(current - 1 + items.length) % items.length]?.focus();
+    }
+    if (event.key === 'Home') {
+        event.preventDefault();
+        items[0]?.focus();
+    }
+    if (event.key === 'End') {
+        event.preventDefault();
+        items[items.length - 1]?.focus();
+    }
 });
 window.addEventListener('resize', () => {
     if (!isMobile()) document.body.classList.remove('menu-open');

@@ -9,6 +9,7 @@ use Moves\Middleware\AuthMiddleware;
 use Moves\Middleware\GuestMiddleware;
 use Moves\Middleware\PermissionMiddleware;
 use Moves\Modules\Erp\ErpModule;
+use Moves\Modules\Talk\TalkModule;
 
 /**
  * Moves | Routes
@@ -23,6 +24,7 @@ final class Routes
     public static function register(Router $router): void
     {
         ErpModule::register();
+        TalkModule::register();
 
         $router
             ->namespace('Moves\\Controllers')
@@ -95,6 +97,16 @@ final class Routes
             '/app/profile',
             'UserController:profile',
             'profile',
+            [
+                AuthMiddleware::class,
+                new PermissionMiddleware('profile.view'),
+            ]
+        );
+
+        $router->post(
+            '/app/profile/security',
+            'UserController:security',
+            'profile.security',
             [
                 AuthMiddleware::class,
                 new PermissionMiddleware('profile.view'),

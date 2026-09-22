@@ -382,3 +382,61 @@ html[data-theme="dark"] .studio-v2 .studio-global-search input, html[data-theme=
 .studio-error h1 { margin: 16px 0 8px; font-size: 1.55rem }
 .studio-error p { color: var(--studio-muted) }
 .studio-error a { display: inline-flex; min-height: 42px; align-items: center; margin-top: 12px; padding: 9px 16px; border-radius:var(--studio-radius); background: var(--studio-primary); color: #fff; font-weight: 600 }
+
+
+/* Moves App Launcher — camada global independente da navegação do produto. */
+.studio-v2 .studio-app-launcher { position:relative; flex:0 0 auto }
+.studio-v2 .studio-app-launcher-trigger { display:grid; width:38px; height:38px; place-items:center; padding:0; border:0; border-radius:var(--studio-radius); background:var(--studio-primary); color:#fff; transition:var(--studio-motion-fast) }
+.studio-v2 .studio-app-launcher-trigger:hover,
+.studio-v2 .studio-app-launcher.open .studio-app-launcher-trigger { background:var(--studio-primary-hover) }
+.studio-v2 .studio-app-launcher-trigger .studio-icon { width:21px; height:21px }
+.studio-v2 .studio-app-launcher-menu { position:absolute; top:calc(100% + 10px); left:0; z-index:var(--studio-z-overlay); display:none; width:286px; overflow:hidden; border:1px solid var(--studio-border); border-radius:var(--studio-radius); background:var(--studio-surface); box-shadow:var(--studio-shadow-lg) }
+.studio-v2 .studio-app-launcher.open .studio-app-launcher-menu { display:block }
+.studio-v2 .studio-app-launcher-menu > header { display:grid; gap:1px; padding:15px 16px 12px; background:var(--studio-surface-soft) }
+.studio-v2 .studio-app-launcher-menu > header strong { color:var(--studio-ink); font-size:.95rem }
+.studio-v2 .studio-app-launcher-menu > header small { color:var(--studio-muted); font-size:.78rem }
+.studio-v2 .studio-app-launcher-menu nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding:8px }
+.studio-v2 .studio-app-launcher-menu nav a { display:grid; min-height:78px; place-items:center; align-content:center; gap:7px; padding:10px 8px; border-radius:var(--studio-radius); color:var(--studio-text); font-size:.8rem; font-weight:600; text-align:center; transition:var(--studio-motion-fast) }
+.studio-v2 .studio-app-launcher-menu nav a:hover,
+.studio-v2 .studio-app-launcher-menu nav a[aria-current="page"] { background:var(--studio-primary-soft); color:var(--studio-primary) }
+.studio-v2 .studio-app-launcher-menu nav .studio-icon { width:22px; height:22px }
+
+/* O menu do produto pode desaparecer por completo; a camada global permanece no topo. */
+@media (min-width:1025px) {
+    .menu-collapsed .studio-v2 .studio-sidebar { transform:translateX(-100%); box-shadow:none }
+    .menu-collapsed .studio-v2 .studio-main { width:100%; margin-left:0 }
+    .studio-v2 .studio-sidebar { transition:transform var(--studio-motion), box-shadow var(--studio-motion) }
+    .studio-v2 .studio-main { transition:width var(--studio-motion), margin-left var(--studio-motion) }
+}
+
+
+/* Topbar global — superfícies discretas, sem caixas decorativas nos acionadores. */
+.studio-v2 .studio-notification-panel > header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 16px 12px; background:var(--studio-surface-soft) }
+.studio-v2 .studio-notification-panel > header > div { display:grid; gap:1px }
+.studio-v2 .studio-notification-panel > header strong { color:var(--studio-ink); font-size:.95rem }
+.studio-v2 .studio-notification-panel > header small { color:var(--studio-muted); font-size:.78rem }
+.studio-v2 .studio-notification-panel > header a { color:var(--studio-primary); font-size:.8rem; font-weight:600 }
+.studio-v2 .studio-notification-empty { display:grid; place-items:center; gap:6px; padding:30px 22px; color:var(--studio-muted); text-align:center }
+.studio-v2 .studio-notification-empty > span { display:grid; width:40px; height:40px; place-items:center; border-radius:50%; background:var(--studio-surface-soft); color:var(--studio-primary) }
+.studio-v2 .studio-notification-empty strong { color:var(--studio-text); font-size:.875rem }
+.studio-v2 .studio-notification-empty small { max-width:260px; font-size:.8rem; line-height:1.45 }
+.studio-v2 .studio-profile-trigger:hover,
+.studio-v2 .studio-header-profile.open .studio-profile-trigger { border-color:transparent; background:var(--studio-surface-soft); color:var(--studio-ink) }
+.studio-v2 .studio-menu:hover,
+.studio-v2 .studio-header-actions > a:hover,
+.studio-v2 .studio-theme-toggle:hover,
+.studio-v2 .studio-notification-toggle:hover,
+.studio-v2 .studio-notifications.open .studio-notification-toggle { background:var(--studio-surface-soft); color:var(--studio-ink) }
+@media (max-width:760px) {
+    .studio-v2 .studio-notification-panel { position:fixed; top:66px; right:10px; left:10px; width:auto }
+}
+
+.studio-v2 .studio-notification-list { display:grid; max-height:360px; overflow:auto; padding:6px }
+.studio-v2 .studio-notification-list > a { position:relative; display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; align-items:start; padding:10px; border-radius:var(--studio-radius); color:var(--studio-text) }
+.studio-v2 .studio-notification-list > a:hover { background:var(--studio-surface-soft) }
+.studio-v2 .studio-notification-list > a.unread { background:var(--studio-primary-soft) }
+.studio-v2 .studio-notification-list > a.unread::after { position:absolute; top:15px; right:10px; width:6px; height:6px; border-radius:50%; background:var(--studio-primary); content:"" }
+.studio-v2 .studio-notification-list > a > span:first-child { display:grid; width:30px; height:30px; place-items:center; border-radius:50%; background:var(--studio-surface-soft); color:var(--studio-primary) }
+.studio-v2 .studio-notification-list > a > span:last-child { display:grid; gap:2px; padding-right:10px }
+.studio-v2 .studio-notification-list strong { overflow:hidden; color:var(--studio-ink); font-size:.82rem; text-overflow:ellipsis; white-space:nowrap }
+.studio-v2 .studio-notification-list small { display:-webkit-box; overflow:hidden; color:var(--studio-muted); font-size:.76rem; line-height:1.4; -webkit-box-orient:vertical; -webkit-line-clamp:2 }
