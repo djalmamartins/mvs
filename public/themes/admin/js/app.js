@@ -1,6 +1,8 @@
 const menuButton = document.querySelector('.studio-menu');
 const backdrop = document.querySelector('.studio-sidebar-backdrop');
 const profile = document.querySelector('.studio-header-profile');
+const launcher = document.querySelector('.studio-app-launcher');
+const launcherTrigger = launcher?.querySelector('.studio-app-launcher-trigger');
 const profileTrigger = profile?.querySelector('.studio-profile-trigger');
 const themeButton = document.querySelector('.studio-theme-toggle');
 const isMobile = () => window.matchMedia('(max-width: 1024px)').matches;
@@ -14,11 +16,15 @@ function setMenuState() {
 
 function closeOverlays() {
     const profileWasOpen = profile?.classList.contains('open');
+    const launcherWasOpen = launcher?.classList.contains('open');
     document.body.classList.remove('menu-open');
     profile?.classList.remove('open');
+    launcher?.classList.remove('open');
     profileTrigger?.setAttribute('aria-expanded', 'false');
+    launcherTrigger?.setAttribute('aria-expanded', 'false');
     setMenuState();
     if (profileWasOpen) profileTrigger?.focus();
+    if (launcherWasOpen) launcherTrigger?.focus();
 }
 
 function applyTheme(theme) {
@@ -48,12 +54,25 @@ menuButton?.addEventListener('click', () => {
     setMenuState();
 });
 backdrop?.addEventListener('click', closeOverlays);
+launcherTrigger?.addEventListener('click', () => {
+    const open = !launcher.classList.contains('open');
+    launcher.classList.toggle('open', open);
+    launcherTrigger.setAttribute('aria-expanded', String(open));
+    if (open) {
+        profile?.classList.remove('open');
+        profileTrigger?.setAttribute('aria-expanded', 'false');
+    }
+});
 profileTrigger?.addEventListener('click', () => {
     const open = !profile.classList.contains('open');
     profile.classList.toggle('open', open);
     profileTrigger.setAttribute('aria-expanded', String(open));
 });
 document.addEventListener('click', event => {
+    if (!event.target.closest('.studio-app-launcher')) {
+        launcher?.classList.remove('open');
+        launcherTrigger?.setAttribute('aria-expanded', 'false');
+    }
     if (!event.target.closest('.studio-header-profile')) {
         profile?.classList.remove('open');
         profileTrigger?.setAttribute('aria-expanded', 'false');
