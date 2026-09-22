@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Controllers;
 
+use Moves\Boot\Connection;
 use Moves\Core\Auth;
 use Moves\Core\Controller;
 use Moves\Core\Csrf;
@@ -14,6 +15,12 @@ use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Validator;
 use Moves\Models\User;
+use Moves\Modules\Erp\Security\MfaChallengeService;
+use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
+use Moves\Modules\Erp\Security\MfaLoginGate;
+use Moves\Modules\Erp\Security\MfaRequirementPolicy;
+use Moves\Modules\Erp\Security\MfaRuntimeConfig;
+use Moves\Modules\Erp\Security\TotpVerifier;
 
 /**
  * Moves | Authentication Controller
@@ -62,8 +69,6 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
-        // Keep credential verification separate from session grant so the MFA
-        // policy/challenge can be inserted here without authenticating first.
         $user = Auth::verifyCredentials($email, $password);
         if (!$user instanceof User) {
             LoginThrottle::recordFailure($email, $ip);
@@ -72,6 +77,15 @@ final class AuthController extends Controller
             ]);
             usleep(random_int(100000, 250000));
             Flash::set('error', 'E-mail ou senha inválidos.');
+            Response::to('/login');
+        }
+
+        if (!$this->mfaAllowsSession($user)) {
+            LoginThrottle::recordFailure($email, $ip);
+            Logger::warning('MFA recusou concessão de sessão.', [
+                'user_id' => (int) ($user->id ?? 0),
+            ]);
+            Flash::set('error', 'Não foi possível concluir o login.');
             Response::to('/login');
         }
 
@@ -87,6 +101,39 @@ final class AuthController extends Controller
         Csrf::regenerate();
         Flash::set('success', 'Login realizado com sucesso.');
         Response::to('/app');
+    }
+
+    private function mfaAllowsSession(User $user): bool
+    {
+        $policy = new MfaRequirementPolicy();
+        $role = isset($user->role) ? (string) $user->role : null;
+
+        if (!$policy->requiresMfa($role)) {
+            return true;
+        }
+
+        try {
+            $config = MfaRuntimeConfig::fromEnvironment();
+            $repository = new MfaEnrollmentRepository(Connection::getInstance(), $config->cipher());
+            $gate = new MfaLoginGate(
+                $policy,
+                new MfaChallengeService($repository, new TotpVerifier())
+            );
+            $totp = Request::post('totp_code');
+
+            return $gate->canEstablishSession(
+                (int) ($user->id ?? 0),
+                $role,
+                is_string($totp) ? $totp : null
+            );
+        } catch (\Throwable $exception) {
+            Logger::error('Falha fechada na validação MFA.', [
+                'user_id' => (int) ($user->id ?? 0),
+                'exception' => $exception::class,
+            ]);
+
+            return false;
+        }
     }
 
     public function logout(): void
