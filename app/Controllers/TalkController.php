@@ -90,6 +90,14 @@ final class TalkController extends Controller
                 } elseif ($action === 'close') {
                     $talk->close($id, (int)$user->id);
                     $_SESSION['talk_action_status'] = 'Atendimento finalizado.';
+                } elseif ($action === 'transfer') {
+                    $toUserId = (int)Request::post('to_user_id', 0);
+                    $toQueueId = (int)Request::post('to_queue_id', 0);
+                    $talk->transfer($id, (int)$user->id, $toUserId > 0 ? $toUserId : null, $toQueueId > 0 ? $toQueueId : null, (string)Request::post('reason', ''));
+                    $_SESSION['talk_action_status'] = 'Atendimento transferido.';
+                } elseif ($action === 'note') {
+                    $talk->addNote($id, (int)$user->id, (string)Request::post('note', ''));
+                    $_SESSION['talk_action_status'] = 'Nota adicionada.';
                 } elseif ($action === 'reopen') {
                     $talk->reopen($id, (int)$user->id);
                     $_SESSION['talk_action_status'] = 'Atendimento reaberto.';
