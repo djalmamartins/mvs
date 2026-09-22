@@ -20,12 +20,15 @@ final class Auth
     private const SESSION_KEY = 'auth_user';
 
     /**
-     * Tenta autenticar um usuário.
+     * Valida credenciais sem conceder uma sessão autenticada.
+     *
+     * Este boundary permite executar políticas adicionais (como MFA)
+     * antes de promover o usuário para uma sessão completa.
      */
-    public static function attempt(
+    public static function verifyCredentials(
         string $email,
         string $password
-    ): bool {
+    ): ?User {
         $user = (new User())
             ->find(
                 'email = :email AND status = :status',
@@ -37,26 +40,45 @@ final class Auth
             ->fetch();
 
         if (!$user instanceof User) {
+            return null;
+        }
+
+        if (!password_verify($password, $user->password)) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    /**
+     * Concede a sessão autenticada somente a um usuário ativo já validado.
+     */
+    public static function establishSession(User $user): bool
+    {
+        if ((string) ($user->status ?? '') !== 'active' || (int) ($user->id ?? 0) <= 0) {
             return false;
         }
 
-        if (
-            !password_verify(
-                $password,
-                $user->password
-            )
-        ) {
-            return false;
-        }
-
-        Session::set(
-            self::SESSION_KEY,
-            (int) $user->id
-        );
-
+        Session::set(self::SESSION_KEY, (int) $user->id);
         session_regenerate_id(true);
 
         return true;
+    }
+
+    /**
+     * Tenta autenticar um usuário preservando o contrato legado.
+     */
+    public static function attempt(
+        string $email,
+        string $password
+    ): bool {
+        $user = self::verifyCredentials($email, $password);
+
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        return self::establishSession($user);
     }
 
     /**
@@ -64,16 +86,13 @@ final class Auth
      */
     public static function user(): ?User
     {
-        $userId = Session::get(
-            self::SESSION_KEY
-        );
+        $userId = Session::get(self::SESSION_KEY);
 
         if (!is_int($userId)) {
             return null;
         }
 
-        $user = (new User())
-            ->findById($userId);
+        $user = (new User())->findById($userId);
 
         if (!$user instanceof User || (string) ($user->status ?? '') !== 'active') {
             Session::remove(self::SESSION_KEY);
