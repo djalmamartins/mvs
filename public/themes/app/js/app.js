@@ -130,3 +130,47 @@ if (talkComposer) {
         }
     });
 }
+
+if (talkWorkspace?.dataset.syncUrl) {
+    const syncState = talkWorkspace.querySelector('[data-talk-sync-state]');
+    let talkSyncTimer = 0;
+    let lastRevision = Number(talkWorkspace.dataset.revision || 0);
+    let failures = 0;
+    const setTalkSyncState = (label, offline = false) => {
+        if (!syncState) return;
+        syncState.textContent = label;
+        syncState.classList.toggle('is-offline', offline);
+    };
+    const scheduleTalkSync = () => {
+        window.clearTimeout(talkSyncTimer);
+        if (!document.hidden) talkSyncTimer = window.setTimeout(runTalkSync, failures ? Math.min(30000, 5000 * failures) : 10000);
+    };
+    const runTalkSync = async () => {
+        if (document.hidden) return;
+        try {
+            const response = await fetch(talkWorkspace.dataset.syncUrl, {headers: {'Accept': 'application/json'}, credentials: 'same-origin', cache: 'no-store'});
+            if (!response.ok) throw new Error('sync');
+            const state = await response.json();
+            failures = 0;
+            setTalkSyncState('Conectado');
+            const revision = Number(state.revision || 0);
+            if (lastRevision > 0 && revision > lastRevision) {
+                const active = document.activeElement;
+                if (!active?.matches('[data-talk-composer-body]')) window.location.reload();
+            }
+            lastRevision = Math.max(lastRevision, revision);
+        } catch (error) {
+            failures += 1;
+            setTalkSyncState(navigator.onLine ? 'Reconectando…' : 'Offline', true);
+        } finally {
+            scheduleTalkSync();
+        }
+    };
+    document.addEventListener('visibilitychange', () => {
+        window.clearTimeout(talkSyncTimer);
+        if (!document.hidden) runTalkSync();
+    });
+    window.addEventListener('online', runTalkSync);
+    window.addEventListener('offline', () => setTalkSyncState('Offline', true));
+    runTalkSync();
+}
