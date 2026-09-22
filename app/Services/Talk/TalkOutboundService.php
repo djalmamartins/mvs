@@ -58,9 +58,10 @@ final class TalkOutboundService
             $metadata['simulation'] = true;
         }
 
+        $now = date('Y-m-d H:i:s');
         $pdo->beginTransaction();
         try {
-            $insert = $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,NOW())");
+            $insert = $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,:sent_at)");
             $insert->execute([
                 'conversation_id' => (int)$ticket['conversation_id'],
                 'ticket_id' => $ticketId,
@@ -68,10 +69,20 @@ final class TalkOutboundService
                 'external_id' => $externalId !== '' ? $externalId : null,
                 'body' => $body,
                 'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'sent_at' => $now,
             ]);
             $messageId = (int)$pdo->lastInsertId();
-            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,NOW()),last_activity_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id' => $ticketId]);
-            $pdo->prepare("UPDATE talk_conversations SET last_message_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id' => (int)$ticket['conversation_id']]);
+            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,:first_response_at),last_activity_at=:last_activity_at,updated_at=:updated_at WHERE id=:id")->execute([
+                'first_response_at' => $now,
+                'last_activity_at' => $now,
+                'updated_at' => $now,
+                'id' => $ticketId,
+            ]);
+            $pdo->prepare("UPDATE talk_conversations SET last_message_at=:last_message_at,updated_at=:updated_at WHERE id=:id")->execute([
+                'last_message_at' => $now,
+                'updated_at' => $now,
+                'id' => (int)$ticket['conversation_id'],
+            ]);
             $pdo->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,'user','message.sent',:payload)")->execute([
                 'ticket_id' => $ticketId,
                 'user_id' => $userId,
