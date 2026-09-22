@@ -22,10 +22,25 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
         </div>
     </aside>
     <main class="talk-thread" aria-label="Conversa ativa">
-        <div class="talk-thread-empty"><span aria-hidden="true">◌</span><strong>Selecione uma conversa</strong><p>Escolha uma conversa na lista para visualizar mensagens e responder.</p></div>
+        <?php if (!$selectedConversation): ?>
+            <div class="talk-thread-empty"><span aria-hidden="true">◌</span><strong>Selecione uma conversa</strong><p>Escolha uma conversa na lista para visualizar mensagens e responder.</p></div>
+        <?php else: ?>
+            <header class="talk-thread-header"><div><strong><?= htmlspecialchars((string)$selectedConversation['contact_name'], ENT_QUOTES, 'UTF-8') ?></strong><small><?= htmlspecialchars((string)$selectedConversation['protocol'], ENT_QUOTES, 'UTF-8') ?></small></div></header>
+            <div class="talk-messages" aria-live="polite">
+                <?php foreach (($selectedConversation['messages'] ?? []) as $message): ?><article class="talk-message <?= ($message['direction'] ?? '') === 'outbound' ? 'is-outbound' : 'is-inbound' ?>"><p><?= nl2br(htmlspecialchars((string)($message['body'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p><small><?= htmlspecialchars((string)($message['sender_name'] ?? (($message['direction'] ?? '') === 'outbound' ? 'Atendente' : $selectedConversation['contact_name'])), ENT_QUOTES, 'UTF-8') ?></small></article><?php endforeach; ?>
+            </div>
+            <?php if (!empty($selectedConversation['outbound_error'])): ?><p class="talk-composer-feedback is-error" role="alert"><?= htmlspecialchars((string)$selectedConversation['outbound_error'], ENT_QUOTES, 'UTF-8') ?></p><?php elseif (!empty($selectedConversation['outbound_status'])): ?><p class="talk-composer-feedback" role="status">Mensagem enviada.</p><?php endif; ?>
+            <form class="talk-composer" method="post" data-talk-composer>
+                <input type="hidden" name="_token" value="<?= htmlspecialchars(\Moves\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="action" value="send">
+                <label class="sr-only" for="talk-message-body">Mensagem</label>
+                <textarea id="talk-message-body" name="body" rows="1" maxlength="4000" placeholder="Digite uma mensagem" required data-talk-composer-body></textarea>
+                <button type="submit" data-talk-send>Enviar</button>
+            </form>
+        <?php endif; ?>
     </main>
     <aside class="talk-context" aria-label="Contexto do contato">
         <header><p class="customer-eyebrow">CONTEXTO</p><h2>Contato</h2></header>
-        <div class="talk-empty"><strong>Nenhum contato selecionado.</strong><p>Dados do contato, condomínio, unidade, tags, chamados e notas aparecerão aqui.</p></div>
+        <?php if (!$selectedConversation): ?><div class="talk-empty"><strong>Nenhum contato selecionado.</strong><p>Dados do contato, condomínio, unidade, tags, chamados e notas aparecerão aqui.</p></div><?php else: ?><dl class="talk-contact-details"><div><dt>Contato</dt><dd><?= htmlspecialchars((string)$selectedConversation['contact_name'], ENT_QUOTES, 'UTF-8') ?></dd></div><div><dt>Telefone</dt><dd><?= htmlspecialchars((string)($selectedConversation['contact_phone'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></dd></div><div><dt>Fila</dt><dd><?= htmlspecialchars((string)($selectedConversation['queue_name'] ?? '—'), ENT_QUOTES, 'UTF-8') ?></dd></div><div><dt>Prioridade</dt><dd><?= htmlspecialchars((string)($selectedConversation['priority'] ?? 'normal'), ENT_QUOTES, 'UTF-8') ?></dd></div></dl><?php endif; ?>
     </aside>
 </section>
