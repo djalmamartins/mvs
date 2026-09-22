@@ -184,7 +184,7 @@ final class TalkController extends Controller
             Response::to('/talk/tickets/'.$id);
         }
 
-        $ticket = $talk->ticket($id);
+        $ticket = $talk->ticket($id, (int)$user->id);
         if ($ticket === null) {
             Response::to('/talk');
         }
