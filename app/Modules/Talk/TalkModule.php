@@ -19,7 +19,10 @@ final class TalkModule
                 $router->get('/talk', 'TalkController:index', 'talk.home', $middleware);
                 $router->get('/talk/queue', 'TalkController:index', 'talk.queue', $middleware);
             },
-            ['admin' => ['talk.access']]
+            [
+                'admin' => ['talk.access'],
+                'user' => ['talk.access'],
+            ]
         );
     }
 }
