@@ -30,6 +30,7 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
                 <?php foreach (($selectedConversation['messages'] ?? []) as $message): ?><article class="talk-message <?= ($message['direction'] ?? '') === 'outbound' ? 'is-outbound' : 'is-inbound' ?>"><p><?= nl2br(htmlspecialchars((string)($message['body'] ?? ''), ENT_QUOTES, 'UTF-8')) ?></p><small><?= htmlspecialchars((string)($message['sender_name'] ?? (($message['direction'] ?? '') === 'outbound' ? 'Atendente' : $selectedConversation['contact_name'])), ENT_QUOTES, 'UTF-8') ?></small></article><?php endforeach; ?>
             </div>
             <?php if (!empty($selectedConversation['outbound_error'])): ?><p class="talk-composer-feedback is-error" role="alert"><?= htmlspecialchars((string)$selectedConversation['outbound_error'], ENT_QUOTES, 'UTF-8') ?></p><?php elseif (!empty($selectedConversation['outbound_status'])): ?><p class="talk-composer-feedback" role="status">Mensagem enviada.</p><?php endif; ?>
+            <?php if (!empty($canOperateTicket)): ?>
             <form class="talk-composer" method="post" data-talk-composer>
                 <input type="hidden" name="_token" value="<?= htmlspecialchars(\Moves\Core\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="action" value="send">
@@ -37,6 +38,7 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
                 <textarea id="talk-message-body" name="body" rows="1" maxlength="4000" placeholder="Digite uma mensagem" required data-talk-composer-body></textarea>
                 <button type="submit" data-talk-send>Enviar</button>
             </form>
+            <?php else: ?><p class="talk-composer-feedback" role="status">Assuma este atendimento para responder.</p><?php endif; ?>
         <?php endif; ?>
     </main>
     <aside class="talk-context" aria-label="Contexto do contato">
