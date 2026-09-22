@@ -75,8 +75,8 @@ final class TalkService
             $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets";
             $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(created_at)),0) FROM talk_messages";
         }else{
-            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE assigned_user_id=:user_id OR status='queued'";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id WHERE t.assigned_user_id=:user_id OR t.status='queued'";
+            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(t.updated_at)),0) FROM talk_tickets t LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL)";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.id=m.ticket_id LEFT JOIN talk_queue_members qm ON qm.queue_id=t.queue_id AND qm.user_id=:user_id AND qm.status='active' WHERE t.assigned_user_id=:user_id OR (t.status='queued' AND qm.user_id IS NOT NULL)";
             $params=['user_id'=>$userId];
         }
         $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
