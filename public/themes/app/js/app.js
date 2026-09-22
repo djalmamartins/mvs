@@ -1,3 +1,48 @@
+const appLauncher = document.querySelector('.moves-app-launcher');
+const appMenu = document.querySelector('#moves-app-menu');
+const shell = document.querySelector('.customer-shell');
+const navCollapse = document.querySelector('.customer-nav-collapse');
+const navPreferenceKey = 'moves.navigation.collapsed';
+
+function setNavCollapsed(collapsed) {
+    shell?.classList.toggle('nav-collapsed', collapsed);
+    navCollapse?.setAttribute('aria-expanded', String(!collapsed));
+    if (navCollapse) {
+        navCollapse.setAttribute('aria-label', collapsed ? 'Expandir navegação' : 'Recolher navegação');
+        navCollapse.textContent = collapsed ? '›' : '‹';
+    }
+}
+try { setNavCollapsed(localStorage.getItem(navPreferenceKey) === '1'); } catch (_) {}
+navCollapse?.addEventListener('click', () => {
+    const collapsed = !shell?.classList.contains('nav-collapsed');
+    setNavCollapsed(collapsed);
+    try { localStorage.setItem(navPreferenceKey, collapsed ? '1' : '0'); } catch (_) {}
+});
+function closeAppMenu(returnFocus = false) {
+    if (!appMenu || !appLauncher) return;
+    appMenu.hidden = true;
+    appLauncher.setAttribute('aria-expanded', 'false');
+    if (returnFocus) appLauncher.focus();
+}
+appLauncher?.addEventListener('click', () => {
+    if (!appMenu) return;
+    const opening = appMenu.hidden;
+    appMenu.hidden = !opening;
+    appLauncher.setAttribute('aria-expanded', String(opening));
+    if (opening) appMenu.querySelector('[role="menuitem"]')?.focus();
+});
+appMenu?.addEventListener('keydown', event => {
+    const items = [...appMenu.querySelectorAll('[role="menuitem"]')];
+    const index = items.indexOf(document.activeElement);
+    if (event.key === 'Escape') { event.preventDefault(); closeAppMenu(true); return; }
+    if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key) || !items.length) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : event.key === 'ArrowDown' ? (index + 1 + items.length) % items.length : (index - 1 + items.length) % items.length;
+    items[next].focus();
+});
+document.addEventListener('click', event => {
+    if (appMenu && !appMenu.hidden && !appMenu.contains(event.target) && !appLauncher?.contains(event.target)) closeAppMenu();
+});
 const menuButton = document.querySelector('.customer-menu-toggle');
 const backdrop = document.querySelector('.customer-backdrop');
 const dashboard = document.querySelector('[data-live-dashboard]');
