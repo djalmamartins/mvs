@@ -20,6 +20,7 @@ final class TalkModule
                 $router->get('/talk/queue', 'TalkController:index', 'talk.queue', $middleware);
                 $router->get('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket', $middleware);
                 $router->post('/talk/tickets/{id}', 'TalkController:ticket', 'talk.ticket.action', $middleware);
+                $router->get('/talk/sync', 'TalkController:sync', 'talk.sync', $middleware);
             },
             [
                 'admin' => ['talk.access'],
