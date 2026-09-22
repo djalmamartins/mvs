@@ -197,7 +197,7 @@ final class TalkController extends Controller
         $ticket['eligible_users'] = $transferOptions['eligible_users'];
         $ticket['attachments'] = (new TalkAttachmentService())->forTicket($id);
         $ticket['tags'] = $talk->ticketTags($id);
-        $ticket['available_tags'] = $talk->availableTags();
+        $ticket['available_tags'] = $talk->availableTags((int)$user->id);
         $ticket['contact_history'] = $talk->contactTicketHistory($id, (int)$user->id);
         unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_outbound_draft'], $_SESSION['talk_action_status']);
 
