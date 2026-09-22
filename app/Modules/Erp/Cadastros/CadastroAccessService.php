@@ -25,7 +25,8 @@ final readonly class CadastroAccessService
     public function findAdministrator(int $userId, int $administratorId): ?array
     {
         if (!$this->access->allows($userId, 'erp.cadastros.read', [
-            'administrator_id' => $administratorId,
+            'scope_type' => 'administrator',
+            'scope_id' => $administratorId,
         ])) {
             return null;
         }
@@ -37,8 +38,8 @@ final readonly class CadastroAccessService
     public function findCondominium(int $userId, int $administratorId, int $condominiumId): ?array
     {
         if (!$this->access->allows($userId, 'erp.cadastros.read', [
-            'administrator_id' => $administratorId,
-            'condominium_id' => $condominiumId,
+            'scope_type' => 'condominium',
+            'scope_id' => $condominiumId,
         ])) {
             return null;
         }
@@ -55,7 +56,8 @@ final readonly class CadastroAccessService
     public function listCondominiums(int $userId, int $administratorId): array
     {
         if (!$this->access->allows($userId, 'erp.cadastros.read', [
-            'administrator_id' => $administratorId,
+            'scope_type' => 'administrator',
+            'scope_id' => $administratorId,
         ])) {
             return [];
         }
