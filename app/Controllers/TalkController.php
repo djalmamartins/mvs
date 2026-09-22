@@ -8,6 +8,7 @@ use Moves\Core\Controller;
 use Moves\Core\Csrf;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Services\Talk\TalkNotificationService;
 use Moves\Services\Talk\TalkOutboundService;
 use Moves\Services\Talk\TalkService;
 
@@ -37,6 +38,28 @@ final class TalkController extends Controller
             'mineCount' => count($mine),
         ]);
     }
+    public function sync(): never
+    {
+        $user = Auth::user();
+        if ($user === null) {
+            http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => 'unauthorized']);
+            exit;
+        }
+
+        $talk = new TalkService();
+        $userId = (int)$user->id;
+        $talk->heartbeat($userId);
+        $talk->autoAssign();
+        $state = $talk->syncState($userId);
+        $state['notifications'] = (new TalkNotificationService())->unreadCount($userId);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        echo json_encode($state, JSON_THROW_ON_ERROR);
+        exit;
+    }
+
     /** @param array<string,string> $data */
     public function ticket(array $data = []): void
     {
