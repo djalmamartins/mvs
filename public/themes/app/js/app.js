@@ -43,6 +43,39 @@ appMenu?.addEventListener('keydown', event => {
 document.addEventListener('click', event => {
     if (appMenu && !appMenu.hidden && !appMenu.contains(event.target) && !appLauncher?.contains(event.target)) closeAppMenu();
 });
+const popoverButtons = [...document.querySelectorAll('[data-popover-button]')];
+const closePopovers = (except = null, returnFocus = false) => {
+    document.querySelectorAll('[data-popover]').forEach(popover => {
+        if (popover === except) return;
+        popover.hidden = true;
+        const button = popoverButtons.find(item => item.getAttribute('aria-controls') === popover.id);
+        button?.setAttribute('aria-expanded', 'false');
+        if (returnFocus) button?.focus();
+    });
+};
+popoverButtons.forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    const popover = document.getElementById(button.getAttribute('aria-controls') || '');
+    if (!popover) return;
+    const opening = popover.hidden;
+    closePopovers(popover);
+    popover.hidden = !opening;
+    button.setAttribute('aria-expanded', String(opening));
+    if (opening) popover.querySelector('a,button')?.focus();
+}));
+document.addEventListener('click', event => {
+    if (!event.target.closest('[data-popover]') && !event.target.closest('[data-popover-button]')) closePopovers();
+});
+document.querySelectorAll('[data-popover]').forEach(popover => popover.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        popover.hidden = true;
+        const button = popoverButtons.find(item => item.getAttribute('aria-controls') === popover.id);
+        button?.setAttribute('aria-expanded', 'false');
+        button?.focus();
+    }
+}));
+
 const menuButton = document.querySelector('.customer-menu-toggle');
 const backdrop = document.querySelector('.customer-backdrop');
 const dashboard = document.querySelector('[data-live-dashboard]');
