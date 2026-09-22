@@ -111,8 +111,11 @@ final class TalkController extends Controller
             $action = (string)Request::post('action', '');
             try {
                 if ($action === 'send') {
-                    (new TalkOutboundService())->sendText($id, (int)$user->id, (string)Request::post('body', ''));
+                    $body = (string)Request::post('body', '');
+                    $_SESSION['talk_outbound_draft'] = mb_substr(trim($body), 0, 4000);
+                    (new TalkOutboundService())->sendText($id, (int)$user->id, $body);
                     $_SESSION['talk_outbound_status'] = 'sent';
+                    unset($_SESSION['talk_outbound_draft']);
                 } elseif ($action === 'claim') {
                     if (!$talk->claim($id, (int)$user->id)) {
                         throw new \RuntimeException('Não foi possível assumir este atendimento.');
@@ -151,9 +154,10 @@ final class TalkController extends Controller
         }
         $ticket['outbound_error'] = $_SESSION['talk_outbound_error'] ?? null;
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
+        $ticket['outbound_draft'] = $_SESSION['talk_outbound_draft'] ?? null;
         $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
         $ticket['attachments'] = (new TalkAttachmentService())->forTicket($id);
-        unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_action_status']);
+        unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_outbound_draft'], $_SESSION['talk_action_status']);
 
         $mine = $talk->myTickets((int)$user->id);
         $queue = $talk->queueForUser((int)$user->id);
