@@ -188,7 +188,7 @@ final class TalkController extends Controller
                 } elseif ($action === 'channel_save') {
                     if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem gerenciar canais.');
                     $channelId=(int)Request::post('channel_id',0);$queueId=(int)Request::post('channel_queue_id',0);
-                    $talk->saveChannel((int)$user->id,$channelId,(string)Request::post('channel_name',''),(string)Request::post('phone_number',''),$queueId>0?$queueId:null,'inactive');
+                    $talk->saveChannel((int)$user->id,$channelId,(string)Request::post('channel_name',''),(string)Request::post('phone_number',''),$queueId>0?$queueId:null,'inactive',(string)Request::post('external_account_id',''));
                     $_SESSION['talk_action_status']='Número do WhatsApp salvo.';
                 } elseif ($action === 'jack_settings') {
                     if(!$talk->canManage((int)$user->id))throw new \RuntimeException('Apenas supervisores podem configurar o agente virtual.');
