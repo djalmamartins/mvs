@@ -93,12 +93,16 @@ final class TalkController extends Controller
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
         unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status']);
 
+        $mine = $talk->myTickets((int)$user->id);
+        $queue = $talk->queueForUser((int)$user->id);
         echo $this->view->render('pages/talk', [
             'title' => 'Talk',
             'user' => $user,
-            'conversations' => array_merge($talk->myTickets((int)$user->id), $talk->queueForUser((int)$user->id)),
+            'conversations' => array_merge($mine, $queue),
             'selectedConversation' => $ticket,
             'canOperateTicket' => $talk->canOperateTicket($id, (int)$user->id),
+            'queueCount' => count($queue),
+            'mineCount' => count($mine),
         ]);
     }
 }
