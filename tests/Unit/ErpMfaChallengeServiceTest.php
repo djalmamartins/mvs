@@ -10,6 +10,8 @@ use PHPUnit\Framework\TestCase;
 
 final class ErpMfaChallengeServiceTest extends TestCase
 {
+    private const RFC_6238_SHA1_SECRET = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
+
     private PDO $pdo;
     private MfaEnrollmentRepository $enrollments;
     private MfaChallengeService $challenge;
@@ -39,14 +41,14 @@ final class ErpMfaChallengeServiceTest extends TestCase
 
     public function testValidEnrolledTotpIsAccepted(): void
     {
-        $this->enrollments->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
+        $this->enrollments->enrollTotp(7, self::RFC_6238_SHA1_SECRET);
 
         self::assertTrue($this->challenge->verifyTotp(7, '287082', 59));
     }
 
     public function testInvalidCodeFailsClosed(): void
     {
-        $this->enrollments->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
+        $this->enrollments->enrollTotp(7, self::RFC_6238_SHA1_SECRET);
 
         self::assertFalse($this->challenge->verifyTotp(7, '000000', 59));
         self::assertFalse($this->challenge->verifyTotp(7, 'not-a-code', 59));
@@ -60,7 +62,7 @@ final class ErpMfaChallengeServiceTest extends TestCase
 
     public function testDisabledEnrollmentCannotPassChallenge(): void
     {
-        $this->enrollments->enrollTotp(7, 'GEZDGNBVGY3TQOJQ');
+        $this->enrollments->enrollTotp(7, self::RFC_6238_SHA1_SECRET);
         self::assertTrue($this->enrollments->disableTotp(7));
 
         self::assertFalse($this->challenge->verifyTotp(7, '287082', 59));
