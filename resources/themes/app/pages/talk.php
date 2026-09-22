@@ -19,6 +19,7 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
                     </a>
                 <?php endforeach; ?>
             <?php endif; ?>
+            <div class="talk-empty" data-talk-filter-empty hidden><strong>Nenhuma conversa encontrada.</strong><p>Ajuste a busca ou os filtros para ver outros atendimentos.</p></div>
         </div>
     </aside>
     <main class="talk-thread" aria-label="Conversa ativa">
@@ -66,3 +67,4 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
         <section class="talk-context-section"><h3>Notas</h3><?php if (empty($selectedConversation['notes'])): ?><p>Nenhuma nota interna.</p><?php else: foreach ($selectedConversation['notes'] as $note): ?><article><p><?= nl2br(htmlspecialchars((string)$note['body'], ENT_QUOTES, 'UTF-8')) ?></p><small><?= htmlspecialchars((string)($note['user_name'] ?? 'Equipe'), ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars((string)($note['created_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small></article><?php endforeach; endif; ?></section><?php endif; ?>
     </aside>
 </section>
+<dialog class="talk-confirm-dialog" data-talk-confirm-dialog aria-labelledby="talk-confirm-title"><form method="dialog"><h2 id="talk-confirm-title">Confirmar ação</h2><p data-talk-confirm-message>Deseja continuar?</p><div><button value="cancel">Cancelar</button><button value="confirm" class="is-danger">Confirmar</button></div></form></dialog>
