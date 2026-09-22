@@ -62,8 +62,8 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
-        // Credential verification is intentionally separated from session grant.
-        // MFA policy/challenge is enforced at this boundary for sensitive roles.
+        // Keep credential verification separate from session grant so the MFA
+        // policy/challenge can be inserted here without authenticating first.
         $user = Auth::verifyCredentials($email, $password);
         if (!$user instanceof User) {
             LoginThrottle::recordFailure($email, $ip);
