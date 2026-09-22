@@ -77,3 +77,18 @@ document.addEventListener('visibilitychange', () => {
 });
 if (dashboard) refreshTimer = window.setInterval(refreshDashboard, 30000);
 setConnection(navigator.onLine);
+
+const talkWorkspace = document.querySelector('[data-talk-workspace]');
+if (talkWorkspace) {
+    const search = talkWorkspace.querySelector('[data-talk-search]');
+    const filters = [...talkWorkspace.querySelectorAll('[data-talk-filter]')];
+    filters.forEach(button => button.addEventListener('click', () => {
+        filters.forEach(item => item.classList.toggle('active', item === button));
+        button.setAttribute('aria-pressed', 'true');
+        filters.filter(item => item !== button).forEach(item => item.setAttribute('aria-pressed', 'false'));
+        talkWorkspace.dataset.filter = button.dataset.talkFilter || 'all';
+    }));
+    search?.addEventListener('input', () => {
+        talkWorkspace.dataset.query = search.value.trim().toLocaleLowerCase('pt-BR');
+    });
+}
