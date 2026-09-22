@@ -209,6 +209,9 @@ final class TalkController extends Controller
         $ticket['outbound_status'] = $_SESSION['talk_outbound_status'] ?? null;
         $ticket['outbound_draft'] = $_SESSION['talk_outbound_draft'] ?? null;
         $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
+        $talkSettings=$talk->settings((int)$user->id);
+        $channels=$talk->channels((int)$user->id);
+        $tenantQueues=$talk->queues((int)$user->id);
         $transferOptions = $talk->ticketTransferOptions($id, (int)$user->id);
         $ticket['queues'] = $transferOptions['queues'];
         $ticket['eligible_users'] = $transferOptions['eligible_users'];
@@ -229,6 +232,9 @@ final class TalkController extends Controller
             'canManageTalk' => $talk->canManage((int)$user->id),
             'queueCount' => count($queue),
             'mineCount' => count($mine),
+            'talkSettings'=>$talkSettings,
+            'channels'=>$channels,
+            'tenantQueues'=>$tenantQueues,
         ]);
     }
 }
