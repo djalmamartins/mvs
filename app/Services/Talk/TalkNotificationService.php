@@ -9,6 +9,7 @@ use PDO;
 
 final class TalkNotificationService
 {
+    private function tenantId(int $userId): int { return (new TalkTenantContext())->id($userId); }
     public function notifyTicketAssignee(int $ticketId, ?int $actorId, string $type, string $title, ?string $body = null, array $payload = []): void
     {
         $pdo = Connection::getInstance();
@@ -33,44 +34,54 @@ final class TalkNotificationService
     public function unread(int $userId, int $limit = 30): array
     {
         $limit = max(1, min(100, $limit));
-        $statement = Connection::getInstance()->prepare("SELECT n.*,t.protocol FROM talk_notifications n LEFT JOIN talk_tickets t ON t.id=n.ticket_id WHERE n.recipient_id=:user_id AND n.read_at IS NULL ORDER BY n.created_at DESC,n.id DESC LIMIT {$limit}");
-        $statement->execute(['user_id'=>$userId]);
+        $statement = Connection::getInstance()->prepare("SELECT n.*,t.protocol FROM talk_notifications n LEFT JOIN talk_tickets t ON t.id=n.ticket_id WHERE n.tenant_id=:tenant_id AND n.recipient_id=:user_id AND n.read_at IS NULL ORDER BY n.created_at DESC,n.id DESC LIMIT {$limit}");
+        $statement->execute(['tenant_id'=>$this->tenantId($userId),'user_id'=>$userId]);
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function recent(int $userId, int $limit = 8): array
     {
         $limit = max(1, min(30, $limit));
-        $statement = Connection::getInstance()->prepare("SELECT n.*,t.protocol FROM talk_notifications n LEFT JOIN talk_tickets t ON t.id=n.ticket_id WHERE n.recipient_id=:user_id ORDER BY n.created_at DESC,n.id DESC LIMIT {$limit}");
-        $statement->execute(['user_id'=>$userId]);
+        $statement = Connection::getInstance()->prepare("SELECT n.*,t.protocol FROM talk_notifications n LEFT JOIN talk_tickets t ON t.id=n.ticket_id WHERE n.tenant_id=:tenant_id AND n.recipient_id=:user_id ORDER BY n.created_at DESC,n.id DESC LIMIT {$limit}");
+        $statement->execute(['tenant_id'=>$this->tenantId($userId),'user_id'=>$userId]);
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function unreadCount(int $userId): int
     {
-        $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM talk_notifications WHERE recipient_id=:user_id AND read_at IS NULL');
-        $statement->execute(['user_id'=>$userId]);
+        $statement = Connection::getInstance()->prepare('SELECT COUNT(*) FROM talk_notifications WHERE tenant_id=:tenant_id AND recipient_id=:user_id AND read_at IS NULL');
+        $statement->execute(['tenant_id'=>$this->tenantId($userId),'user_id'=>$userId]);
         return (int)$statement->fetchColumn();
     }
 
     public function markRead(int $notificationId, int $userId): bool
     {
-        $statement = Connection::getInstance()->prepare('UPDATE talk_notifications SET read_at=NOW() WHERE id=:id AND recipient_id=:user_id AND read_at IS NULL');
-        $statement->execute(['id'=>$notificationId,'user_id'=>$userId]);
+        $statement = Connection::getInstance()->prepare('UPDATE talk_notifications SET read_at=NOW() WHERE id=:id AND tenant_id=:tenant_id AND recipient_id=:user_id AND read_at IS NULL');
+        $statement->execute(['id'=>$notificationId,'tenant_id'=>$this->tenantId($userId),'user_id'=>$userId]);
         return $statement->rowCount() === 1;
     }
 
     public function markAllRead(int $userId): int
     {
-        $statement = Connection::getInstance()->prepare('UPDATE talk_notifications SET read_at=NOW() WHERE recipient_id=:user_id AND read_at IS NULL');
-        $statement->execute(['user_id'=>$userId]);
+        $statement = Connection::getInstance()->prepare('UPDATE talk_notifications SET read_at=NOW() WHERE tenant_id=:tenant_id AND recipient_id=:user_id AND read_at IS NULL');
+        $statement->execute(['tenant_id'=>$this->tenantId($userId),'user_id'=>$userId]);
         return $statement->rowCount();
+    }
+
+    private function ticketTenantId(int $ticketId): int
+    {
+        $s=Connection::getInstance()->prepare('SELECT tenant_id FROM talk_tickets WHERE id=:id');
+        $s->execute(['id'=>$ticketId]);$id=(int)$s->fetchColumn();
+        if($id<=0)throw new \RuntimeException('Tenant do atendimento não encontrado.');
+        return $id;
     }
 
     private function create(int $recipientId, ?int $ticketId, string $type, string $title, ?string $body, array $payload): void
     {
-        $statement = Connection::getInstance()->prepare('INSERT INTO talk_notifications(recipient_id,ticket_id,type,title,body,payload) VALUES(:recipient_id,:ticket_id,:type,:title,:body,:payload)');
+        $tenantId=$ticketId!==null?$this->ticketTenantId($ticketId):$this->tenantId($recipientId);
+        $statement = Connection::getInstance()->prepare('INSERT INTO talk_notifications(tenant_id,recipient_id,ticket_id,type,title,body,payload) VALUES(:tenant_id,:recipient_id,:ticket_id,:type,:title,:body,:payload)');
         $statement->execute([
+            'tenant_id'=>$tenantId,
             'recipient_id'=>$recipientId,
             'ticket_id'=>$ticketId,
             'type'=>mb_substr($type,0,60),
