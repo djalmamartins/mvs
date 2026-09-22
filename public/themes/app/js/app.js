@@ -103,7 +103,12 @@ menuButton?.addEventListener('click', () => {
 });
 backdrop?.addEventListener('click', closeMenu);
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && document.body.classList.contains('customer-menu-open')) {
+    if (event.key !== 'Escape') return;
+    if (appMenu && !appMenu.hidden) {
+        closeAppMenu(true);
+        return;
+    }
+    if (document.body.classList.contains('customer-menu-open')) {
         closeMenu(); menuButton?.focus();
     }
 });
