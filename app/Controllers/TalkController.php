@@ -135,6 +135,10 @@ final class TalkController extends Controller
                 } elseif ($action === 'note') {
                     $talk->addNote($id, (int)$user->id, (string)Request::post('note', ''));
                     $_SESSION['talk_action_status'] = 'Nota adicionada.';
+                } elseif ($action === 'tags') {
+                    $tagIds = Request::post('tag_ids', []);
+                    $talk->setTicketTags($id, (int)$user->id, is_array($tagIds) ? $tagIds : []);
+                    $_SESSION['talk_action_status'] = 'Tags atualizadas.';
                 } elseif ($action === 'attachment') {
                     (new TalkAttachmentService())->store($id, (int)$user->id, $_FILES['attachment'] ?? []);
                     $_SESSION['talk_action_status'] = 'Anexo adicionado.';
@@ -157,6 +161,9 @@ final class TalkController extends Controller
         $ticket['outbound_draft'] = $_SESSION['talk_outbound_draft'] ?? null;
         $ticket['action_status'] = $_SESSION['talk_action_status'] ?? null;
         $ticket['attachments'] = (new TalkAttachmentService())->forTicket($id);
+        $ticket['tags'] = $talk->ticketTags($id);
+        $ticket['available_tags'] = $talk->availableTags();
+        $ticket['contact_history'] = $talk->contactTicketHistory($id, (int)$user->id);
         unset($_SESSION['talk_outbound_error'], $_SESSION['talk_outbound_status'], $_SESSION['talk_outbound_draft'], $_SESSION['talk_action_status']);
 
         $mine = $talk->myTickets((int)$user->id);
