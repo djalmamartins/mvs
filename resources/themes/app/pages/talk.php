@@ -3,9 +3,9 @@ $this->layout('layouts/default', ['title'=>$title,'currentPage'=>'talk']);
 ?>
 <section class="talk-workspace" data-talk-workspace data-sync-url="/talk/sync" data-revision="0">
     <aside class="talk-list" aria-label="Conversas">
-        <header><div><p class="customer-eyebrow">TALK <span class="talk-sync-state" data-talk-sync-state role="status">Conectando…</span></p><h2>Conversas</h2></div><span class="talk-count" aria-label="<?= count($conversations) ?> conversas"><?= count($conversations) ?></span></header>
+        <header><div><p class="customer-eyebrow">TALK <span class="talk-sync-state" data-talk-sync-state role="status">Conectando…</span></p><h2>Conversas</h2></div><span class="talk-count" data-talk-total-count aria-label="<?= count($conversations) ?> conversas"><?= count($conversations) ?></span></header>
         <label class="talk-search"><span class="sr-only">Buscar conversas</span><input type="search" placeholder="Buscar nome, telefone ou unidade" data-talk-search></label>
-        <div class="talk-filters" aria-label="Filtros"><button class="active" type="button" data-talk-filter="all" aria-pressed="true">Todas</button><button type="button" data-talk-filter="queue" aria-pressed="false">Fila</button><button type="button" data-talk-filter="mine" aria-pressed="false">Minhas</button></div>
+        <div class="talk-filters" aria-label="Filtros"><button class="active" type="button" data-talk-filter="all" aria-pressed="true">Todas</button><button type="button" data-talk-filter="queue" aria-pressed="false">Fila <span data-talk-queue-count><?= (int)($queueCount ?? 0) ?></span></button><button type="button" data-talk-filter="mine" aria-pressed="false">Minhas <span data-talk-mine-count><?= (int)($mineCount ?? 0) ?></span></button></div>
         <div class="talk-list-body" aria-live="polite">
             <?php if (!$conversations): ?><div class="talk-empty"><strong>Nenhuma conversa disponível.</strong><p>Novas conversas aparecerão aqui quando o canal Talk estiver conectado.</p></div><?php else: ?>
                 <?php foreach ($conversations as $conversation):
