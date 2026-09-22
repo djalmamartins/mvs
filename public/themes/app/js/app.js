@@ -155,6 +155,16 @@ if (talkWorkspace?.dataset.syncUrl) {
             const state = await response.json();
             failures = 0;
             setTalkSyncState('Conectado');
+            const queueCount = talkWorkspace.querySelector('[data-talk-queue-count]');
+            const mineCount = talkWorkspace.querySelector('[data-talk-mine-count]');
+            const totalCount = talkWorkspace.querySelector('[data-talk-total-count]');
+            if (queueCount) queueCount.textContent = String(Number(state.queue_count || 0));
+            if (mineCount) mineCount.textContent = String(Number(state.mine_count || 0));
+            if (totalCount) {
+                const total = Number(state.queue_count || 0) + Number(state.mine_count || 0);
+                totalCount.textContent = String(total);
+                totalCount.setAttribute('aria-label', total + ' conversas');
+            }
             const revision = Number(state.revision || 0);
             if (lastRevision > 0 && revision > lastRevision) {
                 const composerBody = talkWorkspace.querySelector('[data-talk-composer-body]');
