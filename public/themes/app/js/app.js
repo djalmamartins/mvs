@@ -289,18 +289,21 @@ if (talkWorkspace?.dataset.syncUrl) {
             renderTalkConversations(state.conversations || []);
             const messageList = talkWorkspace.querySelector('[data-talk-messages]');
             if (messageList && Number(messageList.dataset.ticketId || 0) === Number(state.active_ticket_id || 0) && Array.isArray(state.messages)) {
-                const currentIds = [...messageList.querySelectorAll('[data-message-id]')].map(item => Number(item.dataset.messageId || 0));
-                const nextIds = state.messages.map(item => Number(item.id || 0));
-                if (currentIds.length !== nextIds.length || currentIds.some((id,index) => id !== nextIds[index])) {
+                const currentMessages = [...messageList.querySelectorAll('[data-message-id]')].map(item => ({id: Number(item.dataset.messageId || 0), delivery: item.dataset.deliveryStatus || ''}));
+                const nextMessages = state.messages.map(item => ({id: Number(item.id || 0), delivery: item.direction === 'outbound' ? (item.delivery_status || 'sent') : ''}));
+                if (currentMessages.length !== nextMessages.length || currentMessages.some((item,index) => item.id !== nextMessages[index].id || item.delivery !== nextMessages[index].delivery)) {
                     messageList.innerHTML = '';
                     state.messages.forEach(message => {
                         const article = document.createElement('article');
                         article.className = 'talk-message ' + (message.direction === 'outbound' ? 'is-outbound' : 'is-inbound');
                         article.dataset.messageId = String(Number(message.id || 0));
+                        article.dataset.deliveryStatus = message.direction === 'outbound' ? (message.delivery_status || 'sent') : '';
+                        if (message.delivery_status === 'failed') article.classList.add('has-delivery-failed');
                         const body = document.createElement('p');
                         body.textContent = message.body || '';
                         const meta = document.createElement('small');
-                        meta.textContent = [message.sender_name || 'Contato', message.sent_at || '', message.direction === 'outbound' ? (message.delivery_status || 'enviado') : ''].filter(Boolean).join(' · ');
+                        const deliveryLabels = {sent: 'Enviado', delivered: 'Entregue', read: 'Lido', failed: 'Falha no envio'};
+                        meta.textContent = [message.sender_name || 'Contato', message.sent_at || '', message.direction === 'outbound' ? (deliveryLabels[message.delivery_status] || message.delivery_status || 'Enviado') : ''].filter(Boolean).join(' · ');
                         article.append(body, meta); messageList.appendChild(article);
                     });
                     messageList.scrollTop = messageList.scrollHeight;
