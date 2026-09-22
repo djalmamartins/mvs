@@ -195,3 +195,27 @@ document.querySelectorAll('form[data-confirm]').forEach(form => {
         if (!window.confirm(message)) event.preventDefault();
     });
 });
+
+const talkAttachmentForm = document.querySelector('[data-talk-attachment-form]');
+if (talkAttachmentForm) {
+    const input = talkAttachmentForm.querySelector('[data-talk-attachment]');
+    let uploading = false;
+    talkAttachmentForm.addEventListener('submit', event => {
+        const file = input?.files?.[0];
+        if (uploading || !file) {
+            event.preventDefault();
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            event.preventDefault();
+            window.alert('O anexo deve ter no máximo 10 MB.');
+            return;
+        }
+        uploading = true;
+        const button = talkAttachmentForm.querySelector('button[type="submit"]');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Anexando…';
+        }
+    });
+}
