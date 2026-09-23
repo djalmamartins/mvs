@@ -1,1 +1,86 @@
-.talk-page{--talk-line:#e5e7eb;--talk-soft:#f7f7f8;--talk-muted:#737983;--talk-danger:#b42318;--talk-warning:#9a6700}.talk-page .knowledge-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}.talk-page .knowledge-header h1{margin:4px 0 5px;font:28px/34px "Gotham Medium",Arial,sans-serif}.talk-page .knowledge-header p{margin:0;color:var(--talk-muted)}.talk-page .support-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}.talk-page .support-editor-main,.talk-page .support-editor-sidebar{display:grid;gap:12px}.talk-page .studio-panel{background:#fff;border-radius:4px}.talk-page .studio-panel-body{padding:18px}.talk-page .studio-panel h2,.talk-page .studio-panel h3{margin:0 0 14px}.talk-list-filters{display:grid;grid-template-columns:minmax(260px,1fr) 190px auto;gap:10px;align-items:end;margin:0 0 12px;padding:12px;background:#fff;border-radius:4px}.talk-list-filters label{display:grid;gap:6px;color:var(--talk-muted);font-size:12px}.talk-list-filters select,.talk-filter-search{height:40px;border:1px solid var(--talk-line);border-radius:4px;background:#fff}.talk-list-filters select{padding:0 10px;color:inherit}.talk-filter-search{display:flex!important;grid-template-columns:20px 1fr!important;align-items:center;padding:0 10px;gap:6px}.talk-filter-search i{font-size:16px;color:var(--talk-muted)}.talk-filter-search input{width:100%;border:0;outline:0;background:transparent}.talk-filter-actions{display:flex;gap:7px}.talk-filter-actions .studio-btn{height:40px;white-space:nowrap}.talk-thread{display:flex;flex-direction:column;gap:10px;min-height:280px;max-height:56vh;overflow:auto;padding:14px;background:var(--talk-soft);border-radius:4px;scroll-behavior:smooth}.talk-message{width:min(78%,680px);padding:10px 12px;background:#fff;border-radius:4px;box-shadow:0 1px 2px rgba(20,20,24,.05)}.talk-message p{margin:5px 0 0;white-space:normal;overflow-wrap:anywhere}.talk-message small{color:var(--talk-muted)}.talk-message-outbound{align-self:flex-end;background:#f3eafa}.talk-message-inbound{align-self:flex-start}.talk-message-internal{align-self:center;width:min(90%,760px);background:#fff7df}.talk-attachments{display:grid;gap:10px;margin-top:16px}.talk-attachments h3{margin-bottom:2px}.talk-attachment-card{display:grid;grid-template-columns:minmax(120px,220px) minmax(0,1fr);gap:12px;align-items:center;padding:10px;background:var(--talk-soft);border-radius:4px}.talk-attachment-card audio,.talk-attachment-card video{width:100%;max-height:180px}.talk-media-preview{display:block;overflow:hidden;border-radius:4px;background:#fff}.talk-media-preview img{display:block;width:100%;height:140px;object-fit:cover}.talk-attachment-meta{min-width:0}.talk-attachment-meta strong,.talk-attachment-meta small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.talk-attachment-meta small{color:var(--talk-muted);margin:4px 0 9px}.talk-upload{margin-top:14px;padding:12px;background:var(--talk-soft);border-radius:4px}.talk-composer{position:sticky;bottom:0;margin-top:14px;padding:12px;background:#fff;border-top:1px solid var(--talk-line);z-index:3}.talk-composer textarea{resize:vertical;min-height:76px}.talk-composer-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px}.talk-composer-actions small{margin-right:auto;color:var(--talk-muted)}.talk-sla{display:grid;gap:8px}.talk-sla-item{padding:10px;background:var(--talk-soft);border-radius:4px}.talk-sla-item strong,.talk-sla-item span,.talk-sla-item small{display:block}.talk-sla-item span{margin:4px 0}.talk-sla-item.is-breached{background:#fff0ee;color:var(--talk-danger)}.talk-sla-item.is-warning{background:#fff8e5;color:var(--talk-warning)}.talk-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.talk-tags form{margin:0}.talk-tag{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 9px;border:0;border-radius:14px;background:#f0f1f4;color:#4e5665;cursor:pointer}.talk-tag:hover{background:#e7e8ec}.talk-actions-stack{display:grid;gap:8px}.talk-actions-stack form,.talk-actions-stack button{width:100%}@media(max-width:1100px){.talk-page .support-editor-layout{grid-template-columns:1fr}.talk-page .support-editor-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.talk-list-filters{grid-template-columns:1fr 180px}.talk-filter-actions{grid-column:1/-1}}@media(max-width:760px){.talk-page .knowledge-header{align-items:flex-start;flex-direction:column}.talk-page .support-editor-sidebar{grid-template-columns:1fr}.talk-list-filters{grid-template-columns:1fr}.talk-filter-actions{grid-column:auto}.talk-filter-actions .studio-btn{flex:1}.talk-thread{max-height:60vh;padding:10px}.talk-message{width:90%}.talk-composer{margin-left:-8px;margin-right:-8px}.talk-page .studio-panel-body{padding:14px}.talk-attachment-card{grid-template-columns:1fr}.talk-media-preview img{height:auto;max-height:260px;object-fit:contain}}
+/* Moves Talk — visual layer scoped strictly to .studio-page. Application Shell stays untouched. */
+.studio-page .talk-page{--talk-accent:#6e00b3;--talk-accent-soft:#f5edfa;--talk-ink:#172033;--talk-muted:#697386;--talk-line:#e6e8ee;--talk-soft:#f7f8fa;--talk-success:#16845b;--talk-warning:#a66500;--talk-danger:#b42318;display:block;max-width:none;margin:0;padding:0;color:var(--talk-ink)}
+.studio-page .talk-page *{box-sizing:border-box}
+.studio-page .talk-page .knowledge-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin:0 0 22px;padding:2px 0 18px;border-bottom:1px solid var(--talk-line)}
+.studio-page .talk-page .knowledge-header>div{min-width:0}
+.studio-page .talk-page .studio-eyebrow{margin:0 0 7px;color:var(--talk-accent);font-size:11px;font-weight:700;letter-spacing:.12em}
+.studio-page .talk-page .knowledge-header h1{margin:0;font:600 28px/1.2 "Gotham Medium",Arial,sans-serif;letter-spacing:-.02em;color:var(--talk-ink)}
+.studio-page .talk-page .knowledge-header p{max-width:760px;margin:7px 0 0;color:var(--talk-muted);font-size:13px;line-height:1.55}
+.studio-page .talk-page .knowledge-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0 0 14px!important}
+.studio-page .talk-page .studio-dashboard-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.studio-page .talk-page .studio-dashboard-kpis>article,.studio-page .talk-page .studio-dashboard-kpis>.studio-panel{position:relative;min-height:112px;padding:18px 20px;border:1px solid var(--talk-line);border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.studio-page .talk-page .studio-dashboard-kpis>article:before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:0 3px 3px 0;background:var(--talk-accent)}
+.studio-page .talk-page .studio-dashboard-kpis span{display:block;color:var(--talk-muted);font-size:12px}
+.studio-page .talk-page .studio-dashboard-kpis strong{display:block;margin-top:8px;font-size:28px;line-height:1;font-weight:650;color:var(--talk-ink)}
+.studio-page .talk-page .studio-panel{margin:0 0 12px;border:1px solid var(--talk-line);border-radius:8px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.025);overflow:hidden}
+.studio-page .talk-page .studio-panel-body{padding:20px}
+.studio-page .talk-page .studio-panel h2,.studio-page .talk-page .studio-panel h3{margin:0 0 15px;color:var(--talk-ink);font-size:15px;font-weight:650}
+.studio-page .talk-page .studio-panel p{line-height:1.55}
+.studio-page .talk-page .studio-table-wrap{width:100%;overflow:auto;border:1px solid var(--talk-line);border-radius:6px}
+.studio-page .talk-page .studio-table{width:100%;border-collapse:collapse;background:#fff;font-size:12px}
+.studio-page .talk-page .studio-table th{height:42px;padding:0 14px;background:#fafbfc;color:#667085;font-size:10px;font-weight:700;letter-spacing:.05em;text-align:left;text-transform:uppercase;white-space:nowrap;border-bottom:1px solid var(--talk-line)}
+.studio-page .talk-page .studio-table td{height:52px;padding:9px 14px;border-bottom:1px solid #eef0f3;vertical-align:middle;color:#344054}
+.studio-page .talk-page .studio-table tbody tr:last-child td{border-bottom:0}
+.studio-page .talk-page .studio-table tbody tr:hover td{background:#fbf9fd}
+.studio-page .talk-page .studio-table a{color:var(--talk-ink);text-decoration:none}
+.studio-page .talk-page .studio-table a:hover{color:var(--talk-accent)}
+.studio-page .talk-page .studio-status{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;background:var(--talk-accent-soft);color:var(--talk-accent);font-size:11px;font-weight:600}
+.studio-page .talk-page .knowledge-empty{display:flex;min-height:230px;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--talk-muted);gap:7px}
+.studio-page .talk-page .knowledge-empty i{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--talk-accent-soft);color:var(--talk-accent);font-size:20px}
+.studio-page .talk-page .knowledge-empty strong{color:var(--talk-ink);font-size:14px}
+.studio-page .talk-page .knowledge-empty span{max-width:420px;font-size:12px}
+.studio-page .talk-page .studio-btn{display:inline-flex;min-height:36px;align-items:center;justify-content:center;gap:7px;padding:0 12px;border:1px solid #d7dae2;border-radius:5px;background:#fff;color:#344054;font:600 12px/1 Arial,sans-serif;cursor:pointer;text-decoration:none;transition:.15s ease}
+.studio-page .talk-page .studio-btn:hover{border-color:#b8bec9;background:#f9fafb}
+.studio-page .talk-page .studio-btn-primary,.studio-page .talk-page .studio-btn.primary{border-color:var(--talk-accent);background:var(--talk-accent);color:#fff}
+.studio-page .talk-page .studio-btn-primary:hover,.studio-page .talk-page .studio-btn.primary:hover{filter:brightness(.94);background:var(--talk-accent);color:#fff}
+.studio-page .talk-page .studio-field{display:grid;gap:6px;margin:0 0 12px}
+.studio-page .talk-page .studio-field label{color:#475467;font-size:11px;font-weight:600}
+.studio-page .talk-page .studio-field input:not([type=checkbox]),.studio-page .talk-page .studio-field select,.studio-page .talk-page .studio-field textarea{width:100%;min-height:38px;padding:8px 10px;border:1px solid #d7dae2;border-radius:5px;background:#fff;color:var(--talk-ink);font:12px/1.4 Arial,sans-serif;outline:0}
+.studio-page .talk-page .studio-field textarea{min-height:82px;resize:vertical}
+.studio-page .talk-page .studio-field input:focus,.studio-page .talk-page .studio-field select:focus,.studio-page .talk-page .studio-field textarea:focus{border-color:var(--talk-accent);box-shadow:0 0 0 3px rgba(110,0,179,.08)}
+.studio-page .talk-page .talk-list-filters{display:grid;grid-template-columns:minmax(260px,1fr) 190px auto;gap:10px;align-items:end;margin:0 0 12px;padding:12px;border:1px solid var(--talk-line);border-radius:7px;background:#fff}
+.studio-page .talk-page .talk-list-filters label{display:grid;gap:6px;color:var(--talk-muted);font-size:11px;font-weight:600}
+.studio-page .talk-page .talk-list-filters select,.studio-page .talk-page .talk-filter-search{height:38px;border:1px solid var(--talk-line);border-radius:5px;background:#fff}
+.studio-page .talk-page .talk-list-filters select{padding:0 10px}
+.studio-page .talk-page .talk-filter-search{display:flex!important;align-items:center;gap:7px;padding:0 10px}
+.studio-page .talk-page .talk-filter-search input{width:100%;border:0;outline:0;background:transparent}
+.studio-page .talk-page .talk-filter-actions{display:flex;gap:7px}
+.studio-page .talk-page .support-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}
+.studio-page .talk-page .support-editor-main,.studio-page .talk-page .support-editor-sidebar{display:grid;gap:12px;min-width:0}
+.studio-page .talk-page .talk-thread{display:flex;min-height:360px;max-height:58vh;flex-direction:column;gap:9px;overflow:auto;padding:18px;background:#f6f7f9;border:1px solid var(--talk-line);border-radius:6px;scroll-behavior:smooth}
+.studio-page .talk-page .talk-message{width:min(76%,680px);padding:10px 12px;border:1px solid #eaecf0;border-radius:8px 8px 8px 2px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.studio-page .talk-page .talk-message p{margin:5px 0 0;white-space:normal;overflow-wrap:anywhere;font-size:13px;line-height:1.5}
+.studio-page .talk-page .talk-message small{color:var(--talk-muted);font-size:10px}
+.studio-page .talk-page .talk-message-outbound{align-self:flex-end;border-color:#e7d8f0;border-radius:8px 8px 2px 8px;background:var(--talk-accent-soft)}
+.studio-page .talk-page .talk-message-inbound{align-self:flex-start}
+.studio-page .talk-page .talk-message-internal{align-self:center;width:min(90%,760px);border-color:#f4dfae;background:#fff9e9}
+.studio-page .talk-page .talk-composer{position:sticky;bottom:0;z-index:3;margin-top:10px;padding:12px;border:1px solid var(--talk-line);border-radius:7px;background:#fff;box-shadow:0 -4px 16px rgba(16,24,40,.035)}
+.studio-page .talk-page .talk-composer textarea{resize:vertical;min-height:74px}
+.studio-page .talk-page .talk-composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}
+.studio-page .talk-page .talk-composer-actions small{margin-right:auto;color:var(--talk-muted)}
+.studio-page .talk-page .talk-attachments{display:grid;gap:9px;margin-top:14px}
+.studio-page .talk-page .talk-attachment-card{display:grid;grid-template-columns:minmax(120px,210px) minmax(0,1fr);gap:12px;align-items:center;padding:10px;border:1px solid var(--talk-line);border-radius:6px;background:var(--talk-soft)}
+.studio-page .talk-page .talk-attachment-card audio,.studio-page .talk-page .talk-attachment-card video{width:100%;max-height:180px}
+.studio-page .talk-page .talk-media-preview{display:block;overflow:hidden;border-radius:5px;background:#fff}
+.studio-page .talk-page .talk-media-preview img{display:block;width:100%;height:140px;object-fit:cover}
+.studio-page .talk-page .talk-attachment-meta{min-width:0}
+.studio-page .talk-page .talk-attachment-meta strong,.studio-page .talk-page .talk-attachment-meta small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-page .talk-page .talk-attachment-meta small{margin:4px 0 9px;color:var(--talk-muted)}
+.studio-page .talk-page .talk-upload{margin-top:12px;padding:12px;border:1px dashed #d7dae2;border-radius:6px;background:var(--talk-soft)}
+.studio-page .talk-page .talk-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.studio-page .talk-page .talk-tags form{margin:0}
+.studio-page .talk-page .talk-tag{display:inline-flex;min-height:28px;align-items:center;gap:5px;padding:0 9px;border:0;border-radius:999px;background:var(--talk-accent-soft);color:var(--talk-accent);font-size:11px;cursor:pointer}
+.studio-page .talk-page .talk-sla{display:grid;gap:8px}
+.studio-page .talk-page .talk-sla-item{padding:11px;border:1px solid var(--talk-line);border-radius:6px;background:var(--talk-soft)}
+.studio-page .talk-page .talk-sla-item strong,.studio-page .talk-page .talk-sla-item span,.studio-page .talk-page .talk-sla-item small{display:block}
+.studio-page .talk-page .talk-sla-item span{margin:4px 0}
+.studio-page .talk-page .talk-sla-item.is-breached{border-color:#ffd1cc;background:#fff2f0;color:var(--talk-danger)}
+.studio-page .talk-page .talk-sla-item.is-warning{border-color:#f8dfa6;background:#fff9e8;color:var(--talk-warning)}
+.studio-page .talk-page .talk-actions-stack{display:grid;gap:8px}
+.studio-page .talk-page .talk-actions-stack form,.studio-page .talk-page .talk-actions-stack button{width:100%}
+.studio-page .talk-page form{margin-top:0}
+.studio-page .talk-page section.studio-panel+section.studio-panel{margin-top:12px}
+@media(max-width:1180px){.studio-page .talk-page .studio-dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .talk-page .support-editor-layout{grid-template-columns:minmax(0,1fr) 290px}}
+@media(max-width:960px){.studio-page .talk-page .support-editor-layout{grid-template-columns:1fr}.studio-page .talk-page .support-editor-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .talk-page .talk-list-filters{grid-template-columns:1fr 180px}.studio-page .talk-page .talk-filter-actions{grid-column:1/-1}}
+@media(max-width:700px){.studio-page .talk-page .knowledge-header{align-items:flex-start;flex-direction:column}.studio-page .talk-page .studio-dashboard-kpis{grid-template-columns:1fr 1fr}.studio-page .talk-page .support-editor-sidebar{grid-template-columns:1fr}.studio-page .talk-page .talk-list-filters{grid-template-columns:1fr}.studio-page .talk-page .talk-filter-actions{grid-column:auto}.studio-page .talk-page .talk-filter-actions .studio-btn{flex:1}.studio-page .talk-page .talk-thread{max-height:62vh;padding:10px}.studio-page .talk-page .talk-message{width:91%}.studio-page .talk-page .studio-panel-body{padding:14px}.studio-page .talk-page .talk-attachment-card{grid-template-columns:1fr}.studio-page .talk-page .talk-media-preview img{height:auto;max-height:260px;object-fit:contain}}
+@media(max-width:480px){.studio-page .talk-page .studio-dashboard-kpis{grid-template-columns:1fr}.studio-page .talk-page .knowledge-header h1{font-size:24px}}
