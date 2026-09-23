@@ -11,7 +11,7 @@ public function dashboard():void{
 $user=Auth::user();if($user===null){Response::to('/login');}
 $this->talk->heartbeat((int)$user->id);$this->talk->autoAssign();$this->jack->processEligible();
 $view=(string)($_GET['view']??'inbox');$allowed=['inbox','queue','contacts','history','connection','jack','team','settings'];if(!in_array($view,$allowed,true))$view='inbox';
-$conversations=$this->talk->conversations();$visible=[];foreach($conversations as $conversation){$ticketId=(int)($conversation['ticket_id']??0);if($ticketId>0&&$this->talk->canViewTicket($ticketId,(int)$user->id))$visible[]=$conversation;}
+$conversations=$this->talk->conversations();$visible=[];$scope=(string)($_GET['scope']??'all');foreach($conversations as $conversation){$ticketId=(int)($conversation['ticket_id']??0);if($ticketId<=0||!$this->talk->canViewTicket($ticketId,(int)$user->id))continue;$status=(string)($conversation['ticket_status']??$conversation['status']??'');if($scope==='attending'&&!in_array($status,['assigned','open'],true))continue;if($scope==='unread'&&(int)($conversation['unread_count']??0)<=0)continue;$visible[]=$conversation;}
 $data=['title'=>'Talk','productName'=>'Talk','activeProduct'=>'talk','currentPage'=>'dashboard','talkView'=>$view,'conversations'=>$visible,'whatsappStatus'=>$this->outbound->whatsAppStatus()];
 if($view==='queue'){$data['queue']=$this->metadata->search(['q'=>'','status'=>'queued','priority'=>'','queue_id'=>0,'tag_id'=>0]);}
 elseif($view==='contacts'){$data['contacts']=$this->talk->contacts();}
