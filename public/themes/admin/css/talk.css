@@ -217,3 +217,16 @@
 
 .studio-page .talk-channel-state.is-offline b{background:#98a2b3}.studio-page .talk-channel-state.is-offline{color:#667085}
 .studio-page .talk-inbox-row-meta{display:flex;align-items:center;justify-content:space-between;margin-top:4px}.studio-page .talk-inbox-row-meta em{margin-top:0}.studio-page .talk-inbox-row-meta b{display:grid;min-width:18px;height:18px;padding:0 5px;place-items:center;border-radius:9px;background:#ef4444;color:#fff;font-size:9px;font-weight:700}
+
+/* Talk inherits Support visual foundation. Keep only WhatsApp workspace-specific structure here. */
+.support-workspace-page.talk-page{max-width:1500px;color:#19223b;font-family:inherit}
+.support-workspace-page.talk-page .talk-home-shell{border-color:#dfe2e8;border-radius:5px}
+.support-workspace-page.talk-page .talk-inbox-list,.support-workspace-page.talk-page .talk-home-empty{border-color:#e8e9ed}
+.support-workspace-page.talk-page .talk-inbox-search{height:38px;border-color:#dfe2e8;border-radius:4px}
+.support-workspace-page.talk-page .talk-inbox-tabs{border-color:#e8e9ed}
+.support-workspace-page.talk-page .talk-inbox-tabs a{font-family:inherit;font-size:var(--moves-font-base);font-weight:400}
+.support-workspace-page.talk-page .talk-inbox-row-copy strong{font-family:"Gotham Medium",Arial,sans-serif;font-size:var(--moves-font-base);font-weight:400}
+.support-workspace-page.talk-page .talk-inbox-row-copy small,.support-workspace-page.talk-page .talk-inbox-row-copy em,.support-workspace-page.talk-page .talk-list-empty span{font-family:inherit;font-size:var(--moves-font-meta);font-weight:400}
+.support-workspace-page.talk-page .talk-home-empty h2,.support-workspace-page.talk-page .talk-list-empty strong{font-family:"Gotham Medium",Arial,sans-serif;font-size:var(--moves-font-component);font-weight:400}
+.support-workspace-page.talk-page .talk-home-empty p{font-family:inherit;font-size:var(--moves-font-base);line-height:var(--moves-line-base)}
+.support-workspace-page.talk-page .talk-context-tabs button{font-family:inherit;font-size:var(--moves-font-base);font-weight:400}
