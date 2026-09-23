@@ -245,3 +245,7 @@
 .support-workspace-page.talk-page .talk-connection-checks span{color:#71809a;font-size:var(--moves-font-base)}
 .support-workspace-page.talk-page .talk-connection-checks strong{color:#29334a;font:var(--moves-font-base)/var(--moves-line-base) "Gotham Medium",Arial,sans-serif;font-weight:400}
 @media(max-width:900px){.support-workspace-page.talk-page .talk-module-grid{grid-template-columns:1fr}}
+
+.support-workspace-page.talk-page .talk-inbox-tabs-three{display:grid;grid-template-columns:repeat(3,1fr)}
+.support-workspace-page.talk-page .talk-inbox-tabs-three button{appearance:none;border:0;border-bottom:2px solid transparent;background:transparent;padding:12px 6px;color:#59657a;font:inherit;cursor:pointer}
+.support-workspace-page.talk-page .talk-inbox-tabs-three button.active{border-bottom-color:#6e00b3;color:#6e00b3;background:#faf7fc}
