@@ -214,3 +214,6 @@
 .studio-page .talk-list-empty{display:flex;min-height:220px;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:22px;text-align:center;color:#667085}.studio-page .talk-list-empty i{font-size:22px;color:#98a2b3}.studio-page .talk-list-empty strong{color:var(--talk-ink);font-size:12px}.studio-page .talk-list-empty span{font-size:10px;line-height:1.5}
 @media(max-width:1100px){.studio-page .talk-home-shell{grid-template-columns:250px minmax(380px,1fr)}.studio-page .talk-home-context{display:none}}
 @media(max-width:760px){.studio-page .talk-home-shell{grid-template-columns:1fr}.studio-page .talk-home-empty{display:none}.studio-page .talk-homebar-actions .talk-channel-state{display:none}}
+
+.studio-page .talk-channel-state.is-offline b{background:#98a2b3}.studio-page .talk-channel-state.is-offline{color:#667085}
+.studio-page .talk-inbox-row-meta{display:flex;align-items:center;justify-content:space-between;margin-top:4px}.studio-page .talk-inbox-row-meta em{margin-top:0}.studio-page .talk-inbox-row-meta b{display:grid;min-width:18px;height:18px;padding:0 5px;place-items:center;border-radius:9px;background:#ef4444;color:#fff;font-size:9px;font-weight:700}
