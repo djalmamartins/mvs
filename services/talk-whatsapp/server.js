@@ -9,6 +9,7 @@ const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const app=express(),port=Number(process.env.TALK_BAILEYS_PORT||3011);
 const authDir=process.env.TALK_BAILEYS_AUTH_DIR||path.join(__dirname,'baileys_auth');
 const bridgeToken=String(process.env.TALK_BAILEYS_BRIDGE_TOKEN||'');
+if(!bridgeToken) throw new Error('TALK_BAILEYS_BRIDGE_TOKEN é obrigatório');
 const movesInbound=String(process.env.TALK_MOVES_INBOUND_URL||'http://127.0.0.1/talk/bridge/inbound');
 const logger=pino({level:process.env.TALK_BAILEYS_LOG_LEVEL||'silent'});
 let sock=null,state={status:'starting',connected:false,qr:null,detail:'Inicializando WhatsApp',profile:null};
