@@ -18,7 +18,7 @@ if($view==='queue'){$data['queue']=$this->metadata->search(['q'=>'','status'=>'q
 elseif($view==='contacts'){$data['contacts']=$this->talk->contacts();}
 elseif($view==='history'){$data['tickets']=$this->metadata->search(['q'=>'','status'=>'closed','priority'=>'','queue_id'=>0,'tag_id'=>0]);}
 elseif($view==='connection'){$data['channels']=$this->talk->channels();}
-elseif($view==='jack'){$data['jack_interactions']=$this->jack->interactions();}
+elseif($view==='jack'){$data['jack_interactions']=$this->talk->jackInteractions();}
 elseif($view==='team'){$data['users']=$this->talk->usersWithPresence();}
 elseif($view==='settings'){$data['settings']=$this->talk->settings();}
 echo $this->view->render('pages/talk-inbox',$data);
