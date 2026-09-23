@@ -10,7 +10,7 @@ public function __construct(Router $router){parent::__construct($router);$this->
 public function dashboard(array $route=[]):void{
 $user=Auth::user();if($user===null){Response::to('/login');}
 $this->talk->heartbeat((int)$user->id);$this->talk->autoAssign();$this->jack->processEligible();
-$view=(string)($route['view']??$_GET['view']??'inbox');$allowed=['inbox','queue','contacts','history','connection','jack','team','settings'];if(!in_array($view,$allowed,true))$view='inbox';
+$legacyView=(string)($_GET['view']??'');if($legacyView!==''&&empty($route['view'])){Response::to('/talk/view/'.rawurlencode($legacyView));}$view=(string)($route['view']??'inbox');$allowed=['inbox','queue','contacts','history','connection','jack','team','settings'];if(!in_array($view,$allowed,true))$view='inbox';
 $conversations=$this->talk->conversations();$visible=[];$scope=(string)($_GET['scope']??'all');foreach($conversations as $conversation){$ticketId=(int)($conversation['ticket_id']??0);if($ticketId<=0||!$this->talk->canViewTicket($ticketId,(int)$user->id))continue;$status=(string)($conversation['ticket_status']??$conversation['status']??'');if($scope==='attending'&&!in_array($status,['assigned','open'],true))continue;if($scope==='unread'&&(int)($conversation['unread_count']??0)<=0)continue;$visible[]=$conversation;}
 $selected = null;
 $selectedId = max(0, (int) ($_GET['ticket'] ?? 0));
