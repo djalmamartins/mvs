@@ -41,7 +41,7 @@ $canManage = $canManage ?? false;
     <?php endif; ?>
 
     <?php if ($currentPage === 'queue'): ?>
-        <div class="knowledge-header-actions" style="margin-bottom:16px">
+        <div class="knowledge-header-actions talk-page-actions">
             <form method="post" action="/talk/simulate">
                 <?= $this->csrf() ?>
                 <button class="studio-btn studio-btn-primary" type="submit"><i class="icon-add-outline"></i> Criar atendimento de simulação</button>
