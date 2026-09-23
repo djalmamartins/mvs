@@ -11,6 +11,12 @@ final class WhatsAppTransportFactory
     {
         $driver = strtolower(trim(self::env('TALK_WHATSAPP_DRIVER', 'null')));
 
+        if ($driver === 'baileys') {
+            $url = trim(self::env('TALK_BAILEYS_URL', 'http://127.0.0.1:3011'));
+            $token = trim(self::env('TALK_BAILEYS_BRIDGE_TOKEN'));
+            return new BaileysWhatsAppTransport($url !== '' ? $url : 'http://127.0.0.1:3011', $token);
+        }
+
         if ($driver === 'meta_cloud') {
             $phoneNumberId = trim(self::env('TALK_WHATSAPP_PHONE_NUMBER_ID'));
             $accessToken = trim(self::env('TALK_WHATSAPP_ACCESS_TOKEN'));
