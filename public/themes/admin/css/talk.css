@@ -197,3 +197,20 @@
 @media(max-width:1200px){.studio-page .talk-inbox-shell{grid-template-columns:240px minmax(0,1fr)}.studio-page .talk-inbox-shell>.talk-attendance-layout{grid-template-columns:minmax(380px,1fr) 270px}}
 @media(max-width:980px){.studio-page.talk-inbox-page{height:auto;overflow:visible}.studio-page .talk-inbox-shell{height:auto;min-height:0;grid-template-columns:1fr}.studio-page .talk-inbox-list{display:none}.studio-page .talk-inbox-shell>.talk-attendance-layout{grid-template-columns:1fr}.studio-page .talk-inbox-shell .talk-conversation-panel{min-height:650px}.studio-page .talk-inbox-shell .talk-context-column{display:grid;grid-template-columns:repeat(2,1fr);max-height:none}.studio-page .talk-inbox-shell .talk-context-tabs{grid-column:1/-1}.studio-page .talk-inbox-shell .talk-thread{min-height:420px}}
 @media(max-width:700px){.studio-page .talk-inbox-shell .talk-context-column{grid-template-columns:1fr}.studio-page .talk-inbox-topbar{border-radius:7px 7px 0 0}}
+
+/* /talk is the WhatsApp inbox — reference layout */
+.studio-page .talk-homebar{display:flex;height:64px;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--talk-line);background:#fff}
+.studio-page .talk-brand,.studio-page .talk-homebar-actions{display:flex;align-items:center;gap:10px}
+.studio-page .talk-brand h1{margin:0;font-size:22px;line-height:1;color:#20123a}
+.studio-page .talk-brand p{margin:3px 0 0;color:#667085;font-size:10px}
+.studio-page .talk-whatsapp-mark{display:grid;width:30px;height:30px;place-items:center;border-radius:50%;background:#2dbb70;color:#fff;font-size:17px}
+.studio-page .talk-whatsapp-mark.large{width:48px;height:48px;margin:0 auto 12px;font-size:25px}
+.studio-page .talk-channel-state{font-size:10px;color:#344054}.studio-page .talk-channel-state b{display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:50%;background:#2dbb70}
+.studio-page .talk-home-shell{display:grid;grid-template-columns:280px minmax(420px,1fr) 300px;height:calc(100vh - 142px);min-height:620px;border:1px solid var(--talk-line);border-radius:9px;overflow:hidden;background:#fff}
+.studio-page .talk-home-empty{display:grid;place-items:center;border-right:1px solid var(--talk-line);background:#fff;text-align:center}
+.studio-page .talk-home-empty>div{max-width:380px;padding:30px}.studio-page .talk-home-empty h2{margin:0 0 8px;font-size:17px}.studio-page .talk-home-empty p{margin:0;color:#667085;font-size:11px;line-height:1.6}
+.studio-page .talk-home-context{overflow:auto;background:#fff}.studio-page .talk-home-context .talk-context-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--talk-line)}
+.studio-page .talk-home-context .talk-context-tabs button{height:48px;border:0;border-bottom:2px solid transparent;background:#fff;color:#667085;font-size:10px}.studio-page .talk-home-context .talk-context-tabs button.active{border-color:var(--talk-accent);color:var(--talk-accent)}
+.studio-page .talk-list-empty{display:flex;min-height:220px;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:22px;text-align:center;color:#667085}.studio-page .talk-list-empty i{font-size:22px;color:#98a2b3}.studio-page .talk-list-empty strong{color:var(--talk-ink);font-size:12px}.studio-page .talk-list-empty span{font-size:10px;line-height:1.5}
+@media(max-width:1100px){.studio-page .talk-home-shell{grid-template-columns:250px minmax(380px,1fr)}.studio-page .talk-home-context{display:none}}
+@media(max-width:760px){.studio-page .talk-home-shell{grid-template-columns:1fr}.studio-page .talk-home-empty{display:none}.studio-page .talk-homebar-actions .talk-channel-state{display:none}}
