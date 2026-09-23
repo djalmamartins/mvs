@@ -150,3 +150,50 @@
 @media(max-width:1180px){.studio-page .talk-page .talk-attendance-layout{grid-template-columns:minmax(480px,1fr) 290px}.studio-page .talk-page .talk-attendance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:960px){.studio-page .talk-page .talk-attendance-layout{grid-template-columns:1fr}.studio-page .talk-page .talk-context-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .talk-page .talk-context-tabs{grid-column:1/-1}.studio-page .talk-page .talk-conversation-panel .talk-thread{max-height:58vh}}
 @media(max-width:700px){.studio-page .talk-page .talk-context-column{grid-template-columns:1fr}.studio-page .talk-page .talk-attendance-kpis{grid-template-columns:1fr 1fr}.studio-page .talk-page .talk-contact-title{align-items:flex-start}.studio-page .talk-page .talk-conversation-panel .talk-thread{padding:12px}.studio-page .talk-page .talk-conversation-toolbar{padding:9px 12px}}
+
+/* Talk inbox — faithful implementation of the approved reference, scoped to studio-page */
+.studio-page.talk-inbox-page{height:calc(100vh - 72px);overflow:hidden}
+.studio-page .talk-inbox-topbar{min-height:64px;margin:0;padding:8px 14px;border:1px solid var(--talk-line);border-bottom:0;border-radius:10px 10px 0 0;background:#fff}
+.studio-page .talk-inbox-topbar .studio-eyebrow{display:none}
+.studio-page .talk-inbox-topbar .talk-contact-avatar{width:38px;height:38px;flex-basis:38px}
+.studio-page .talk-inbox-kpis{display:none}
+.studio-page .talk-inbox-shell{display:grid;grid-template-columns:280px minmax(0,1fr);height:calc(100vh - 150px);min-height:620px;border:1px solid var(--talk-line);border-radius:0 0 10px 10px;background:#fff;overflow:hidden}
+.studio-page .talk-inbox-list{display:flex;min-width:0;flex-direction:column;border-right:1px solid var(--talk-line);background:#fff}
+.studio-page .talk-inbox-tabs{display:grid;grid-template-columns:repeat(4,1fr);min-height:48px;border-bottom:1px solid var(--talk-line)}
+.studio-page .talk-inbox-tabs a{display:flex;align-items:center;justify-content:center;border-bottom:2px solid transparent;color:#475467;font-size:10px;font-weight:650;text-decoration:none}
+.studio-page .talk-inbox-tabs a.active{border-color:var(--talk-accent);color:var(--talk-accent);background:#fbf8fd}
+.studio-page .talk-inbox-search{display:flex;align-items:center;gap:7px;margin:9px;padding:0 10px;height:36px;border:1px solid var(--talk-line);border-radius:6px;background:#fff}
+.studio-page .talk-inbox-search i{color:#98a2b3}
+.studio-page .talk-inbox-search input{width:100%;border:0;outline:0;background:transparent;font-size:11px}
+.studio-page .talk-inbox-list-body{min-height:0;overflow:auto}
+.studio-page .talk-inbox-row{display:flex;gap:9px;min-height:70px;padding:10px;border-bottom:1px solid #f0f1f3;color:var(--talk-ink);text-decoration:none}
+.studio-page .talk-inbox-row.active{background:linear-gradient(90deg,#f7f1fb,#f0e3fa)}
+.studio-page .talk-inbox-row .talk-contact-avatar{width:36px;height:36px;flex-basis:36px}
+.studio-page .talk-inbox-row-copy{display:grid;min-width:0;grid-template-columns:1fr;align-content:start}
+.studio-page .talk-inbox-row-copy strong{font-size:11px}
+.studio-page .talk-inbox-row-copy small{overflow:hidden;margin-top:3px;color:#667085;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.studio-page .talk-inbox-row-copy em{justify-self:start;margin-top:4px;padding:2px 5px;border-radius:3px;background:#f2f4f7;color:#667085;font-size:8px;font-style:normal}
+.studio-page .talk-inbox-shell>.talk-attendance-layout{display:grid;grid-template-columns:minmax(420px,1fr) 300px;min-width:0;gap:0}
+.studio-page .talk-inbox-shell .talk-conversation-column{min-width:0;border-right:1px solid var(--talk-line)}
+.studio-page .talk-inbox-shell .talk-conversation-panel{height:100%;margin:0;border:0;border-radius:0;box-shadow:none}
+.studio-page .talk-inbox-shell .talk-conversation-panel>.studio-panel-body{display:flex;height:100%;min-height:0;flex-direction:column}
+.studio-page .talk-inbox-shell .talk-conversation-toolbar{flex:0 0 58px}
+.studio-page .talk-inbox-shell .talk-thread{flex:1;min-height:0;max-height:none;overflow:auto;background:#fff}
+.studio-page .talk-inbox-shell .talk-message{max-width:72%;border:0;background:#f4f5f7;box-shadow:none}
+.studio-page .talk-inbox-shell .talk-message-outbound{background:#eee3fa}
+.studio-page .talk-inbox-shell .talk-composer{position:static;flex:0 0 auto;margin:10px 14px 12px;border:1px solid #dfe3ea;border-radius:7px}
+.studio-page .talk-inbox-shell .talk-composer textarea{min-height:54px;border:0;background:#fff;box-shadow:none}
+.studio-page .talk-inbox-shell .talk-upload,.studio-page .talk-inbox-shell .talk-attachments,.studio-page .talk-inbox-shell .studio-alert{flex:0 0 auto}
+.studio-page .talk-inbox-shell .talk-context-column{position:static;display:block;max-height:100%;overflow:auto;padding:0;background:#fff}
+.studio-page .talk-inbox-shell .talk-context-tabs{position:sticky;top:0;z-index:3;grid-template-columns:repeat(3,1fr);padding:0;border:0;border-bottom:1px solid var(--talk-line);border-radius:0;background:#fff}
+.studio-page .talk-inbox-shell .talk-context-tabs button{height:48px;border-radius:0;border-bottom:2px solid transparent}
+.studio-page .talk-inbox-shell .talk-context-tabs button.active{border-bottom-color:var(--talk-accent);background:#fff}
+.studio-page .talk-inbox-shell .talk-context-column .studio-panel{margin:0;border:0;border-bottom:1px solid var(--talk-line);border-radius:0;box-shadow:none}
+.studio-page .talk-inbox-shell .talk-context-column .studio-panel-body{padding:14px}
+.studio-page .talk-inbox-shell .talk-context-column .studio-panel:first-of-type .studio-panel-body{padding-top:16px}
+.studio-page .talk-inbox-shell .talk-context-column .talk-actions-stack{grid-template-columns:1fr}
+.studio-page .talk-inbox-shell .talk-context-column .talk-actions-stack .studio-btn{justify-content:center}
+.studio-page .talk-inbox-shell .support-editor-main>section.studio-panel:not(.talk-conversation-panel){display:none}
+@media(max-width:1200px){.studio-page .talk-inbox-shell{grid-template-columns:240px minmax(0,1fr)}.studio-page .talk-inbox-shell>.talk-attendance-layout{grid-template-columns:minmax(380px,1fr) 270px}}
+@media(max-width:980px){.studio-page.talk-inbox-page{height:auto;overflow:visible}.studio-page .talk-inbox-shell{height:auto;min-height:0;grid-template-columns:1fr}.studio-page .talk-inbox-list{display:none}.studio-page .talk-inbox-shell>.talk-attendance-layout{grid-template-columns:1fr}.studio-page .talk-inbox-shell .talk-conversation-panel{min-height:650px}.studio-page .talk-inbox-shell .talk-context-column{display:grid;grid-template-columns:repeat(2,1fr);max-height:none}.studio-page .talk-inbox-shell .talk-context-tabs{grid-column:1/-1}.studio-page .talk-inbox-shell .talk-thread{min-height:420px}}
+@media(max-width:700px){.studio-page .talk-inbox-shell .talk-context-column{grid-template-columns:1fr}.studio-page .talk-inbox-topbar{border-radius:7px 7px 0 0}}
