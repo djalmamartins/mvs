@@ -110,3 +110,43 @@
 .studio-page .talk-page .talk-sla-item small{margin-top:3px;color:inherit;opacity:.78}
 .studio-page .talk-page input[type=checkbox]{accent-color:var(--talk-accent)}
 @media(max-width:960px){.studio-page .talk-page .support-editor-sidebar{position:static;max-height:none;overflow:visible}}
+
+/* Atendimento — layout operacional final */
+.studio-page .talk-page .talk-attendance-header{margin-bottom:12px;padding-bottom:12px}
+.studio-page .talk-page .talk-contact-title{display:flex;align-items:center;gap:12px}
+.studio-page .talk-page .talk-contact-avatar{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border-radius:50%;background:var(--talk-accent-soft);color:var(--talk-accent);font-size:15px;font-weight:700}
+.studio-page .talk-page .talk-contact-title h1{font-size:20px}
+.studio-page .talk-page .talk-contact-title p{margin-top:4px}
+.studio-page .talk-page .talk-attendance-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.studio-page .talk-page .talk-attendance-kpis>article{min-height:74px;padding:12px 14px}
+.studio-page .talk-page .talk-attendance-kpis>article:before{top:12px;bottom:12px}
+.studio-page .talk-page .talk-attendance-kpis strong{margin-top:5px;font-size:13px;line-height:1.3}
+.studio-page .talk-page .talk-attendance-kpis small{display:block;margin-top:3px;color:var(--talk-muted);font-size:10px}
+.studio-page .talk-page .talk-attendance-layout{grid-template-columns:minmax(520px,1fr) 330px;gap:10px}
+.studio-page .talk-page .talk-conversation-panel{overflow:visible}
+.studio-page .talk-page .talk-conversation-panel>.studio-panel-body{padding:0}
+.studio-page .talk-page .talk-conversation-toolbar{display:flex;min-height:58px;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--talk-line)}
+.studio-page .talk-page .talk-conversation-toolbar h2{margin:0 0 2px;font-size:14px}
+.studio-page .talk-page .talk-conversation-toolbar small{color:var(--talk-muted);font-size:10px}
+.studio-page .talk-page .talk-conversation-panel .talk-thread{min-height:430px;max-height:calc(100vh - 365px);border:0;border-radius:0;background:#f5f6f8;padding:18px 20px}
+.studio-page .talk-page .talk-conversation-panel .talk-attachments{padding:0 16px}
+.studio-page .talk-page .talk-conversation-panel .talk-upload{margin:10px 16px}
+.studio-page .talk-page .talk-conversation-panel>.studio-panel-body>.studio-alert{margin:10px 16px}
+.studio-page .talk-page .talk-conversation-panel .talk-composer{margin:0;border:0;border-top:1px solid var(--talk-line);border-radius:0;box-shadow:none;padding:12px 14px}
+.studio-page .talk-page .talk-conversation-panel .talk-composer .studio-field{margin-bottom:0}
+.studio-page .talk-page .talk-conversation-panel .talk-composer label{display:none}
+.studio-page .talk-page .talk-conversation-panel .talk-composer textarea{min-height:62px;border-color:#e0e3e8;background:#fafbfc}
+.studio-page .talk-page .talk-context-column{top:10px;gap:8px}
+.studio-page .talk-page .talk-context-tabs{display:grid;grid-template-columns:repeat(3,1fr);padding:4px;border:1px solid var(--talk-line);border-radius:7px;background:#fff}
+.studio-page .talk-page .talk-context-tabs button{height:32px;border:0;border-radius:4px;background:transparent;color:var(--talk-muted);font-size:11px;font-weight:600;cursor:pointer}
+.studio-page .talk-page .talk-context-tabs button.active{background:var(--talk-accent-soft);color:var(--talk-accent)}
+.studio-page .talk-page .talk-context-column .studio-panel-body{padding:14px}
+.studio-page .talk-page .talk-context-column h3{font-size:12px;margin-bottom:10px}
+.studio-page .talk-page .talk-context-column p{margin:7px 0;font-size:11px}
+.studio-page .talk-page .talk-context-column .studio-field{margin-bottom:8px}
+.studio-page .talk-page .talk-context-column .studio-btn{min-height:32px;font-size:11px}
+.studio-page .talk-page .talk-context-column .talk-sla-item{padding:8px 9px}
+.studio-page .talk-page .talk-context-column .talk-tags{margin-bottom:8px}
+@media(max-width:1180px){.studio-page .talk-page .talk-attendance-layout{grid-template-columns:minmax(480px,1fr) 290px}.studio-page .talk-page .talk-attendance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:960px){.studio-page .talk-page .talk-attendance-layout{grid-template-columns:1fr}.studio-page .talk-page .talk-context-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .talk-page .talk-context-tabs{grid-column:1/-1}.studio-page .talk-page .talk-conversation-panel .talk-thread{max-height:58vh}}
+@media(max-width:700px){.studio-page .talk-page .talk-context-column{grid-template-columns:1fr}.studio-page .talk-page .talk-attendance-kpis{grid-template-columns:1fr 1fr}.studio-page .talk-page .talk-contact-title{align-items:flex-start}.studio-page .talk-page .talk-conversation-panel .talk-thread{padding:12px}.studio-page .talk-page .talk-conversation-toolbar{padding:9px 12px}}
