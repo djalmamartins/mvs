@@ -84,3 +84,29 @@
 @media(max-width:960px){.studio-page .talk-page .support-editor-layout{grid-template-columns:1fr}.studio-page .talk-page .support-editor-sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-page .talk-page .talk-list-filters{grid-template-columns:1fr 180px}.studio-page .talk-page .talk-filter-actions{grid-column:1/-1}}
 @media(max-width:700px){.studio-page .talk-page .knowledge-header{align-items:flex-start;flex-direction:column}.studio-page .talk-page .studio-dashboard-kpis{grid-template-columns:1fr 1fr}.studio-page .talk-page .support-editor-sidebar{grid-template-columns:1fr}.studio-page .talk-page .talk-list-filters{grid-template-columns:1fr}.studio-page .talk-page .talk-filter-actions{grid-column:auto}.studio-page .talk-page .talk-filter-actions .studio-btn{flex:1}.studio-page .talk-page .talk-thread{max-height:62vh;padding:10px}.studio-page .talk-page .talk-message{width:91%}.studio-page .talk-page .studio-panel-body{padding:14px}.studio-page .talk-page .talk-attachment-card{grid-template-columns:1fr}.studio-page .talk-page .talk-media-preview img{height:auto;max-height:260px;object-fit:contain}}
 @media(max-width:480px){.studio-page .talk-page .studio-dashboard-kpis{grid-template-columns:1fr}.studio-page .talk-page .knowledge-header h1{font-size:24px}}
+/* Workspace finishing pass */
+.studio-page .talk-page .talk-page-actions{margin-bottom:14px!important}
+.studio-page .talk-page .studio-panel-body>form:not(.talk-composer):not(.talk-list-filters){max-width:760px}
+.studio-page .talk-page .studio-panel-body>h2+form,.studio-page .talk-page .studio-panel-body>h3+form{padding-top:2px}
+.studio-page .talk-page .studio-panel-body>p{margin:8px 0;color:var(--talk-muted);font-size:12px}
+.studio-page .talk-page .studio-panel-body>p strong{color:var(--talk-ink)}
+.studio-page .talk-page .studio-panel-body>.studio-table-wrap:first-child{margin-top:0}
+.studio-page .talk-page .studio-table td small{color:var(--talk-muted)}
+.studio-page .talk-page .studio-table td select,.studio-page .talk-page .studio-table td input{min-height:34px;border:1px solid #d7dae2;border-radius:5px;background:#fff;padding:6px 8px}
+.studio-page .talk-page .studio-table td form{display:flex;align-items:center;gap:7px}
+.studio-page .talk-page .studio-table td form .studio-btn{min-height:32px}
+.studio-page .talk-page .studio-panel+.studio-panel{margin-top:12px}
+.studio-page .talk-page .studio-panel-body>form+.studio-table-wrap{margin-top:18px}
+.studio-page .talk-page .studio-panel-body>h2+p{padding:10px 12px;border-radius:5px;background:var(--talk-soft)}
+.studio-page .talk-page .studio-panel-body>h2~p strong{color:var(--talk-accent)}
+.studio-page .talk-page .studio-dashboard-kpis+section.studio-panel{margin-top:0}
+.studio-page .talk-page .talk-thread::-webkit-scrollbar{width:8px}
+.studio-page .talk-page .talk-thread::-webkit-scrollbar-thumb{border:2px solid #f6f7f9;border-radius:8px;background:#cfd3da}
+.studio-page .talk-page .support-editor-sidebar .studio-panel{margin-bottom:0}
+.studio-page .talk-page .support-editor-sidebar{position:sticky;top:12px;max-height:calc(100vh - 96px);overflow:auto;padding-right:2px}
+.studio-page .talk-page .support-editor-sidebar::-webkit-scrollbar{width:6px}
+.studio-page .talk-page .support-editor-sidebar::-webkit-scrollbar-thumb{border-radius:8px;background:#d8dbe1}
+.studio-page .talk-page .talk-actions-stack .studio-btn{justify-content:flex-start}
+.studio-page .talk-page .talk-sla-item small{margin-top:3px;color:inherit;opacity:.78}
+.studio-page .talk-page input[type=checkbox]{accent-color:var(--talk-accent)}
+@media(max-width:960px){.studio-page .talk-page .support-editor-sidebar{position:static;max-height:none;overflow:visible}}
