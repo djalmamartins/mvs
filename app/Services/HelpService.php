@@ -200,7 +200,7 @@ final class HelpService
         $toc = [];
         $used = [];
         foreach (iterator_to_array($root->getElementsByTagName('*')) as $element) {
-            if (!$element instanceof DOMElement || !in_array(strtolower($element->tagName), ['h2', 'h3'], true)) {
+            if (!in_array(strtolower($element->tagName), ['h2', 'h3'], true)) {
                 continue;
             }
             $base = $this->slug((string) $element->textContent) ?: 'secao';

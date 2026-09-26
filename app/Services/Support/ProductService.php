@@ -61,7 +61,7 @@ final class ProductService
 
         if (!$product->save()) {
             throw new RuntimeException(
-                $product->message()->getText()
+                $product->message()->text()
                 ?: 'Não foi possível criar o produto.'
             );
         }
@@ -101,7 +101,7 @@ final class ProductService
 
         if (!$product->save()) {
             throw new RuntimeException(
-                $product->message()->getText()
+                $product->message()->text()
                 ?: 'Não foi possível atualizar o produto.'
             );
         }

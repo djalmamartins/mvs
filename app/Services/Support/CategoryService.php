@@ -74,7 +74,7 @@ final class CategoryService
 
         if (!$category->save()) {
             throw new RuntimeException(
-                $category->message()->getText()
+                $category->message()->text()
                 ?: 'Não foi possível criar a categoria.'
             );
         }
@@ -134,7 +134,7 @@ final class CategoryService
 
         if (!$category->save()) {
             throw new RuntimeException(
-                $category->message()->getText()
+                $category->message()->text()
                 ?: 'Não foi possível atualizar a categoria.'
             );
         }

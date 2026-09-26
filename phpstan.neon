@@ -1,5 +1,7 @@
 parameters:
     level: 5
+    universalObjectCratesClasses:
+        - MovesCode\Model\Model
     paths:
         - app
     tmpDir: storage/phpstan

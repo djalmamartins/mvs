@@ -150,7 +150,7 @@ final class SupportKnowledgeController extends Controller
                 : $service->create(
                     $name,
                     $description,
-                    (int) (Auth::user()?->id ?? 0)
+                    (int) Auth::user()->id
                 );
 
             $this->respondSaved(

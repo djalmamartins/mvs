@@ -60,7 +60,7 @@ final class TagService
 
         if (!$tag->save()) {
             throw new RuntimeException(
-                $tag->message()->getText()
+                $tag->message()->text()
                 ?: 'Não foi possível criar a tag.'
             );
         }
@@ -105,7 +105,7 @@ final class TagService
 
         if (!$tag->save()) {
             throw new RuntimeException(
-                $tag->message()->getText()
+                $tag->message()->text()
                 ?: 'Não foi possível atualizar a tag.'
             );
         }
@@ -185,7 +185,7 @@ final class TagService
                 $pdo->commit();
             }
         } catch (\Throwable $exception) {
-            if ($ownsTransaction && $pdo->inTransaction()) {
+            if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
 

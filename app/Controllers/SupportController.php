@@ -69,7 +69,8 @@ final class SupportController extends Controller
             foreach (['author_id', 'deleted_by'] as $field) {
                 $id = (int) ($article->{$field} ?? 0);
                 if ($id > 0 && !isset($users[$id])) {
-                    $users[$id] = (new User())->findById($id)?->name ?? '—';
+                    $foundUser = (new User())->findById($id);
+                    $users[$id] = $foundUser !== null ? (string) $foundUser->name : '—';
                 }
             }
         }
@@ -348,7 +349,7 @@ final class SupportController extends Controller
                 $revisions[] = [
                     'id' => (int) $revision->id,
                     'title' => (string) $revision->title,
-                    'author' => $revisionAuthor?->name ?? 'Sistema',
+                    'author' => $revisionAuthor !== null ? (string) $revisionAuthor->name : 'Sistema',
                     'created_at' => (string) $revision->created_at,
                     'excerpt' => (string) ($revision->excerpt ?? ''),
                     'content' => HtmlSanitizer::clean((string) ($revision->content ?? '')),
@@ -367,7 +368,7 @@ final class SupportController extends Controller
                     static fn ($tag): string => (string) $tag->name,
                     $tagService->forArticle($articleId)
                 ),
-                'author' => $author?->name ?? '—',
+                'author' => $author !== null ? (string) $author->name : '—',
                 'created_at' => (string) ($article->created_at ?? '—'),
                 'updated_at' => (string) ($article->updated_at ?? '—'),
                 'reading_time' => (int) ($article->reading_time ?? 0),

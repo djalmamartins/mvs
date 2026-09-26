@@ -311,7 +311,7 @@ final class ArticleService
 
             if (!$article->save()) {
                 throw new RuntimeException(
-                    $article->message()->getText()
+                    $article->message()->text()
                     ?: 'Não foi possível criar o artigo.'
                 );
             }
@@ -453,7 +453,7 @@ final class ArticleService
 
             if (!$article->save()) {
                 throw new RuntimeException(
-                    $article->message()->getText()
+                    $article->message()->text()
                     ?: 'Não foi possível atualizar o artigo.'
                 );
             }
@@ -517,7 +517,7 @@ final class ArticleService
 
         if (!$revision->save()) {
             throw new RuntimeException(
-                $revision->message()->getText()
+                $revision->message()->text()
                 ?: 'Não foi possível criar a revisão do artigo.'
             );
         }
