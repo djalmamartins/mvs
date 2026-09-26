@@ -11,12 +11,15 @@ final class TalkInboundServiceTest extends TestCase
 {
     private PDO $pdo;
     private string $prefix;
+    private string $channelExternalId = 'whatsapp-default';
 
     protected function setUp(): void
     {
         Environment::load(dirname(__DIR__));
         $this->pdo = Connection::getInstance();
         $this->prefix = 'phpunit-talk-'.bin2hex(random_bytes(6));
+        $this->pdo->prepare("UPDATE talk_channels SET status='active' WHERE external_id=:external_id")
+            ->execute(['external_id'=>$this->channelExternalId]);
     }
 
     protected function tearDown(): void
@@ -52,6 +55,7 @@ final class TalkInboundServiceTest extends TestCase
         $phone = '55119'.random_int(10000000, 99999999);
         $payload = [
             'external_id' => $externalId,
+            'channel_external_id' => $this->channelExternalId,
             'from' => $phone,
             'from_jid' => $phone.'@s.whatsapp.net',
             'push_name' => $this->prefix.' Contato',
@@ -88,6 +92,7 @@ final class TalkInboundServiceTest extends TestCase
         $service = new TalkInboundService();
         $firstTicket = $service->receiveWhatsApp([
             'external_id' => $this->prefix.'-lid-message-1',
+            'channel_external_id' => $this->channelExternalId,
             'from' => '',
             'from_jid' => $this->lid(),
             'push_name' => $this->prefix.' Contato LID',
@@ -99,6 +104,7 @@ final class TalkInboundServiceTest extends TestCase
         $this->pdo->prepare("UPDATE talk_tickets SET status='closed',closed_at=NOW() WHERE id=:id")->execute(['id' => $firstTicket]);
         $secondTicket = $service->receiveWhatsApp([
             'external_id' => $this->prefix.'-lid-message-2',
+            'channel_external_id' => $this->channelExternalId,
             'from' => '',
             'from_jid' => $this->lid(),
             'push_name' => $this->prefix.' Contato LID',
@@ -117,7 +123,7 @@ final class TalkInboundServiceTest extends TestCase
     {
         $columns = $this->pdo->query("SHOW COLUMNS FROM talk_messages LIKE 'read_at'")->fetchAll();
         self::assertCount(1, $columns);
-        $index = $this->pdo->query("SHOW INDEX FROM talk_messages WHERE Key_name='talk_messages_external_id'")->fetch(PDO::FETCH_ASSOC);
+        $index = $this->pdo->query("SHOW INDEX FROM talk_messages WHERE Key_name='talk_messages_tenant_external_id'")->fetch(PDO::FETCH_ASSOC);
         self::assertIsArray($index);
         self::assertSame(0, (int) $index['Non_unique']);
     }

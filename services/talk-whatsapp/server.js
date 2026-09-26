@@ -15,6 +15,7 @@ const host = String(process.env.TALK_BAILEYS_HOST || '127.0.0.1');
 const configuredAuthDir = String(process.env.TALK_BAILEYS_AUTH_DIR || 'baileys_auth');
 const authDir = path.isAbsolute(configuredAuthDir) ? configuredAuthDir : path.resolve(serviceDir, configuredAuthDir);
 const bridgeToken = String(process.env.TALK_BAILEYS_BRIDGE_TOKEN || '').trim();
+const channelExternalId = String(process.env.TALK_CHANNEL_EXTERNAL_ID || 'whatsapp-default').trim();
 const movesInbound = String(process.env.TALK_MOVES_INBOUND_URL || 'http://127.0.0.1/talk/bridge/inbound');
 const logger = pino({ level: process.env.TALK_BAILEYS_LOG_LEVEL || 'info' });
 
@@ -141,7 +142,7 @@ async function startWhatsApp() {
       }
       const senderJid = directJid || (remote.endsWith('@lid') ? remote : '');
       if (!senderJid) continue;
-      await postInbound({ external_id: message.key.id, from: directJid ? directJid.split('@')[0] : '', from_jid: senderJid, push_name: message.pushName || '', type: Object.keys(message.message)[0] || 'text', body: messageText(message.message), timestamp: Number(message.messageTimestamp || Math.floor(Date.now() / 1000)) });
+      await postInbound({ external_id: message.key.id, channel_external_id: channelExternalId, from: directJid ? directJid.split('@')[0] : '', from_jid: senderJid, push_name: message.pushName || '', type: Object.keys(message.message)[0] || 'text', body: messageText(message.message), timestamp: Number(message.messageTimestamp || Math.floor(Date.now() / 1000)) });
     }
   });
 }

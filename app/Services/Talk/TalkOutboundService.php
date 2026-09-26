@@ -16,10 +16,12 @@ use RuntimeException;
  */
 final class TalkOutboundService
 {
-    public function __construct(private ?WhatsAppTransport $whatsApp = null)
+    public function __construct(private ?WhatsAppTransport $whatsApp = null, private ?int $tenantId = null)
     {
         $this->whatsApp ??= WhatsAppTransportFactory::make();
     }
+
+    private function tenantId(): int { return $this->tenantId ??= (new TalkTenantContext())->currentTenantId(); }
 
     public function sendText(int $ticketId, int $userId, string $body): int
     {
@@ -29,8 +31,8 @@ final class TalkOutboundService
         }
 
         $pdo = Connection::getInstance();
-        $statement = $pdo->prepare("SELECT t.id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.id=cv.contact_id WHERE t.id=:id LIMIT 1");
-        $statement->execute(['id' => $ticketId]);
+        $statement = $pdo->prepare("SELECT t.id,t.channel_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.tenant_id=t.tenant_id AND cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.tenant_id=t.tenant_id AND c.id=cv.contact_id WHERE t.tenant_id=:tenant_id AND t.id=:id LIMIT 1");
+        $statement->execute(['tenant_id'=>$this->tenantId(),'id' => $ticketId]);
         $ticket = $statement->fetch(PDO::FETCH_ASSOC);
 
         if (!$ticket || (int)($ticket['assigned_user_id'] ?? 0) !== $userId || !in_array((string)$ticket['status'], ['assigned', 'open'], true)) {
@@ -60,8 +62,10 @@ final class TalkOutboundService
 
         $pdo->beginTransaction();
         try {
-            $insert = $pdo->prepare("INSERT INTO talk_messages(conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,NOW())");
+            $insert = $pdo->prepare("INSERT INTO talk_messages(tenant_id,channel_id,conversation_id,ticket_id,sender_type,sender_user_id,external_id,direction,type,body,metadata,sent_at) VALUES(:tenant_id,:channel_id,:conversation_id,:ticket_id,'user',:user_id,:external_id,'outbound','text',:body,:metadata,NOW())");
             $insert->execute([
+                'tenant_id'=>$this->tenantId(),
+                'channel_id'=>(int)$ticket['channel_id'],
                 'conversation_id' => (int)$ticket['conversation_id'],
                 'ticket_id' => $ticketId,
                 'user_id' => $userId,
@@ -70,9 +74,10 @@ final class TalkOutboundService
                 'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             ]);
             $messageId = (int)$pdo->lastInsertId();
-            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,NOW()),last_activity_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id' => $ticketId]);
-            $pdo->prepare("UPDATE talk_conversations SET last_message_at=NOW(),updated_at=NOW() WHERE id=:id")->execute(['id' => (int)$ticket['conversation_id']]);
-            $pdo->prepare("INSERT INTO talk_events(ticket_id,user_id,actor_type,event_type,payload) VALUES(:ticket_id,:user_id,'user','message.sent',:payload)")->execute([
+            $pdo->prepare("UPDATE talk_tickets SET first_response_at=COALESCE(first_response_at,NOW()),last_activity_at=NOW(),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id")->execute(['tenant_id'=>$this->tenantId(),'id' => $ticketId]);
+            $pdo->prepare("UPDATE talk_conversations SET last_message_at=NOW(),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id")->execute(['tenant_id'=>$this->tenantId(),'id' => (int)$ticket['conversation_id']]);
+            $pdo->prepare("INSERT INTO talk_events(tenant_id,ticket_id,user_id,actor_type,event_type,payload) VALUES(:tenant_id,:ticket_id,:user_id,'user','message.sent',:payload)")->execute([
+                'tenant_id'=>$this->tenantId(),
                 'ticket_id' => $ticketId,
                 'user_id' => $userId,
                 'payload' => json_encode(['message_id' => $messageId, 'channel' => $channel, 'delivery_status' => $deliveryStatus], JSON_THROW_ON_ERROR),
