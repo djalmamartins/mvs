@@ -48,8 +48,8 @@ final class TalkOutboundService
                 throw new RuntimeException('Contato sem número de WhatsApp válido.');
             }
             $result = $this->whatsApp->sendText($recipient, $body);
-            $externalId = trim((string)($result['message_id'] ?? ''));
-            $deliveryStatus = trim((string)($result['status'] ?? 'sent')) ?: 'sent';
+            $externalId = trim($result['message_id']);
+            $deliveryStatus = trim($result['status']) ?: 'sent';
             $metadata['delivery_status'] = $deliveryStatus;
             $metadata['transport'] = 'whatsapp';
         } elseif ($channel !== 'simulation') {

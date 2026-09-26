@@ -11,10 +11,17 @@ public function dashboard(array $route=[]):void{
 $user=Auth::user();if($user===null){Response::to('/login');}
 $this->talk->heartbeat((int)$user->id);$this->talk->autoAssign();$this->jack->processEligible();
 $legacyView=(string)($_GET['view']??'');if($legacyView!==''&&empty($route['view'])){Response::to('/talk/view/'.rawurlencode($legacyView));}$view=(string)($route['view']??'inbox');$allowed=['inbox','queue','contacts','history','connection','jack','team','settings'];if(!in_array($view,$allowed,true))$view='inbox';
-$conversations=$this->talk->conversations();$visible=[];$scope=(string)($_GET['scope']??'all');foreach($conversations as $conversation){$ticketId=(int)($conversation['ticket_id']??0);if($ticketId<=0||!$this->talk->canViewTicket($ticketId,(int)$user->id))continue;$status=(string)($conversation['ticket_status']??$conversation['status']??'');if($scope==='attending'&&!in_array($status,['assigned','open'],true))continue;if($scope==='unread'&&(int)($conversation['unread_count']??0)<=0)continue;$visible[]=$conversation;}
+$conversations=$this->talk->conversations((string)($_GET['q']??''));$visible=[];$scope=(string)($_GET['scope']??'all');foreach($conversations as $conversation){$ticketId=(int)($conversation['ticket_id']??0);if($ticketId<=0||!$this->talk->canViewTicket($ticketId,(int)$user->id))continue;$status=(string)($conversation['ticket_status']??$conversation['status']??'');if($scope==='attending'&&!in_array($status,['assigned','open'],true))continue;if($scope==='unread'&&(int)($conversation['unread_count']??0)<=0)continue;$visible[]=$conversation;}
 $selected = null;
 $selectedId = max(0, (int) ($_GET['ticket'] ?? 0));
 if ($view === 'inbox' && $selectedId > 0 && $this->talk->canViewTicket($selectedId, (int) $user->id)) {
+    $this->talk->markTicketRead($selectedId);
+    foreach ($visible as &$conversation) {
+        if ((int) ($conversation['ticket_id'] ?? 0) === $selectedId) {
+            $conversation['unread_count'] = 0;
+        }
+    }
+    unset($conversation);
     $selected = $this->talk->ticket($selectedId);
     if ($selected !== null) {
         $selected['tags'] = $this->metadata->ticketTags($selectedId);
