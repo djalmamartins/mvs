@@ -143,7 +143,7 @@ final class TalkInboundService
 
     private function createTicket(PDO $pdo, int $tenantId, int $channelId, int $conversationId): int
     {
-        $queueId = $this->queue($pdo, $tenantId);
+        $queueId = $this->queue($pdo, $tenantId, $channelId);
         do {
             $protocol = 'TALK-'.date('Ymd').'-'.str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
             $check = $pdo->prepare('SELECT COUNT(*) FROM talk_tickets WHERE protocol=:protocol');
@@ -155,8 +155,13 @@ final class TalkInboundService
         return (int) $pdo->lastInsertId();
     }
 
-    private function queue(PDO $pdo, int $tenantId): int
+    private function queue(PDO $pdo, int $tenantId, int $channelId): int
     {
+        $preferred = $pdo->prepare("SELECT q.id FROM talk_channels ch INNER JOIN talk_queues q ON q.tenant_id=ch.tenant_id AND q.id=ch.default_queue_id AND q.status='active' WHERE ch.tenant_id=:tenant_id AND ch.id=:channel_id LIMIT 1");
+        $preferred->execute(['tenant_id'=>$tenantId,'channel_id'=>$channelId]);
+        $preferredId = (int)($preferred->fetchColumn() ?: 0);
+        if ($preferredId > 0) return $preferredId;
+
         $select = $pdo->prepare("SELECT id FROM talk_queues WHERE tenant_id=:tenant_id AND status='active' ORDER BY id LIMIT 1");
         $select->execute(['tenant_id' => $tenantId]);
         $queueId = (int) ($select->fetchColumn() ?: 0);

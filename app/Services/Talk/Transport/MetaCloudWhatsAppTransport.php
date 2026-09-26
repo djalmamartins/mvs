@@ -22,7 +22,7 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
         }
     }
 
-    public function sendText(string $to, string $text): array
+    public function sendText(string $channelKey, string $to, string $text): array
     {
         $to = $this->normalizeRecipient($to);
         $text = trim($text);
@@ -41,7 +41,7 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
         return $this->deliveryResult($response);
     }
 
-    public function sendMedia(string $to, string $absolutePath, string $mimeType, ?string $caption = null): array
+    public function sendMedia(string $channelKey, string $to, string $absolutePath, string $mimeType, ?string $caption = null): array
     {
         $to = $this->normalizeRecipient($to);
         if (!is_file($absolutePath) || !is_readable($absolutePath)) {
@@ -70,7 +70,7 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
         return $this->deliveryResult($response);
     }
 
-    public function status(): array
+    public function status(string $channelKey): array
     {
         try {
             $response = $this->request('GET', $this->phoneNumberId.'?fields=id,display_phone_number,verified_name');
@@ -83,6 +83,9 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
             return ['status' => 'disconnected', 'connected' => false, 'detail' => $e->getMessage()];
         }
     }
+
+    public function connect(string $channelKey, string $externalId): array { return $this->status($channelKey); }
+    public function logout(string $channelKey): array { throw new RuntimeException('A desconexão da Cloud API deve ser feita no Meta Business.'); }
 
     private function uploadMedia(string $path, string $mimeType): string
     {

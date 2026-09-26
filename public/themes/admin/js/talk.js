@@ -45,6 +45,49 @@
         window.setInterval(refreshConnection, 3000);
     }
 
+    const channels = page.querySelector('[data-talk-channels]');
+    if (channels) {
+        const dialog = channels.querySelector('[data-channel-dialog]');
+        const form = dialog?.querySelector('form');
+        const csrf = form?.querySelector('input[name="_token"]')?.value || '';
+        const openDialog = (data = {}) => {
+            if (!dialog || !form) return;
+            form.reset();
+            form.elements.id.value = data.id || 0;
+            form.elements.name.value = data.name || '';
+            form.elements.display_name.value = data.display_name || '';
+            form.elements.default_queue_id.value = data.default_queue_id || 0;
+            form.elements.status.value = data.status || 'active';
+            dialog.querySelector('[data-dialog-title]').textContent = data.id ? 'Editar canal' : 'Novo canal';
+            dialog.showModal();
+        };
+        channels.querySelector('[data-channel-new]')?.addEventListener('click', () => openDialog());
+        channels.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', () => dialog?.close()));
+        channels.querySelectorAll('[data-channel-edit]').forEach((button) => button.addEventListener('click', () => {
+            try { openDialog(JSON.parse(button.dataset.channelEdit || '{}')); } catch (_) { openDialog(); }
+        }));
+        channels.querySelector('[data-qr-close]')?.addEventListener('click', () => { channels.querySelector('[data-channel-qr]').hidden = true; });
+        const render = (row, status) => {
+            const badge = row.querySelector('[data-channel-state]');
+            if (badge) { badge.textContent = status.status || 'disconnected'; badge.classList.toggle('success', Boolean(status.connected)); }
+            const error = row.querySelector('[data-channel-error]');
+            if (error) error.textContent = status.status === 'error' ? (status.detail || '') : '';
+            const qr = channels.querySelector('[data-channel-qr]');
+            if (qr && status.qr) { qr.hidden = false; qr.querySelector('img').src = status.qr; }
+            else if (qr && status.connected) qr.hidden = true;
+        };
+        const request = async (id, action) => {
+            const response = await fetch(`/talk/channels/${id}/${action}`, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ _token: csrf }), credentials: 'same-origin' });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Falha ao operar o canal.');
+            const row = channels.querySelector(`[data-channel-row="${id}"]`); if (row) render(row, data); return data;
+        };
+        channels.querySelectorAll('[data-channel-connect]').forEach((button) => button.addEventListener('click', async () => { try { await request(button.dataset.channelConnect, 'connect'); } catch (error) { window.alert(error.message); } }));
+        channels.querySelectorAll('[data-channel-logout]').forEach((button) => button.addEventListener('click', async () => { if (!window.confirm('Desconectar somente este canal?')) return; try { await request(button.dataset.channelLogout, 'logout'); } catch (error) { window.alert(error.message); } }));
+        const refresh = async () => { for (const row of channels.querySelectorAll('[data-channel-row]')) { try { const response = await fetch(row.dataset.statusUrl, { headers: { Accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' }); if (response.ok) render(row, await response.json()); } catch (_) {} } };
+        refresh(); window.setInterval(refresh, 3000);
+    }
+
     const inboxTabs = page.querySelector('[data-talk-inbox-tabs]');
     if (inboxTabs) {
         inboxTabs.addEventListener('click', (event) => {

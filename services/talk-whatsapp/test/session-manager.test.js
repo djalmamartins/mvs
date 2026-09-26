@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import {EventEmitter} from 'node:events';
+import {SessionManager} from '../session-manager.js';
+
+function harness(root,{reconnectDelay=5}={}){
+  const sockets=[];
+  const manager=new SessionManager({authRoot:root,reconnectDelay,loggedOutCode:401,logger:{error(){},warn(){}},qrFactory:async(qr)=>`data:${qr}`,authFactory:async(directory)=>({state:{directory},saveCreds(){}}),versionFactory:async()=>({version:[1,0,0]}),postInbound:async()=>{},socketFactory:({auth})=>{const ev=new EventEmitter();const socket={ev,user:{id:`${path.basename(auth.directory)}@s.whatsapp.net`,name:path.basename(auth.directory)},sent:[],logoutCalls:0,async sendMessage(to,payload){this.sent.push({to,payload});return{key:{id:`msg-${sockets.length}`}};},async logout(){this.logoutCalls+=1;},end(){}};sockets.push(socket);return socket;}});
+  return{manager,sockets};
+}
+
+test('duas sessões conectam, enviam e encerram isoladamente',async(t)=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'moves-wa-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const{manager,sockets}=harness(root);await Promise.all([manager.connect('channel-a','wa-a'),manager.connect('channel-b','wa-b')]);assert.equal(sockets.length,2);const socketA=sockets.find((socket)=>socket.user.id.startsWith('channel-a@')),socketB=sockets.find((socket)=>socket.user.id.startsWith('channel-b@'));socketA.ev.emit('connection.update',{connection:'open'});socketB.ev.emit('connection.update',{connection:'open'});assert.equal(manager.state('channel-a').connected,true);assert.equal(manager.state('channel-b').connected,true);await manager.sendText('channel-b','5511999999999','oi');assert.equal(socketA.sent.length,0);assert.equal(socketB.sent.length,1);await manager.logout('channel-a');assert.equal(socketA.logoutCalls,1);assert.equal(manager.state('channel-a').connected,false);assert.equal(manager.state('channel-b').connected,true);});
+
+test('auth path rejeita traversal e cada canal usa diretório próprio',async(t)=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'moves-wa-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const{manager,sockets}=harness(root);assert.throws(()=>manager.state('../escape'),/Canal inválido/);await Promise.all([manager.connect('safe-a','wa-a'),manager.connect('safe-b','wa-b')]);assert.notEqual(sockets[0].user.id,sockets[1].user.id);assert.equal((await fs.stat(path.join(root,'safe-a'))).isDirectory(),true);assert.equal((await fs.stat(path.join(root,'safe-b'))).isDirectory(),true);});
+
+test('reconexão e falha de um canal não afetam o outro',async(t)=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'moves-wa-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const{manager,sockets}=harness(root);await Promise.all([manager.connect('channel-a','wa-a'),manager.connect('channel-b','wa-b')]);const socketA=sockets.find((socket)=>socket.user.id.startsWith('channel-a@')),socketB=sockets.find((socket)=>socket.user.id.startsWith('channel-b@'));socketA.ev.emit('connection.update',{connection:'open'});socketB.ev.emit('connection.update',{connection:'open'});socketA.ev.emit('connection.update',{connection:'close',lastDisconnect:{error:{output:{statusCode:500}}}});await new Promise((resolve)=>setImmediate(resolve));assert.equal(manager.state('channel-a').status,'reconnecting');assert.equal(manager.state('channel-b').status,'connected');await new Promise((resolve)=>setTimeout(resolve,20));assert.equal(sockets.length,3);});
+
+test('reinício restaura sessões persistidas',async(t)=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'moves-wa-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const first=harness(root);await first.manager.connect('restored','wa-restored');await first.manager.shutdown();const second=harness(root);await second.manager.restore();assert.equal(second.sockets.length,1);assert.equal(second.manager.sessions.get('restored').externalId,'wa-restored');});
+
+test('sessão histórica é migrada sem reutilizar auth nos demais canais',async(t)=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'moves-wa-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));await fs.writeFile(path.join(root,'creds.json'),'{}');const{manager}=harness(root);await manager.restore();assert.equal(manager.sessions.has('whatsapp-default'),true);assert.equal(await fs.readFile(path.join(root,'whatsapp-default','creds.json'),'utf8'),'{}');await manager.connect('outro-canal','outro-canal');await assert.rejects(fs.access(path.join(root,'outro-canal','creds.json')));});

@@ -31,7 +31,7 @@ final class TalkOutboundService
         }
 
         $pdo = Connection::getInstance();
-        $statement = $pdo->prepare("SELECT t.id,t.channel_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,c.phone,c.external_id contact_external_id FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.tenant_id=t.tenant_id AND cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.tenant_id=t.tenant_id AND c.id=cv.contact_id WHERE t.tenant_id=:tenant_id AND t.id=:id LIMIT 1");
+        $statement = $pdo->prepare("SELECT t.id,t.channel_id,t.conversation_id,t.assigned_user_id,t.status,t.source,cv.channel,c.phone,c.external_id contact_external_id,ch.external_id channel_external_id,ch.session_key,ch.driver,ch.status channel_status,ch.connection_status FROM talk_tickets t INNER JOIN talk_conversations cv ON cv.tenant_id=t.tenant_id AND cv.id=t.conversation_id INNER JOIN talk_contacts c ON c.tenant_id=t.tenant_id AND c.id=cv.contact_id INNER JOIN talk_channels ch ON ch.tenant_id=t.tenant_id AND ch.id=t.channel_id WHERE t.tenant_id=:tenant_id AND t.id=:id LIMIT 1");
         $statement->execute(['tenant_id'=>$this->tenantId(),'id' => $ticketId]);
         $ticket = $statement->fetch(PDO::FETCH_ASSOC);
 
@@ -45,11 +45,14 @@ final class TalkOutboundService
         $metadata = ['channel' => $channel, 'delivery_status' => $deliveryStatus];
 
         if ($channel === 'whatsapp') {
+            if ((string)$ticket['channel_status'] !== 'active' || (string)$ticket['connection_status'] !== 'connected') {
+                throw new RuntimeException('O canal WhatsApp deste atendimento está desconectado.');
+            }
             $recipient = trim((string)($ticket['phone'] ?: $ticket['contact_external_id']));
             if ($recipient === '') {
                 throw new RuntimeException('Contato sem número de WhatsApp válido.');
             }
-            $result = $this->whatsApp->sendText($recipient, $body);
+            $result = $this->whatsApp->sendText((string)$ticket['session_key'], $recipient, $body);
             $externalId = trim($result['message_id']);
             $deliveryStatus = trim($result['status']) ?: 'sent';
             $metadata['delivery_status'] = $deliveryStatus;
@@ -93,8 +96,8 @@ final class TalkOutboundService
     }
 
     /** @return array{status:string,connected:bool,detail:?string} */
-    public function whatsAppStatus(): array
+    public function whatsAppStatus(string $channelKey = ''): array
     {
-        return $this->whatsApp->status();
+        return $this->whatsApp->status($channelKey);
     }
 }

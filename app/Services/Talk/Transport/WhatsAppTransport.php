@@ -14,11 +14,17 @@ namespace Moves\Services\Talk\Transport;
 interface WhatsAppTransport
 {
     /** @return array{message_id:string,status:string} */
-    public function sendText(string $to, string $text): array;
+    public function sendText(string $channelKey, string $to, string $text): array;
 
     /** @return array{message_id:string,status:string} */
-    public function sendMedia(string $to, string $absolutePath, string $mimeType, ?string $caption = null): array;
+    public function sendMedia(string $channelKey, string $to, string $absolutePath, string $mimeType, ?string $caption = null): array;
 
     /** @return array{status:string,connected:bool,detail:?string} */
-    public function status(): array;
+    public function status(string $channelKey): array;
+
+    /** @return array<string,mixed> */
+    public function connect(string $channelKey, string $externalId): array;
+
+    /** @return array<string,mixed> */
+    public function logout(string $channelKey): array;
 }

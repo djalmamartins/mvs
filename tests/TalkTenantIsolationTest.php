@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
 use Moves\Services\Talk\TalkAttachmentService;
+use Moves\Services\Talk\TalkChannelService;
 use Moves\Services\Talk\TalkInboundService;
 use Moves\Services\Talk\TalkJackService;
 use Moves\Services\Talk\TalkMetadataService;
@@ -38,7 +39,7 @@ final class TalkTenantIsolationTest extends TestCase
         foreach ([$this->a ?? [], $this->b ?? []] as $fixture) {
             if (isset($fixture['tenant'])) {
                 $tenant=(int)$fixture['tenant'];
-                foreach (['talk_notifications','talk_attachments','talk_ticket_tags','talk_jack_interactions','talk_events','talk_notes','talk_transfers','talk_messages','talk_tickets','talk_conversations','talk_contacts','talk_queue_members','talk_queues','talk_departments','talk_settings','talk_presence','talk_user_settings','talk_channels','talk_tenant_users'] as $table) {
+                foreach (['talk_notifications','talk_attachments','talk_ticket_tags','talk_jack_interactions','talk_events','talk_notes','talk_transfers','talk_messages','talk_tickets','talk_conversations','talk_contacts','talk_queue_members','talk_channels','talk_queues','talk_departments','talk_settings','talk_presence','talk_user_settings','talk_tenant_users'] as $table) {
                     $this->pdo->prepare("DELETE FROM {$table} WHERE tenant_id=:tenant_id")->execute(['tenant_id'=>$tenant]);
                 }
                 $this->pdo->prepare('DELETE FROM talk_tenants WHERE id=:id')->execute(['id'=>$fixture['tenant']]);
@@ -121,9 +122,12 @@ final class TalkTenantIsolationTest extends TestCase
             ->execute(['a'=>$this->a['ticket'],'ua'=>$this->a['user'],'ub'=>$this->b['user'],'a2'=>$this->a['ticket'],'b'=>$this->b['ticket']]);
         $transport = new class implements WhatsAppTransport {
             public int $calls = 0;
-            public function sendText(string $to,string $text): array { $this->calls++;return ['message_id'=>'out-'.$this->calls,'status'=>'sent']; }
-            public function sendMedia(string $to,string $absolutePath,string $mimeType,?string $caption=null): array { return ['message_id'=>'media','status'=>'sent']; }
-            public function status(): array { return ['status'=>'connected','connected'=>true,'detail'=>null]; }
+            public string $channelKey = '';
+            public function sendText(string $channelKey,string $to,string $text): array { $this->calls++;$this->channelKey=$channelKey;return ['message_id'=>'out-'.$this->calls,'status'=>'sent']; }
+            public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null): array { return ['message_id'=>'media','status'=>'sent']; }
+            public function status(string $channelKey): array { return ['status'=>'connected','connected'=>true,'detail'=>null]; }
+            public function connect(string $channelKey,string $externalId): array { return $this->status($channelKey); }
+            public function logout(string $channelKey): array { return ['ok'=>true]; }
         };
         $outbound = new TalkOutboundService($transport, (int)$this->a['tenant']);
         try {
@@ -134,6 +138,7 @@ final class TalkTenantIsolationTest extends TestCase
         }
         self::assertGreaterThan(0, $outbound->sendText((int)$this->a['ticket'], (int)$this->a['user'], 'mensagem autorizada'));
         self::assertSame(1, $transport->calls);
+        self::assertSame($this->prefix.'-a-session', $transport->channelKey);
         self::assertSame(0, $this->countWhere('talk_messages', (int)$this->b['tenant'], "external_id='out-1'"));
     }
 
@@ -151,6 +156,41 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame((int)$this->b['tenant'], $this->tenantOf('talk_tickets', $ticketB));
         self::assertSame(1, $this->countWhere('talk_messages', (int)$this->a['tenant'], 'external_id='.$this->pdo->quote($externalMessage)));
         self::assertSame(1, $this->countWhere('talk_messages', (int)$this->b['tenant'], 'external_id='.$this->pdo->quote($externalMessage)));
+    }
+
+    public function testMultipleChannelsKeepQueueInboundBridgeAndManagementIsolated(): void
+    {
+        $external = $this->prefix.'-a-finance';
+        $session = $this->prefix.'-a-finance-session';
+        $insert = $this->pdo->prepare("INSERT INTO talk_channels(tenant_id,type,name,external_id,driver,status,connection_status,session_key,default_queue_id) VALUES(:tenant,'whatsapp','Financeiro',:external,'baileys','active','connected',:session,:queue)");
+        $insert->execute(['tenant'=>$this->a['tenant'],'external'=>$external,'session'=>$session,'queue'=>$this->a['queue']]);
+        $channel2 = (int)$this->pdo->lastInsertId();
+
+        $phone = '5511987654321';
+        $inbound = new TalkInboundService();
+        $ticket1 = $inbound->receiveWhatsApp($this->inboundPayload($this->a,$this->prefix.'-multi-1',$phone));
+        $ticket2 = $inbound->receiveWhatsApp(['external_id'=>$this->prefix.'-multi-2','channel_external_id'=>$external,'from'=>$phone,'from_jid'=>$phone.'@s.whatsapp.net','push_name'=>'Mesmo morador','body'=>'Financeiro','timestamp'=>time()]);
+        self::assertNotSame($ticket1,$ticket2);
+        $query=$this->pdo->prepare('SELECT channel_id,queue_id,conversation_id FROM talk_tickets WHERE id IN (?,?) ORDER BY id');$query->execute([$ticket1,$ticket2]);$tickets=$query->fetchAll(PDO::FETCH_ASSOC);
+        self::assertCount(2,$tickets);
+        self::assertSame([(int)$this->a['channel'],$channel2],array_map('intval',array_column($tickets,'channel_id')));
+        self::assertSame([(int)$this->a['queue'],(int)$this->a['queue']],array_map('intval',array_column($tickets,'queue_id')));
+        self::assertCount(2,array_unique(array_column($tickets,'conversation_id')));
+
+        $transport = new class implements WhatsAppTransport {
+            public array $keys=[];
+            public function sendText(string $channelKey,string $to,string $text):array{return ['message_id'=>'x','status'=>'sent'];}
+            public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{return ['message_id'=>'x','status'=>'sent'];}
+            public function status(string $channelKey):array{$this->keys[]=$channelKey;return ['status'=>'connected','connected'=>true,'profile'=>['id'=>'5511000000000@s.whatsapp.net','name'=>'Conta real']];}
+            public function connect(string $channelKey,string $externalId):array{$this->keys[]=$channelKey;return ['status'=>'qr','connected'=>false,'qr'=>'data:test'];}
+            public function logout(string $channelKey):array{$this->keys[]=$channelKey;return ['ok'=>true,'status'=>'disconnected'];}
+        };
+        $service = new TalkChannelService($transport,(int)$this->a['tenant']);
+        self::assertSame('connected',$service->status($channel2)['status']);
+        self::assertSame($session,$transport->keys[0]);
+        self::assertNull($service->find((int)$this->b['channel']));
+        try{$service->status((int)$this->b['channel']);self::fail('Canal estrangeiro deveria ser bloqueado.');}catch(RuntimeException){self::assertCount(1,$transport->keys);}
+        try{$service->save(['name'=>'Inválido','default_queue_id'=>$this->b['queue']],(int)$this->a['user']);self::fail('Fila estrangeira deveria ser bloqueada.');}catch(RuntimeException $e){self::assertStringContainsString('Fila padrão inválida',$e->getMessage());}
     }
 
     public function testCompositeForeignKeysRejectCrossTenantAssociations(): void
@@ -175,12 +215,15 @@ final class TalkTenantIsolationTest extends TestCase
         $this->assertConstraintViolation($statement,['foreign_user'=>$this->b['user'],'tenant_id'=>$this->a['tenant'],'id'=>$this->a['ticket']]);
 
         $constraints=$this->pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND CONSTRAINT_NAME LIKE '%_tenant_fk'")->fetchAll(PDO::FETCH_COLUMN);
-        foreach (['talk_contacts_channel_tenant_fk','talk_conversations_contact_tenant_fk','talk_tickets_conversation_tenant_fk','talk_tickets_channel_tenant_fk','talk_tickets_assignee_tenant_fk','talk_messages_ticket_tenant_fk','talk_ticket_tags_tag_tenant_fk','talk_attachments_message_tenant_fk','talk_notifications_user_tenant_fk'] as $required) {
+        foreach (['talk_contacts_channel_tenant_fk','talk_conversations_contact_tenant_fk','talk_tickets_conversation_tenant_fk','talk_tickets_channel_tenant_fk','talk_tickets_assignee_tenant_fk','talk_messages_ticket_tenant_fk','talk_ticket_tags_tag_tenant_fk','talk_attachments_message_tenant_fk','talk_notifications_user_tenant_fk','talk_channels_default_queue_tenant_fk'] as $required) {
             self::assertContains($required,$constraints);
         }
         $channelIndex=$this->pdo->query("SHOW INDEX FROM talk_channels WHERE Key_name='talk_channels_external_id'")->fetch(PDO::FETCH_ASSOC);
         self::assertIsArray($channelIndex);
         self::assertSame(0,(int)$channelIndex['Non_unique']);
+        $sessionIndex=$this->pdo->query("SHOW INDEX FROM talk_channels WHERE Key_name='talk_channels_session_key'")->fetch(PDO::FETCH_ASSOC);
+        self::assertIsArray($sessionIndex);
+        self::assertSame(0,(int)$sessionIndex['Non_unique']);
     }
 
     /** @return array<string,int|string> */
@@ -190,7 +233,7 @@ final class TalkTenantIsolationTest extends TestCase
         $s=$pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES(:name,:email,'test-only','active','admin')");$s->execute(['name'=>'Tenant '.strtoupper($suffix),'email'=>$slug.'@example.test']);$user=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");$s->execute(['name'=>'Empresa '.strtoupper($suffix),'slug'=>$slug]);$tenant=(int)$pdo->lastInsertId();
         $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,'admin','active',1)")->execute(['tenant'=>$tenant,'user'=>$user]);
-        $s=$pdo->prepare("INSERT INTO talk_channels(tenant_id,type,name,external_id,driver,status,connection_status) VALUES(:tenant,'whatsapp',:name,:external,'baileys','active','connected')");$s->execute(['tenant'=>$tenant,'name'=>'WhatsApp '.$suffix,'external'=>$slug.'-channel']);$channel=(int)$pdo->lastInsertId();
+        $s=$pdo->prepare("INSERT INTO talk_channels(tenant_id,type,name,external_id,driver,status,connection_status,session_key) VALUES(:tenant,'whatsapp',:name,:external,'baileys','active','connected',:session_key)");$s->execute(['tenant'=>$tenant,'name'=>'WhatsApp '.$suffix,'external'=>$slug.'-channel','session_key'=>$slug.'-session']);$channel=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_departments(tenant_id,name,slug,status) VALUES(:tenant,:name,:slug,'active')");$s->execute(['tenant'=>$tenant,'name'=>'Departamento '.$suffix,'slug'=>$slug.'-department']);$department=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_queues(tenant_id,department_id,name,slug,status,auto_assign_after_seconds) VALUES(:tenant,:department,:name,:slug,'active',5)");$s->execute(['tenant'=>$tenant,'department'=>$department,'name'=>'Fila '.$suffix,'slug'=>$slug.'-queue']);$queue=(int)$pdo->lastInsertId();
         $pdo->prepare("INSERT INTO talk_queue_members(tenant_id,queue_id,user_id,role,capacity,status) VALUES(:tenant,:queue,:user,'supervisor',10,'active')")->execute(['tenant'=>$tenant,'queue'=>$queue,'user'=>$user]);
