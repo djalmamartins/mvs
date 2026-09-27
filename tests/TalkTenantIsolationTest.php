@@ -359,6 +359,27 @@ final class TalkTenantIsolationTest extends TestCase
         }
     }
 
+    public function testSimulationCreatesIsolatedChannelAndReusesIt(): void
+    {
+        $a=new TalkService((int)$this->a['tenant']);
+        $b=new TalkService((int)$this->b['tenant']);
+        $first=$a->seedSimulation((int)$this->a['user']);
+        $second=$a->seedSimulation((int)$this->a['user']);
+        $other=$b->seedSimulation((int)$this->b['user']);
+        $sql="SELECT t.channel_id,ch.type,ch.external_id,ch.session_key,t.source FROM talk_tickets t INNER JOIN talk_channels ch ON ch.tenant_id=t.tenant_id AND ch.id=t.channel_id WHERE t.id=:id";
+        $statement=$this->pdo->prepare($sql);
+        $rows=[];
+        foreach([$first,$second,$other] as $id){$statement->execute(['id'=>$id]);$rows[]=$statement->fetch(PDO::FETCH_ASSOC);}
+        self::assertSame($rows[0]['channel_id'],$rows[1]['channel_id']);
+        self::assertNotSame($rows[0]['channel_id'],$rows[2]['channel_id']);
+        self::assertSame('simulation',$rows[0]['type']);
+        self::assertSame('simulation',$rows[0]['source']);
+        self::assertNotSame($rows[0]['external_id'],$rows[2]['external_id']);
+        self::assertNotSame($rows[0]['session_key'],$rows[2]['session_key']);
+        self::assertSame('whatsapp',$this->pdo->query('SELECT type FROM talk_channels WHERE id='.(int)$this->a['channel'])->fetchColumn());
+        self::assertSame('whatsapp',$this->pdo->query('SELECT type FROM talk_channels WHERE id='.(int)$this->b['channel'])->fetchColumn());
+    }
+
     public function testJackAndOutboundRemainInsideTheSelectedTenant(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")
