@@ -19,10 +19,11 @@ final class TalkInboundService
         $stage = 'validate';
         $externalId = mb_substr(trim((string) ($payload['external_id'] ?? '')), 0, 191);
         $channelExternalId = mb_substr(trim((string) ($payload['channel_external_id'] ?? '')), 0, 190);
-        $phone = preg_replace('/\D+/', '', (string) ($payload['from'] ?? '')) ?? '';
-        $senderJid = mb_substr(trim((string) ($payload['from_jid'] ?? '')), 0, 190);
-        if ($senderJid !== '' && preg_match('/^\d+@(s\.whatsapp\.net|lid)$/', $senderJid) !== 1) $senderJid = '';
-        $externalAddress = $senderJid !== '' ? $senderJid : ($phone !== '' ? $phone.'@s.whatsapp.net' : '');
+        $identity = WhatsAppIdentity::inbound($payload);
+        $phone = $identity['phone_number'];
+        $senderJid = $identity['jid'];
+        $externalAddress = $identity['external_address'];
+        $sessionKey = mb_substr(trim((string) ($payload['session_key'] ?? '')), 0, 128);
         $body = mb_substr(trim((string) ($payload['body'] ?? '')), 0, 4000);
         $pushName = mb_substr(trim((string) ($payload['push_name'] ?? '')), 0, 160);
         $messageType = mb_substr(trim((string) ($payload['type'] ?? 'text')), 0, 30) ?: 'text';
@@ -34,7 +35,7 @@ final class TalkInboundService
         $sentAt = $this->sentAt($payload['timestamp'] ?? null);
         $stage = 'connect';
         $pdo = Connection::getInstance();
-        $channel = (new TalkTenantContext())->inboundChannel($channelExternalId);
+        $channel = (new TalkTenantContext())->inboundChannel($channelExternalId, 'whatsapp', $sessionKey);
         $tenantId = $channel['tenant_id'];
         $channelId = $channel['id'];
         $stage = 'deduplicate';
@@ -67,7 +68,7 @@ final class TalkInboundService
                 'external_id' => $externalId,
                 'type' => $messageType,
                 'body' => $body,
-                'metadata' => json_encode(['channel' => 'whatsapp', 'push_name' => $pushName ?: null], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+                'metadata' => json_encode(['channel'=>'whatsapp','push_name'=>$pushName ?: null,'jid'=>$senderJid ?: null,'lid'=>$identity['lid'] ?: null,'phone_jid'=>$identity['phone_jid'] ?: null,'session_key'=>$sessionKey ?: null], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
                 'sent_at' => $sentAt,
             ]);
             $messageId = (int) $pdo->lastInsertId();

@@ -56,6 +56,7 @@ final class TalkInboundServiceTest extends TestCase
         $payload = [
             'external_id' => $externalId,
             'channel_external_id' => $this->channelExternalId,
+            'session_key' => 'whatsapp-default',
             'from' => $phone,
             'from_jid' => $phone.'@s.whatsapp.net',
             'push_name' => $this->prefix.' Contato',
@@ -85,6 +86,22 @@ final class TalkInboundServiceTest extends TestCase
         self::assertSame('queued', $storedTicket['status']);
         self::assertSame('whatsapp', $storedTicket['source']);
         self::assertGreaterThan(0, (int) $storedTicket['queue_id']);
+    }
+
+    public function testInboundRejectsSessionKeyFromAnotherChannel(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Canal de entrada');
+        (new TalkInboundService())->receiveWhatsApp([
+            'external_id'=>$this->prefix.'-wrong-session',
+            'channel_external_id'=>$this->channelExternalId,
+            'session_key'=>'ch-wrong-session',
+            'phone_number'=>'5531996920154',
+            'phone_jid'=>'553196920154@s.whatsapp.net',
+            'from_jid'=>'553196920154@s.whatsapp.net',
+            'body'=>'Não deve entrar',
+            'timestamp'=>time(),
+        ]);
     }
 
     public function testLidIdentityIsAcceptedAndClosedConversationCreatesANewTicket(): void

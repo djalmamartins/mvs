@@ -52,10 +52,13 @@ final class TalkTenantContext
     }
 
     /** @return array{id:int,tenant_id:int,type:string,external_id:string,driver:string,status:string} */
-    public function inboundChannel(string $externalId, string $type = 'whatsapp'): array
+    public function inboundChannel(string $externalId, string $type = 'whatsapp', string $sessionKey = ''): array
     {
-        $statement = Connection::getInstance()->prepare("SELECT ch.id,ch.tenant_id,ch.type,ch.external_id,ch.driver,ch.status FROM talk_channels ch INNER JOIN talk_tenants tenant ON tenant.id=ch.tenant_id AND tenant.status='active' INNER JOIN platform_tenant_products product ON product.tenant_id=ch.tenant_id AND product.product='talk' AND product.enabled=1 WHERE ch.external_id=:external_id AND ch.type=:type AND ch.status='active' LIMIT 1");
-        $statement->execute(['external_id' => $externalId, 'type' => $type]);
+        $sessionSql = $sessionKey !== '' ? ' AND ch.session_key=:session_key' : '';
+        $statement = Connection::getInstance()->prepare("SELECT ch.id,ch.tenant_id,ch.type,ch.external_id,ch.driver,ch.status FROM talk_channels ch INNER JOIN talk_tenants tenant ON tenant.id=ch.tenant_id AND tenant.status='active' INNER JOIN platform_tenant_products product ON product.tenant_id=ch.tenant_id AND product.product='talk' AND product.enabled=1 WHERE ch.external_id=:external_id AND ch.type=:type AND ch.status='active'{$sessionSql} LIMIT 1");
+        $parameters = ['external_id' => $externalId, 'type' => $type];
+        if ($sessionKey !== '') $parameters['session_key'] = $sessionKey;
+        $statement->execute($parameters);
         $channel = $statement->fetch(PDO::FETCH_ASSOC);
         if (!is_array($channel)) {
             throw new RuntimeException('Canal de entrada inativo ou não cadastrado.');

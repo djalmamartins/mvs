@@ -24,7 +24,7 @@ final class TalkChannelService
     /** @return list<array<string,mixed>> */
     public function channels(): array
     {
-        $statement = Connection::getInstance()->prepare("SELECT ch.id,ch.type,ch.name,ch.display_name,ch.external_id,ch.driver,ch.phone_number,ch.connected_jid,ch.status,ch.connection_status,ch.session_key,ch.default_queue_id,ch.last_connected_at,ch.last_disconnected_at,ch.last_error,ch.last_error_at,ch.metadata,q.name default_queue_name FROM talk_channels ch LEFT JOIN talk_queues q ON q.tenant_id=ch.tenant_id AND q.id=ch.default_queue_id WHERE ch.tenant_id=:tenant_id ORDER BY ch.name,ch.id");
+        $statement = Connection::getInstance()->prepare("SELECT ch.id,ch.type,ch.name,ch.display_name,ch.external_id,ch.driver,ch.phone_number,ch.connected_jid,ch.connected_phone_jid,ch.connected_lid,ch.status,ch.connection_status,ch.session_key,ch.default_queue_id,ch.last_connected_at,ch.last_disconnected_at,ch.bridge_seen_at,ch.last_error,ch.last_error_at,ch.metadata,q.name default_queue_name FROM talk_channels ch LEFT JOIN talk_queues q ON q.tenant_id=ch.tenant_id AND q.id=ch.default_queue_id WHERE ch.tenant_id=:tenant_id AND ch.type='whatsapp' AND ch.removed_at IS NULL ORDER BY ch.name,ch.id");
         $statement->execute(['tenant_id'=>$this->tenantId()]);
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -96,10 +96,32 @@ final class TalkChannelService
         return $result + ['channel_id'=>$id];
     }
 
+    /** @return array<string,mixed> */
+    public function disconnect(int $id, int $userId): array
+    {
+        $this->assertManager($userId);
+        $channel = $this->requireChannel($id);
+        $result = $this->transport->disconnect((string)$channel['session_key']);
+        Connection::getInstance()->prepare("UPDATE talk_channels SET connection_status='disconnected',last_disconnected_at=NOW(),bridge_seen_at=NOW(),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id")
+            ->execute(['tenant_id'=>$this->tenantId(),'id'=>$id]);
+        return $result + ['channel_id'=>$id];
+    }
+
+    /** @return array<string,mixed> */
+    public function remove(int $id, int $userId): array
+    {
+        $this->assertManager($userId);
+        $channel = $this->requireChannel($id);
+        $result = $this->transport->logout((string)$channel['session_key']);
+        Connection::getInstance()->prepare("UPDATE talk_channels SET status='inactive',connection_status='disconnected',last_disconnected_at=NOW(),bridge_seen_at=NOW(),removed_at=NOW(),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id")
+            ->execute(['tenant_id'=>$this->tenantId(),'id'=>$id]);
+        return $result + ['channel_id'=>$id,'removed'=>true];
+    }
+
     /** @return array<string,mixed>|null */
     public function find(int $id): ?array
     {
-        $statement = Connection::getInstance()->prepare('SELECT * FROM talk_channels WHERE tenant_id=:tenant_id AND id=:id LIMIT 1');
+        $statement = Connection::getInstance()->prepare('SELECT * FROM talk_channels WHERE tenant_id=:tenant_id AND id=:id AND removed_at IS NULL LIMIT 1');
         $statement->execute(['tenant_id'=>$this->tenantId(),'id'=>$id]);
         $row = $statement->fetch(PDO::FETCH_ASSOC);
         return is_array($row) ? $row : null;
@@ -118,12 +140,16 @@ final class TalkChannelService
     {
         $state = in_array((string)($status['status'] ?? ''), ['starting','qr','connected','reconnecting','disconnected','error'], true) ? (string)$status['status'] : 'disconnected';
         $profile = is_array($status['profile'] ?? null) ? $status['profile'] : [];
-        $jid = mb_substr(trim((string)($profile['id'] ?? '')),0,190);
-        $number = preg_replace('/\D+/', '', explode('@', $jid)[0]) ?: null;
+        $jid = mb_substr(WhatsAppIdentity::jid($profile['jid'] ?? $profile['id'] ?? ''),0,190);
+        $phoneJid = mb_substr(WhatsAppIdentity::jid($profile['phone_jid'] ?? $profile['phoneNumber'] ?? ''),0,190);
+        if ($phoneJid !== '' && !str_ends_with($phoneJid, '@s.whatsapp.net')) $phoneJid = '';
+        $lid = mb_substr(WhatsAppIdentity::jid($profile['lid'] ?? ''),0,190);
+        if ($lid !== '' && !str_ends_with($lid, '@lid')) $lid = '';
+        $number = WhatsAppIdentity::phone($profile['phone_number'] ?? ($phoneJid !== '' ? strstr($phoneJid, '@', true) : '')) ?: null;
         $name = mb_substr(trim((string)($profile['name'] ?? '')),0,160) ?: null;
         $error = $state === 'error' ? mb_substr(trim((string)($status['detail'] ?? 'Erro na sessão')),0,500) : null;
-        $sql = "UPDATE talk_channels SET last_connected_at=IF(:state2='connected' AND connection_status<>'connected',NOW(),last_connected_at),last_disconnected_at=IF(:state3='disconnected' AND connection_status<>'disconnected',NOW(),last_disconnected_at),last_error_at=IF(:state4='error' AND connection_status<>'error',NOW(),last_error_at),connection_status=:state,phone_number=COALESCE(:phone,phone_number),connected_jid=COALESCE(:jid,connected_jid),display_name=COALESCE(:display_name,display_name),last_error=:last_error,metadata=JSON_SET(COALESCE(metadata,JSON_OBJECT()),'$.bridge_updated_at',NOW()),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id";
-        Connection::getInstance()->prepare($sql)->execute(['state'=>$state,'phone'=>$number,'jid'=>$jid ?: null,'display_name'=>$name,'state2'=>$state,'state3'=>$state,'last_error'=>$error,'state4'=>$state,'tenant_id'=>$this->tenantId(),'id'=>$id]);
+        $sql = "UPDATE talk_channels SET last_connected_at=IF(:state2='connected' AND connection_status<>'connected',NOW(),last_connected_at),last_disconnected_at=IF(:state3='disconnected' AND connection_status<>'disconnected',NOW(),last_disconnected_at),last_error_at=IF(:state4='error' AND connection_status<>'error',NOW(),last_error_at),connection_status=:state,phone_number=COALESCE(:phone,phone_number),connected_jid=COALESCE(:jid,connected_jid),connected_phone_jid=COALESCE(:phone_jid,connected_phone_jid),connected_lid=COALESCE(:lid,connected_lid),display_name=COALESCE(:display_name,display_name),last_error=:last_error,bridge_seen_at=NOW(),metadata=JSON_SET(COALESCE(metadata,JSON_OBJECT()),'$.bridge_updated_at',NOW()),updated_at=NOW() WHERE tenant_id=:tenant_id AND id=:id";
+        Connection::getInstance()->prepare($sql)->execute(['state'=>$state,'phone'=>$number,'jid'=>$jid ?: null,'phone_jid'=>$phoneJid ?: null,'lid'=>$lid ?: null,'display_name'=>$name,'state2'=>$state,'state3'=>$state,'last_error'=>$error,'state4'=>$state,'tenant_id'=>$this->tenantId(),'id'=>$id]);
     }
 
     private function assertManager(int $userId): void

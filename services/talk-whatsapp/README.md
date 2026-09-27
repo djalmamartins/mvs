@@ -20,18 +20,35 @@ TALK_BAILEYS_BRIDGE_TOKEN=<mesmo-token-do-bridge>
 
 No `.env` do bridge, ajuste `TALK_MOVES_INBOUND_URL` para a URL local da plataforma, por exemplo `http://mvs.lab/talk/bridge/inbound`.
 
-Inicie com `npm start` e abra **Talk → Conexão**. Cadastre o canal e use **Conectar** para gerar seu QR individual. Cada canal usa `baileys_auth/<session_key>/`, restaura sua própria sessão após reinício e pode reconectar ou fazer logout sem afetar os demais.
+No checkout de desenvolvimento, inicie com:
+
+```bash
+cd /Users/djalmamartins/Projects/mvs/services/talk-whatsapp
+set -a
+source /Applications/XAMPP/xamppfiles/htdocs/mvs/services/talk-whatsapp/.env
+set +a
+npm start
+```
+
+Abra **Talk → Conexão**. A página apenas consulta a saúde; ela não abre socket nem gera QR. Cadastre o canal e use **Conectar** para iniciar sua sessão e abrir o QR no modal. Cada canal usa `baileys_auth/<session_key>/`, restaura sua própria sessão após reinício e pode reconectar ou desconectar sem afetar os demais.
 
 O PHP chama exclusivamente as rotas autenticadas por canal:
 
 ```
 GET  /channels/:session_key/status
 POST /channels/:session_key/connect
+POST /channels/:session_key/disconnect
 POST /channels/:session_key/logout
 POST /channels/:session_key/send/text
 ```
 
 `external_id` identifica o canal no inbound; `session_key` é gerado pelo servidor, validado e usado somente como chave segura de sessão. Nenhum deles vem de um `.env` global por número.
+
+## Identidades do WhatsApp
+
+O bridge mantém separadamente `jid`, `lid`, `phone_jid`, `phone_number`, `session_key` e `external_id`. O sufixo de dispositivo de um JID, como `:3`, nunca integra o telefone. Para números móveis brasileiros, o PN interno legado de 12 dígitos recebe o nono dígito pela regra geral de DDD e faixa móvel; `+55 31 99692-0154` resulta em `5531996920154`. LIDs nunca são convertidos em telefone.
+
+O inbound registra as etapas `messages.upsert`, aceitação, chamada ao Moves e persistência usando apenas IDs operacionais. Tokens, credenciais e conteúdo da mensagem não são escritos nos logs. Eventos `notify` e `append` são aceitos, deduplicados no banco por tenant e `external_id`, e validados contra o par `channel_external_id` + `session_key`.
 
 Não versione `.env` nem `baileys_auth/`. O uso de Baileys é adequado ao desenvolvimento/teste local; para operação oficial, mantenha disponível o driver `meta_cloud`.
 

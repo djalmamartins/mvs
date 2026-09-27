@@ -26,5 +26,8 @@ interface WhatsAppTransport
     public function connect(string $channelKey, string $externalId): array;
 
     /** @return array<string,mixed> */
+    public function disconnect(string $channelKey): array;
+
+    /** @return array<string,mixed> */
     public function logout(string $channelKey): array;
 }

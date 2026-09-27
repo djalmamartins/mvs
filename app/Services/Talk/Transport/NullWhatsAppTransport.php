@@ -34,6 +34,7 @@ final class NullWhatsAppTransport implements WhatsAppTransport
     }
 
     public function connect(string $channelKey, string $externalId): array { throw new RuntimeException('Transporte WhatsApp não configurado.'); }
+    public function disconnect(string $channelKey): array { return ['ok' => true, 'status' => 'disconnected']; }
     public function logout(string $channelKey): array { return ['ok' => true, 'status' => 'disconnected']; }
 
     private function assertRecipient(string $to): void

@@ -85,7 +85,8 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
     }
 
     public function connect(string $channelKey, string $externalId): array { return $this->status($channelKey); }
-    public function logout(string $channelKey): array { throw new RuntimeException('A desconexão da Cloud API deve ser feita no Meta Business.'); }
+    public function disconnect(string $channelKey): array { throw new RuntimeException('A desconexão da Cloud API deve ser feita no Meta Business.'); }
+    public function logout(string $channelKey): array { throw new RuntimeException('A remoção da Cloud API deve ser feita no Meta Business.'); }
 
     private function uploadMedia(string $path, string $mimeType): string
     {

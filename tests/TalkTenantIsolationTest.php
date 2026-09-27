@@ -28,6 +28,7 @@ final class OutboxTestTransport implements WhatsAppTransport
     public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{return['message_id'=>'media','status'=>'sent'];}
     public function status(string $channelKey):array{return['status'=>'connected','connected'=>true,'detail'=>null];}
     public function connect(string $channelKey,string $externalId):array{return$this->status($channelKey);}
+    public function disconnect(string $channelKey):array{return['ok'=>true];}
     public function logout(string $channelKey):array{return['ok'=>true];}
 }
 
@@ -495,6 +496,7 @@ final class TalkTenantIsolationTest extends TestCase
             public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null): array { return ['message_id'=>'media','status'=>'sent']; }
             public function status(string $channelKey): array { return ['status'=>'connected','connected'=>true,'detail'=>null]; }
             public function connect(string $channelKey,string $externalId): array { return $this->status($channelKey); }
+            public function disconnect(string $channelKey): array { return ['ok'=>true]; }
             public function logout(string $channelKey): array { return ['ok'=>true]; }
         };
         $outbound = new TalkOutboundService((int)$this->a['tenant']);
@@ -566,16 +568,22 @@ final class TalkTenantIsolationTest extends TestCase
             public array $keys=[];
             public function sendText(string $channelKey,string $to,string $text,?string $idempotencyKey=null):array{return ['message_id'=>'x','status'=>'sent'];}
             public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{return ['message_id'=>'x','status'=>'sent'];}
-            public function status(string $channelKey):array{$this->keys[]=$channelKey;return ['status'=>'connected','connected'=>true,'profile'=>['id'=>'5511000000000@s.whatsapp.net','name'=>'Conta real']];}
+            public function status(string $channelKey):array{$this->keys[]=$channelKey;return ['status'=>'connected','connected'=>true,'profile'=>['id'=>'553196920154:3@s.whatsapp.net','jid'=>'553196920154@s.whatsapp.net','phone_jid'=>'553196920154@s.whatsapp.net','lid'=>'150350380150964@lid','phone_number'=>'5531996920154','name'=>'Conta real']];}
             public function connect(string $channelKey,string $externalId):array{$this->keys[]=$channelKey;return ['status'=>'qr','connected'=>false,'qr'=>'data:test'];}
+            public function disconnect(string $channelKey):array{$this->keys[]=$channelKey;return ['ok'=>true,'status'=>'disconnected'];}
             public function logout(string $channelKey):array{$this->keys[]=$channelKey;return ['ok'=>true,'status'=>'disconnected'];}
         };
         $service = new TalkChannelService($transport,(int)$this->a['tenant']);
         self::assertSame('connected',$service->status($channel2)['status']);
         self::assertSame($session,$transport->keys[0]);
+        $stored=$service->find($channel2);self::assertSame('5531996920154',$stored['phone_number']);self::assertSame('553196920154@s.whatsapp.net',$stored['connected_phone_jid']);self::assertSame('150350380150964@lid',$stored['connected_lid']);
         self::assertNull($service->find((int)$this->b['channel']));
         try{$service->status((int)$this->b['channel']);self::fail('Canal estrangeiro deveria ser bloqueado.');}catch(RuntimeException){self::assertCount(1,$transport->keys);}
         try{$service->save(['name'=>'Inválido','default_queue_id'=>$this->b['queue']],(int)$this->a['user']);self::fail('Fila estrangeira deveria ser bloqueada.');}catch(RuntimeException $e){self::assertStringContainsString('Fila padrão inválida',$e->getMessage());}
+        self::assertSame('disconnected',$service->disconnect($channel2,(int)$this->a['user'])['status']);
+        self::assertTrue($service->remove($channel2,(int)$this->a['user'])['removed']);
+        self::assertNull($service->find($channel2));
+        self::assertSame(1,(int)$this->pdo->query('SELECT COUNT(*) FROM talk_tickets WHERE id='.(int)$ticket2)->fetchColumn());
     }
 
     public function testCompositeForeignKeysRejectCrossTenantAssociations(): void
