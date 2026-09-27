@@ -380,6 +380,35 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame('whatsapp',$this->pdo->query('SELECT type FROM talk_channels WHERE id='.(int)$this->b['channel'])->fetchColumn());
     }
 
+    public function testHeartbeatPreservesManualPresenceAndExpiresDisplayedStatus(): void
+    {
+        $tenant=(int)$this->a['tenant'];$user=(int)$this->a['user'];$service=new TalkService($tenant);
+        $presence=$this->pdo->prepare('SELECT status FROM talk_presence WHERE tenant_id=:tenant AND user_id=:user');
+        $readPresence=static function()use($presence,$tenant,$user):string{$presence->execute(['tenant'=>$tenant,'user'=>$user]);return (string)$presence->fetchColumn();};
+        $service->heartbeat($user);
+        self::assertSame('online',$readPresence());
+        $service->updatePresence($user,'away');$service->heartbeat($user);
+        self::assertSame('away',$readPresence());
+        $service->updatePresence($user,'offline');$service->heartbeat($user);
+        self::assertSame('offline',$readPresence());
+        self::assertSame('offline',(new TalkService((int)$this->b['tenant']))->usersWithPresence()[0]['presence']);
+
+        $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,status,source,queued_at) VALUES(:tenant,:channel,:protocol,:conversation,:queue,'queued','whatsapp',DATE_SUB(NOW(),INTERVAL 5 MINUTE))")
+            ->execute(['tenant'=>$tenant,'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-presence'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue']]);
+        $ticket=(int)$this->pdo->lastInsertId();
+        self::assertSame(0,$service->autoAssign());
+        $service->updatePresence($user,'online');
+        $this->pdo->prepare('UPDATE talk_presence SET last_seen_at=DATE_SUB(NOW(),INTERVAL 6 MINUTE) WHERE tenant_id=:tenant AND user_id=:user')
+            ->execute(['tenant'=>$tenant,'user'=>$user]);
+        self::assertSame('online',$readPresence());
+        self::assertSame('offline',$service->usersWithPresence()[0]['presence']);
+        self::assertSame(0,$service->autoAssign());
+        $service->heartbeat($user);
+        self::assertSame('online',$service->usersWithPresence()[0]['presence']);
+        self::assertSame(1,$service->autoAssign());
+        self::assertSame($user,(int)$this->pdo->query("SELECT assigned_user_id FROM talk_tickets WHERE id={$ticket}")->fetchColumn());
+    }
+
     public function testJackAndOutboundRemainInsideTheSelectedTenant(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")
