@@ -43,7 +43,7 @@ final class TalkService
         $pdo->beginTransaction();
         try {
             // One tenant membership row serializes capacity checks for this attendant.
-            $member=$pdo->prepare("SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant_id AND user_id=:user_id AND status='active' FOR UPDATE");
+            $member=$pdo->prepare("SELECT tu.user_id FROM talk_tenant_users tu INNER JOIN users u ON u.id=tu.user_id AND u.status='active' WHERE tu.tenant_id=:tenant_id AND tu.user_id=:user_id AND tu.status='active' FOR UPDATE");
             $member->execute(['tenant_id'=>$tenant,'user_id'=>$userId]);
             if(!$member->fetchColumn()){$pdo->rollBack();return false;}
 
@@ -56,7 +56,7 @@ final class TalkService
 
             $capacity=(int)$permissions['max_active_tickets'];
             if($ticket['queue_id']!==null){
-                $queueMember=$pdo->prepare("SELECT capacity FROM talk_queue_members WHERE tenant_id=:tenant_id AND queue_id=:queue_id AND user_id=:user_id AND status='active'");
+                $queueMember=$pdo->prepare("SELECT qm.capacity FROM talk_queue_members qm INNER JOIN talk_queues q ON q.tenant_id=qm.tenant_id AND q.id=qm.queue_id AND q.status='active' WHERE qm.tenant_id=:tenant_id AND qm.queue_id=:queue_id AND qm.user_id=:user_id AND qm.status='active' FOR UPDATE");
                 $queueMember->execute(['tenant_id'=>$tenant,'queue_id'=>$ticket['queue_id'],'user_id'=>$userId]);
                 $queueCapacity=$queueMember->fetchColumn();
                 if($queueCapacity===false){$pdo->rollBack();return false;}
