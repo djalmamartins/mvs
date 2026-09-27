@@ -10,6 +10,7 @@ if (\Moves\Core\Config::isDevelopment()) {
     $router->get('/layout/login', 'LayoutController:login', 'layout.login');
     $router->get('/layout/cadastro', 'LayoutController:signup', 'layout.signup');
     $router->get('/layout/recuperar-senha', 'LayoutController:forgot', 'layout.forgot');
+    $router->get('/layout/auth/{mode}', 'LayoutController:authScreen', 'layout.auth.screen');
     $router->get('/layout/{product}/{page}', 'LayoutController:product', 'layout.product.page');
     $router->get('/layout/{product}', 'LayoutController:product', 'layout.product');
 }

@@ -8,6 +8,13 @@ final class LayoutController extends Controller
     public function login(): void { $this->auth('login'); }
     public function signup(): void { $this->auth('signup'); }
     public function forgot(): void { $this->auth('forgot'); }
+    public function authScreen(array $data = []): void
+    {
+        $mode = strtolower((string)($data['mode'] ?? 'login'));
+        $allowed=['login','signup','forgot','email-enviado','nova-senha','senha-alterada','2fa','2fa-configurar','2fa-obrigatorio','recovery-codes','recuperar-2fa','primeiro-acesso','convite','conta-bloqueada','sessao-expirada','organizacao'];
+        if(!in_array($mode,$allowed,true)){$mode='login';}
+        $this->auth($mode);
+    }
     public function product(array $data = []): void
     {
         $product = strtolower((string)($data['product'] ?? 'meu-dia'));
