@@ -6,12 +6,17 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
+use Moves\Core\Config;
 
 Environment::load(dirname(__DIR__));
 
+if (Config::environment() !== 'testing') {
+    throw new RuntimeException('Testes de migration exigem APP_ENV=testing e banco descartável.');
+}
+
 $root = dirname(__DIR__);
 $migrations = $root . '/database/migrations';
-$php = escapeshellarg(PHP_BINARY);
+$php = escapeshellarg(PHP_BINARY) . ' -d variables_order=EGPCS';
 $runner = escapeshellarg($root . '/scripts/migrate.php');
 
 $run = static function () use ($php, $runner): array {
