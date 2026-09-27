@@ -221,7 +221,7 @@ final class TalkTenantIsolationTest extends TestCase
             $lock->execute(['tenant'=>$tenant,'user'=>$user]);
             self::assertSame($user,(int)$lock->fetchColumn());
             $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$tenant,(string)$second,(string)$user];
-            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__));
             self::assertIsResource($process);
             fclose($pipes[0]);
             stream_set_timeout($pipes[1],5);
@@ -261,7 +261,7 @@ final class TalkTenantIsolationTest extends TestCase
             $lock->execute(['tenant'=>$this->a['tenant'],'user'=>$this->a['user']]);
             self::assertNotFalse($lock->fetchColumn());
             $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$this->b['tenant'],(string)$this->b['ticket'],(string)$this->b['user']];
-            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__));
             self::assertIsResource($process);
             fclose($pipes[0]);
             stream_set_timeout($pipes[1],5);
@@ -395,11 +395,11 @@ final class TalkTenantIsolationTest extends TestCase
             $lock=$this->pdo->prepare('SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user FOR UPDATE');
             $lock->execute(['tenant'=>$tenant,'user'=>$target]);self::assertSame($target,(int)$lock->fetchColumn());
             $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-transfer-child.php',(string)$tenant,(string)$ticket,(string)$actor,(string)$target];
-            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__));
             self::assertIsResource($process);fclose($pipes[0]);stream_set_timeout($pipes[1],5);
             self::assertSame("ready\n",fgets($pipes[1]));
             $claimCommand=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$tenant,(string)$claimed,(string)$target];
-            $claimProcess=proc_open($claimCommand,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$claimPipes,dirname(__DIR__),$_ENV);
+            $claimProcess=proc_open($claimCommand,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$claimPipes,dirname(__DIR__));
             self::assertIsResource($claimProcess);fclose($claimPipes[0]);stream_set_timeout($claimPipes[1],5);
             self::assertSame("ready\n",fgets($claimPipes[1]));
             usleep(200000);self::assertTrue(proc_get_status($process)['running']);self::assertTrue(proc_get_status($claimProcess)['running']);
