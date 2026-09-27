@@ -37,6 +37,11 @@ As migrations SQL ficam em `database/migrations/`. O runner cria o histórico, e
 
 Não altere uma migration aplicada; crie outra com prefixo cronológico.
 
+Instalações Talk que já executaram a trilha de tenancy de 2026-09-22 precisam
+do [procedimento de reconciliação](docs/talk-legacy-schema-upgrade.md) antes de
+usar o schema multitenant atual. O runner interrompe a migration `011` nesse
+caso até que o procedimento seja solicitado explicitamente.
+
 ## Fluxo e estrutura
 
 ```text

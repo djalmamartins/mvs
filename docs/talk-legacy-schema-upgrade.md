@@ -18,23 +18,28 @@ diferentes. Elas não podem ser aplicadas uma sobre a outra diretamente.
   `Unknown column 'is_default' in 'field list'`. A migration SQL já havia
   executado instruções anteriores, pois DDL MySQL não é transacional.
 
-O runner agora recusa essa combinação **antes** de executar qualquer
-migration pendente. Isso evita uma segunda aplicação parcial; não atualiza o
-schema nem corrige o 500 por si só.
+O runner recusa essa combinação **antes** de executar qualquer migration
+pendente. O caminho de reconciliação precisa ser solicitado explicitamente:
+
+```sh
+/Applications/XAMPP/xamppfiles/bin/php scripts/migrate.php --reconcile-legacy-talk
+```
+
+Essa opção é apenas para a trilha legada de tenant único. Ela mantém o ID do
+tenant existente, converte o papel legado `member` em `agent`, completa as
+colunas ausentes e aplica a migration `011` sem duplicar colunas, índices ou
+constraints já existentes. O runner então aplica `012` e `013` normalmente.
 
 ## Critérios para o upgrade
 
 1. Fazer backup verificável e criar clone descartável do banco antes de
    qualquer alteração no banco em uso.
-2. Construir migração de reconciliação que preserve IDs, tenant `principal`,
-   membros, canais e todos os atendimentos, mensagens e vínculos existentes.
-   Não editar migration já aplicada nem marcar `011` como concluída sem
-   demonstrar equivalência estrutural e de dados.
-3. No clone, aplicar a reconciliação e as migrations seguintes. Comparar
-   contagens, chaves estrangeiras, isolamento por tenant e associação dos
-   registros antes/depois. Executar PHPUnit, PHPStan, lint, auditorias e smoke
-   HTTP autenticado do Talk.
-4. Planejar janela de manutenção, backup e rollback. Só aplicar no banco XAMPP
-   após a mesma validação e uma revisão do resultado.
+2. No clone, executar o comando acima com `DB_DATABASE` apontando para ele.
+   Conferir contagens, chaves estrangeiras, isolamento por tenant e associação
+   dos registros antes/depois. Executar PHPUnit, PHPStan, lint, auditorias e
+   smoke HTTP autenticado do Talk.
+3. Planejar janela de manutenção, backup e rollback. Só aplicar no banco XAMPP
+   após a mesma validação e uma revisão do resultado. Não editar migration já
+   aplicada nem marcar `011` como concluída manualmente.
 
 Rastreamento: [issue #170](https://github.com/djalmamartins/mvs/issues/170).
