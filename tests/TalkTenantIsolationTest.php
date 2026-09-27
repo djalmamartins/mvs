@@ -678,6 +678,23 @@ final class TalkTenantIsolationTest extends TestCase
         }
     }
 
+    public function testTicketAccessIsRevokedWhenIdentityOrTenantBecomesInactive():void
+    {
+        $service=new TalkService((int)$this->a['tenant']);$ticket=(int)$this->a['ticket'];$user=(int)$this->a['user'];
+        self::assertTrue($service->canViewTicket($ticket,$user));self::assertTrue($service->canOperateTicket($ticket,$user));
+        $this->pdo->prepare("UPDATE users SET status='inactive' WHERE id=:id")->execute(['id'=>$user]);
+        self::assertFalse($service->canViewTicket($ticket,$user));self::assertFalse($service->canOperateTicket($ticket,$user));
+        $this->pdo->prepare("UPDATE users SET status='active' WHERE id=:id")->execute(['id'=>$user]);
+        $this->pdo->prepare("UPDATE talk_tenant_users SET status='inactive' WHERE tenant_id=:tenant AND user_id=:user")->execute(['tenant'=>$this->a['tenant'],'user'=>$user]);
+        self::assertFalse($service->canViewTicket($ticket,$user));self::assertFalse($service->canOperateTicket($ticket,$user));
+        $this->pdo->prepare("UPDATE talk_tenant_users SET status='active' WHERE tenant_id=:tenant AND user_id=:user")->execute(['tenant'=>$this->a['tenant'],'user'=>$user]);
+        $this->pdo->prepare("UPDATE talk_tenants SET status='inactive' WHERE id=:id")->execute(['id'=>$this->a['tenant']]);
+        self::assertFalse($service->canViewTicket($ticket,$user));self::assertFalse($service->canOperateTicket($ticket,$user));
+        $this->pdo->prepare("UPDATE talk_tenants SET status='active' WHERE id=:id")->execute(['id'=>$this->a['tenant']]);
+        self::assertTrue($service->canViewTicket($ticket,$user));self::assertTrue($service->canOperateTicket($ticket,$user));
+        self::assertFalse((new TalkService((int)$this->b['tenant']))->canViewTicket($ticket,(int)$this->b['user']));
+    }
+
     /** @return array<string,int|string> */
     private function fixture(string $suffix): array
     {
