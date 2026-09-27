@@ -89,27 +89,33 @@
     }
 
     const inboxTabs = page.querySelector('[data-talk-inbox-tabs]');
+    const applyInboxScope = () => {
+        const scope = inboxTabs?.querySelector('[data-talk-scope].active')?.dataset.talkScope || 'all';
+        page.querySelectorAll('.talk-inbox-row').forEach((row) => {
+            const status = row.dataset.talkStatus || '';
+            const unread = Number(row.dataset.talkUnread || 0);
+            row.hidden = scope === 'attending'
+                ? !['assigned', 'open'].includes(status)
+                : scope === 'unread' ? unread <= 0 : false;
+        });
+    };
     if (inboxTabs) {
         inboxTabs.addEventListener('click', (event) => {
             const button = event.target.closest('[data-talk-scope]');
             if (!button) return;
             const scope = button.dataset.talkScope || 'all';
             inboxTabs.querySelectorAll('[data-talk-scope]').forEach((element) => element.classList.toggle('active', element === button));
-            page.querySelectorAll('.talk-inbox-row').forEach((row) => {
-                const status = row.dataset.talkStatus || '';
-                const unread = Number(row.dataset.talkUnread || 0);
-                row.hidden = scope === 'attending'
-                    ? !['assigned', 'open'].includes(status)
-                    : scope === 'unread' ? unread <= 0 : false;
-            });
+            applyInboxScope();
         });
+        applyInboxScope();
     }
 
     const thread = page.querySelector('.talk-thread');
     if (thread) thread.scrollTop = thread.scrollHeight;
 
-    const textarea = page.querySelector('[data-talk-composer]');
-    if (textarea) {
+    const setupComposer = () => {
+        const textarea = page.querySelector('[data-talk-composer]');
+        if (!textarea) return;
         const idempotency = textarea.form?.querySelector('[data-talk-idempotency]');
         if (idempotency && !idempotency.value) {
             idempotency.value = window.crypto?.randomUUID?.()
@@ -127,7 +133,8 @@
             }
         });
         resize();
-    }
+    };
+    setupComposer();
 
     const file = page.querySelector('[data-talk-file]');
     const fileLabel = page.querySelector('[data-talk-file-name]');
@@ -143,38 +150,87 @@
     }));
 
     let revision = null;
-    let reloadScheduled = false;
+    let appliedRevision = null;
+    let listedRevision = null;
+    let timer = null;
+    let polling = false;
+    const status = page.querySelector('[data-talk-sync-status]');
+    const setStatus = (state, label) => {
+        if (!status || status.dataset.state === state) return;
+        status.dataset.state = state;
+        status.textContent = label;
+    };
+    const schedule = (delay) => {
+        if (timer !== null) window.clearTimeout(timer);
+        timer = window.setTimeout(sync, delay);
+    };
+    const refreshWorkspace = async () => {
+        if (page.dataset.talkView !== 'inbox') return true;
+        const currentComposer = page.querySelector('[data-talk-composer]');
+        const editing = currentComposer && (document.activeElement === currentComposer || currentComposer.value.trim() !== '');
+        if (listedRevision === revision && editing) return false;
+        const response = await fetch(location.href, {
+            headers: { Accept: 'text/html' }, cache: 'no-store', credentials: 'same-origin',
+        });
+        if (!response.ok) throw new Error('Workspace indisponível');
+        const fresh = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextPage = fresh.querySelector('.talk-page[data-talk-view="inbox"]');
+        const nextList = nextPage?.querySelector('.talk-inbox-list-body');
+        const currentList = page.querySelector('.talk-inbox-list-body');
+        if (!nextList || !currentList) throw new Error('Workspace inválida');
+        currentList.replaceWith(nextList);
+        listedRevision = revision;
+        applyInboxScope();
+        const composer = page.querySelector('[data-talk-composer]');
+        if (composer && (document.activeElement === composer || composer.value.trim() !== '')) return false;
+        const shell = page.querySelector('.talk-home-shell');
+        const nextShell = nextPage.querySelector('.talk-home-shell');
+        const main = shell?.querySelector('main');
+        const context = shell?.querySelector('.talk-home-context');
+        const nextMain = nextShell?.querySelector('main');
+        const nextContext = nextShell?.querySelector('.talk-home-context');
+        if (!main || !context || !nextMain || !nextContext) throw new Error('Conversa inválida');
+        const oldThread = main.querySelector('.talk-thread');
+        const nearBottom = !oldThread || oldThread.scrollHeight - oldThread.scrollTop - oldThread.clientHeight < 48;
+        const oldScrollTop = oldThread?.scrollTop || 0;
+        main.replaceWith(nextMain);
+        context.replaceWith(nextContext);
+        const thread = page.querySelector('.talk-thread');
+        if (thread) thread.scrollTop = nearBottom ? thread.scrollHeight : oldScrollTop;
+        setupComposer();
+        return true;
+    };
     const sync = async () => {
+        timer = null;
+        if (polling) return;
+        if (document.hidden) { schedule(15000); return; }
+        polling = true;
         try {
             const response = await fetch('/talk/sync', {
                 headers: { Accept: 'application/json' },
                 cache: 'no-store',
                 credentials: 'same-origin',
             });
-            if (!response.ok) return;
+            if (!response.ok) throw new Error('Sincronização indisponível');
             const data = await response.json();
-            if (revision === null) {
-                revision = data.revision;
-            } else if (data.revision !== revision) {
-                revision = data.revision;
-                const composer = page.querySelector('[data-talk-composer]');
-                const editing = composer && (document.activeElement === composer || composer.value.trim() !== '');
-                const liveWorkspace = location.pathname.startsWith('/talk/view/');
-                if (!editing && liveWorkspace && !reloadScheduled) {
-                    reloadScheduled = true;
-                    location.reload();
-                    return;
-                }
-            }
+            if (typeof data.revision !== 'string') throw new Error('Revisão inválida');
+            revision = data.revision;
+            if (appliedRevision !== revision && await refreshWorkspace()) appliedRevision = revision;
             const badge = document.querySelector('[data-talk-notification-count]');
             if (badge) {
                 badge.textContent = String(data.notifications || '');
                 badge.hidden = !data.notifications;
             }
+            setStatus('online', 'Atualizações conectadas');
         } catch (_) {
-            // The next poll retries automatically.
+            setStatus('offline', 'Atualizações interrompidas. Tentando reconectar…');
+        } finally {
+            polling = false;
+            schedule(document.hidden ? 15000 : status?.dataset.state === 'offline' ? 5000 : 2000);
         }
     };
+    document.addEventListener('visibilitychange', () => {
+        if (!polling) schedule(document.hidden ? 15000 : 0);
+    });
     sync();
-    window.setInterval(sync, 2000);
 })();
