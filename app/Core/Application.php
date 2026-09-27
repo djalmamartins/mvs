@@ -11,6 +11,7 @@ use MovesCode\Model\Connection as ModelConnection;
 use MovesCode\Router\Router;
 use Throwable;
 use Moves\Core\HttpException;
+use Moves\Services\Platform\ProductAccessGate;
 /**
  * Moves | Application
  *
@@ -33,6 +34,8 @@ final class Application
             $pdo = DatabaseConnection::getInstance();
 
             ModelConnection::configure($pdo);
+
+            ProductAccessGate::enforceCurrentRequest();
 
             Routes::register($router);
 

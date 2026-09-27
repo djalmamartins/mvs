@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Modules\Erp\Cadastros;
 
 use PDO;
+use Moves\Services\Platform\CompanyService;
 
 final class AdministratorRepository
 {
@@ -43,6 +44,7 @@ final class AdministratorRepository
             $tenant = $this->pdo->prepare('INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,\'active\')');
             $tenant->execute(['name' => $name, 'slug' => 'erp-' . substr(hash('sha256', $taxId), 0, 32)]);
             $tenantId = (int) $this->pdo->lastInsertId();
+            (new CompanyService($this->pdo))->ensureRoles($tenantId);
 
             $stmt = $this->pdo->prepare('INSERT INTO erp_administrators (tenant_id,legal_name,trade_name,tax_id) VALUES (:tenant_id,:legal_name,:trade_name,:tax_id)');
             $stmt->execute([

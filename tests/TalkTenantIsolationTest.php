@@ -382,8 +382,8 @@ final class TalkTenantIsolationTest extends TestCase
             ->execute(['email'=>$this->prefix.'-transfer@example.test']);
         $actor=(int)$this->pdo->lastInsertId();$process=null;$pipes=[];$claimProcess=null;$claimPipes=[];
         try {
-            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')")
-                ->execute(['tenant'=>$tenant,'user'=>$actor]);
+            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status) SELECT :tenant,:user,'agent',id,'active' FROM platform_roles WHERE tenant_id=:role_tenant AND slug='agent'")
+                ->execute(['tenant'=>$tenant,'user'=>$actor,'role_tenant'=>$tenant]);
             $this->pdo->prepare("UPDATE talk_tickets SET assigned_user_id=:actor WHERE id=:ticket")
                 ->execute(['actor'=>$actor,'ticket'=>$ticket]);
             $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")
@@ -704,7 +704,7 @@ final class TalkTenantIsolationTest extends TestCase
     {
         $email=$this->prefix.'-transfer@example.test';$this->pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES('Destino',:email,'test-only','active','user')")->execute(['email'=>$email]);$target=(int)$this->pdo->lastInsertId();
         try{
-            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')")->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status) SELECT :tenant,:user,'agent',id,'active' FROM platform_roles WHERE tenant_id=:role_tenant AND slug='agent'")->execute(['tenant'=>$this->a['tenant'],'user'=>$target,'role_tenant'=>$this->a['tenant']]);
             $this->pdo->prepare("INSERT INTO talk_queue_members(tenant_id,queue_id,user_id,role,capacity,status) VALUES(:tenant,:queue,:user,'agent',1,'active')")->execute(['tenant'=>$this->a['tenant'],'queue'=>$this->a['queue'],'user'=>$target]);
             $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
             $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,assigned_user_id,status,priority,subject,source) VALUES(:tenant,:channel,:protocol,:conversation,:queue,:user,'assigned','normal','Capacidade','whatsapp')")->execute(['tenant'=>$this->a['tenant'],'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-transfer-cap'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue'],'user'=>$target]);$capacityTicket=(int)$this->pdo->lastInsertId();
@@ -750,8 +750,9 @@ final class TalkTenantIsolationTest extends TestCase
         $pdo=$this->pdo;$slug=$this->prefix.'-'.$suffix;
         $s=$pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES(:name,:email,'test-only','active','admin')");$s->execute(['name'=>'Tenant '.strtoupper($suffix),'email'=>$slug.'@example.test']);$user=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");$s->execute(['name'=>'Empresa '.strtoupper($suffix),'slug'=>$slug]);$tenant=(int)$pdo->lastInsertId();
+        (new \Moves\Services\Platform\CompanyService($pdo))->ensureRoles($tenant);
         $pdo->prepare("INSERT INTO platform_tenant_products(tenant_id,product,enabled) VALUES(:tenant,'talk',1)")->execute(['tenant'=>$tenant]);
-        $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,'admin','active',1)")->execute(['tenant'=>$tenant,'user'=>$user]);
+        $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) SELECT :tenant,:user,'admin',id,'active',1 FROM platform_roles WHERE tenant_id=:role_tenant AND slug='owner'")->execute(['tenant'=>$tenant,'user'=>$user,'role_tenant'=>$tenant]);
         $s=$pdo->prepare("INSERT INTO talk_channels(tenant_id,type,name,external_id,driver,status,connection_status,session_key) VALUES(:tenant,'whatsapp',:name,:external,'baileys','active','connected',:session_key)");$s->execute(['tenant'=>$tenant,'name'=>'WhatsApp '.$suffix,'external'=>$slug.'-channel','session_key'=>$slug.'-session']);$channel=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_departments(tenant_id,name,slug,status) VALUES(:tenant,:name,:slug,'active')");$s->execute(['tenant'=>$tenant,'name'=>'Departamento '.$suffix,'slug'=>$slug.'-department']);$department=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_queues(tenant_id,department_id,name,slug,status,auto_assign_after_seconds) VALUES(:tenant,:department,:name,:slug,'active',5)");$s->execute(['tenant'=>$tenant,'department'=>$department,'name'=>'Fila '.$suffix,'slug'=>$slug.'-queue']);$queue=(int)$pdo->lastInsertId();

@@ -21,6 +21,8 @@ use Moves\Modules\Erp\Security\MfaLoginGate;
 use Moves\Modules\Erp\Security\MfaRequirementPolicy;
 use Moves\Modules\Erp\Security\MfaRuntimeConfig;
 use Moves\Modules\Erp\Security\TotpVerifier;
+use Moves\Services\Platform\PlatformAudit;
+use Moves\Services\Platform\TenantContext;
 
 /**
  * Moves | Authentication Controller
@@ -99,6 +101,13 @@ final class AuthController extends Controller
 
         LoginThrottle::clear($email, $ip);
         Csrf::regenerate();
+        try {
+            $pdo = Connection::getInstance();
+            $tenantId = (new TenantContext($pdo))->currentId((int) $user->id);
+            (new PlatformAudit($pdo))->record($tenantId, (int) $user->id, 'auth.login', 'user', (int) $user->id, ['ip_hash' => hash('sha256', $ip)]);
+        } catch (\Throwable) {
+            // Authentication also supports platform operators without a tenant.
+        }
         Flash::set('success', 'Login realizado com sucesso.');
         Response::to('/app');
     }
@@ -145,6 +154,16 @@ final class AuthController extends Controller
             Response::to('/app');
         }
 
+        $user = Auth::user();
+        if ($user !== null) {
+            try {
+                $pdo = Connection::getInstance();
+                $tenantId = (new TenantContext($pdo))->currentId((int) $user->id);
+                (new PlatformAudit($pdo))->record($tenantId, (int) $user->id, 'auth.logout', 'user', (int) $user->id);
+            } catch (\Throwable) {
+                // Logout must remain available during migrations or support access.
+            }
+        }
         Auth::logout();
         Flash::set('success', 'Sessão encerrada com sucesso.');
         Response::to('/login');

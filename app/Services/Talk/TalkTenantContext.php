@@ -6,8 +6,8 @@ namespace Moves\Services\Talk;
 
 use Moves\Boot\Connection;
 use Moves\Core\Auth;
-use Moves\Core\HttpException;
-use Moves\Core\Session;
+use Moves\Services\Platform\ProductEntitlement;
+use Moves\Services\Platform\TenantContext;
 use PDO;
 use RuntimeException;
 
@@ -22,27 +22,33 @@ final class TalkTenantContext
             throw new RuntimeException('Contexto de empresa indisponível.');
         }
 
-        $requested = Session::get(self::SESSION_KEY);
-        return $this->forUser((int) $user->id, is_int($requested) ? $requested : null);
+        $pdo = Connection::getInstance();
+        $tenantId = (new TenantContext($pdo))->currentId((int) $user->id);
+        if (!(new ProductEntitlement($pdo))->enabled($tenantId, 'talk')) {
+            throw new \Moves\Core\HttpException(403, 'Talk não habilitado para esta administradora.');
+        }
+        return $tenantId;
     }
 
     public function forUser(int $userId, ?int $requestedTenantId = null): int
     {
         $pdo = Connection::getInstance();
-        $sql = "SELECT tu.tenant_id FROM talk_tenant_users tu INNER JOIN talk_tenants t ON t.id=tu.tenant_id INNER JOIN platform_tenant_products product ON product.tenant_id=tu.tenant_id AND product.product='talk' AND product.enabled=1 INNER JOIN users u ON u.id=tu.user_id WHERE tu.user_id=:user_id AND tu.status='active' AND t.status='active' AND u.status='active'";
-        $params = ['user_id' => $userId];
-        if ($requestedTenantId !== null) {
-            $sql .= ' AND tu.tenant_id=:tenant_id';
-            $params['tenant_id'] = $requestedTenantId;
-        }
-        $sql .= ' ORDER BY tu.is_default DESC,tu.tenant_id LIMIT 1';
-        $statement = $pdo->prepare($sql);
-        $statement->execute($params);
-        $tenantId = (int) ($statement->fetchColumn() ?: 0);
-        if ($tenantId < 1) {
-            throw new HttpException(403, 'Usuário sem acesso à empresa selecionada.');
+        $context = new TenantContext($pdo);
+        $tenantId = $requestedTenantId === null ? $context->currentId($userId) : $this->resolveRequested($context, $userId, $requestedTenantId);
+        if (!(new ProductEntitlement($pdo))->enabled($tenantId, 'talk')) {
+            throw new \Moves\Core\HttpException(403, 'Talk não habilitado para esta administradora.');
         }
         return $tenantId;
+    }
+
+    private function resolveRequested(TenantContext $context, int $userId, int $tenantId): int
+    {
+        foreach ($context->available($userId) as $tenant) {
+            if ($tenant['id'] === $tenantId) {
+                return $tenantId;
+            }
+        }
+        throw new \Moves\Core\HttpException(403, 'Usuário sem acesso à empresa selecionada.');
     }
 
     /** @return array{id:int,tenant_id:int,type:string,external_id:string,driver:string,status:string} */

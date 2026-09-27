@@ -88,8 +88,8 @@ final class PlatformTenantIntegrationTest extends TestCase
 
     private function membership(int $tenantId, int $userId): void
     {
-        $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(?,?,'agent','active',0)")
-            ->execute([$tenantId, $userId]);
+        $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) SELECT ?,?,'agent',id,'active',0 FROM platform_roles WHERE tenant_id=? AND slug='agent'")
+            ->execute([$tenantId, $userId, $tenantId]);
     }
 
     private function grant(int $userId, int $administratorId): void

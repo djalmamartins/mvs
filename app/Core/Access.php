@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Moves\Core;
 
 use Moves\Boot\Modules;
+use Moves\Boot\Connection;
+use Moves\Services\Platform\TenantAuthorization;
+use Moves\Services\Platform\TenantContext;
 
 /**
  * Moves | Access
@@ -51,6 +54,16 @@ final class Access
 
         if ($user === null) {
             return false;
+        }
+
+        try {
+            $pdo = Connection::getInstance();
+            $tenantId = (new TenantContext($pdo))->currentId((int) $user->id);
+            if ((new TenantAuthorization($pdo))->can((int) $user->id, $tenantId, $permission)) {
+                return true;
+            }
+        } catch (\Throwable) {
+            // Legacy/global permissions remain available during staged upgrades.
         }
 
         $role = (string) ($user->role ?? 'user');
