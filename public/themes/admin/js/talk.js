@@ -127,10 +127,9 @@
         };
         textarea.addEventListener('input', resize);
         textarea.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                textarea.form?.requestSubmit();
-            }
+            if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+            event.preventDefault();
+            textarea.form?.requestSubmit();
         });
         resize();
     };
