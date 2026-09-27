@@ -6,6 +6,7 @@ namespace Moves\Services\Talk;
 
 use Moves\Boot\Connection;
 use Moves\Core\Auth;
+use Moves\Core\HttpException;
 use Moves\Core\Session;
 use PDO;
 use RuntimeException;
@@ -39,7 +40,7 @@ final class TalkTenantContext
         $statement->execute($params);
         $tenantId = (int) ($statement->fetchColumn() ?: 0);
         if ($tenantId < 1) {
-            throw new RuntimeException('Usuário sem acesso à empresa selecionada.');
+            throw new HttpException(403, 'Usuário sem acesso à empresa selecionada.');
         }
         return $tenantId;
     }

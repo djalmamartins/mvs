@@ -23,8 +23,7 @@ final class Environment
         $dotenv = Dotenv::createImmutable($path);
         $dotenv->safeLoad();
 
-        $timezone = $_ENV['APP_TIMEZONE']
-            ?? 'UTC';
+        $timezone = (string) Config::get('APP_TIMEZONE', 'UTC');
 
         date_default_timezone_set(
             $timezone

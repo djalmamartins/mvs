@@ -86,3 +86,5 @@ A migration 014 vincula `erp_administrators` a `talk_tenants` (nome histórico d
 ## Validação local
 
 Em banco descartável: instalação limpa até migration 014, reexecução idempotente, teste de falha controlada e upgrade da 013 para 014 com administradora e grant existentes. PHPUnit: 159 testes e 674 assertions. PHPStan, lint PHP, sintaxe JavaScript, 6 testes Node, Composer audit e npm audit passaram. O CI remoto deve ser consultado no commit final antes de excluir branches.
+
+No smoke HTTP com servidor local e banco descartável, login redirecionou para `/app` (200 autenticado), ERP sem grant retornou 403, Talk sem produto retornou 403 e a revisão visual de 2FA retornou 200. Um symlink local ignorado `.env` apontava para a configuração XAMPP e foi removido antes da validação HTTP definitiva. O carregamento de timezone agora respeita variáveis de ambiente explícitas, inclusive quando `$_ENV` não é populado pelo PHP CLI.
