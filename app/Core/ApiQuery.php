@@ -49,4 +49,22 @@ final class ApiQuery
 
         return $filters;
     }
+
+    /**
+     * @param array<string, mixed> $query
+     * @param list<string> $allowedFields
+     * @return array{field: ?string, direction: string}
+     */
+    public static function sorting(array $query, array $allowedFields): array
+    {
+        $field = $query['sort'] ?? null;
+        if ($field !== null && (!is_string($field) || !in_array($field, $allowedFields, true))) {
+            throw new \InvalidArgumentException('Unsupported sort field.');
+        }
+        $direction = $query['direction'] ?? 'asc';
+        if (!is_string($direction) || !in_array(strtolower($direction), ['asc', 'desc'], true)) {
+            throw new \InvalidArgumentException('Unsupported sort direction.');
+        }
+        return ['field' => $field, 'direction' => strtolower($direction)];
+    }
 }

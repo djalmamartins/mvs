@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/mvs-dev]
   pull_request:
-    branches: [main]
+    branches: [main, feat/mvs-dev]
 
 permissions:
   contents: read
@@ -78,3 +78,27 @@ jobs:
 
       - name: Static analysis
         run: composer analyse
+
+      - name: PHP syntax
+        run: find app tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l > /tmp/php-lint.log
+
+  javascript:
+    name: JavaScript and WhatsApp bridge
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: services/talk-whatsapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: services/talk-whatsapp/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --audit-level=low
+      - name: JavaScript syntax
+        working-directory: .
+        run: rg --files -g '*.js' public services scripts tests | while IFS= read -r file; do node --check "$file" || exit 1; done

@@ -28,4 +28,14 @@ final class IdempotencyKey
 
         return $key;
     }
+
+    public static function fingerprint(string $key, string $scope): string
+    {
+        $key = self::normalize($key);
+        $scope = trim($scope);
+        if ($scope === '') {
+            throw new InvalidArgumentException('Idempotency scope is required.');
+        }
+        return hash('sha256', $scope . "\0" . $key);
+    }
 }

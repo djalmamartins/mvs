@@ -8,6 +8,11 @@ use PHPUnit\Framework\TestCase;
 
 final class IdempotencyKeyTest extends TestCase
 {
+    public function testFingerprintSeparatesScopes(): void
+    {
+        self::assertSame(IdempotencyKey::fingerprint('request-1', 'erp:a'), IdempotencyKey::fingerprint('request-1', 'erp:a'));
+        self::assertNotSame(IdempotencyKey::fingerprint('request-1', 'erp:a'), IdempotencyKey::fingerprint('request-1', 'erp:b'));
+    }
     public function testKeyIsTrimmedAndPreserved(): void
     {
         self::assertSame('payment:42.retry-1', IdempotencyKey::normalize(' payment:42.retry-1 '));

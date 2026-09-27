@@ -7,6 +7,12 @@ use PHPUnit\Framework\TestCase;
 
 final class ApiQueryTest extends TestCase
 {
+    public function testSortingUsesAllowlist(): void
+    {
+        self::assertSame(['field' => 'name', 'direction' => 'desc'], ApiQuery::sorting(['sort' => 'name', 'direction' => 'DESC'], ['name']));
+        $this->expectException(InvalidArgumentException::class);
+        ApiQuery::sorting(['sort' => 'password'], ['name']);
+    }
     public function testPaginationUsesDefaults(): void
     {
         self::assertSame(['page' => 1, 'per_page' => 20], ApiQuery::pagination([]));
