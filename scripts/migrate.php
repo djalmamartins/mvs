@@ -41,6 +41,27 @@ if ($files === false || $files === []) {
 
 sort($files);
 
+// The older Talk tenancy migrations and 20260926_011 describe different
+// upgrade paths. Running 011 over the older schema partially changes MySQL
+// tables before failing because DDL is not transactional.
+$talkMultitenancyMigration = '20260926_011_create_talk_multitenancy.sql';
+$pendingTalkMultitenancy = $pdo->prepare(
+    'SELECT COUNT(*) FROM migrations WHERE migration = :migration'
+);
+$pendingTalkMultitenancy->execute(['migration' => $talkMultitenancyMigration]);
+if ((int) $pendingTalkMultitenancy->fetchColumn() === 0) {
+    $legacyTalkTenancy = $pdo->query(
+        "SELECT COUNT(*) FROM migrations WHERE migration = '20260922_001_add_talk_tenant_context.sql'"
+    );
+    if ((int) $legacyTalkTenancy->fetchColumn() > 0) {
+        throw new RuntimeException(
+            'Schema Talk legado detectado. A migration 20260926_011 não é compatível ' .
+            'com a trilha 20260922_001; interrompido antes de alterar dados. ' .
+            'Use o plano de reconciliação da issue #170.'
+        );
+    }
+}
+
 foreach ($files as $file) {
     $migration = basename($file);
 
