@@ -6,7 +6,6 @@ use Moves\Modules\Erp\Security\MfaChallengeService;
 use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
 use Moves\Modules\Erp\Security\MfaSecretCipher;
 use Moves\Modules\Erp\Security\TotpVerifier;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpMfaChallengeServiceTest extends TestCase

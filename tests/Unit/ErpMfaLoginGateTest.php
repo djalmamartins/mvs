@@ -8,7 +8,6 @@ use Moves\Modules\Erp\Security\MfaLoginGate;
 use Moves\Modules\Erp\Security\MfaRequirementPolicy;
 use Moves\Modules\Erp\Security\MfaSecretCipher;
 use Moves\Modules\Erp\Security\TotpVerifier;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpMfaLoginGateTest extends TestCase

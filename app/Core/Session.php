@@ -21,17 +21,26 @@ final class Session
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             $url = (string) Config::get('APP_URL', '');
+            $secure = filter_var(
+                Config::get('SESSION_SECURE', str_starts_with($url, 'https://')),
+                FILTER_VALIDATE_BOOL
+            );
+            $httpOnly = filter_var(Config::get('SESSION_HTTP_ONLY', true), FILTER_VALIDATE_BOOL);
+            $sameSite = ucfirst(strtolower((string) Config::get('SESSION_SAME_SITE', 'Lax')));
+            if (!in_array($sameSite, ['Lax', 'Strict'], true)) {
+                $sameSite = 'Lax';
+            }
 
             ini_set('session.use_strict_mode', '1');
             ini_set('session.use_only_cookies', '1');
-            ini_set('session.cookie_httponly', '1');
+            ini_set('session.cookie_httponly', $httpOnly ? '1' : '0');
 
             session_set_cookie_params([
                 'lifetime' => 0,
                 'path' => '/',
-                'secure' => str_starts_with($url, 'https://'),
-                'httponly' => true,
-                'samesite' => 'Lax',
+                'secure' => $secure,
+                'httponly' => $httpOnly,
+                'samesite' => $sameSite,
             ]);
 
             session_start();

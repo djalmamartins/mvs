@@ -6,7 +6,6 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
-use RuntimeException;
 
 Environment::load(dirname(__DIR__));
 

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Moves\Modules\Erp\Security\AccessGate;
 use Moves\Modules\Erp\Security\AccessScope;
 use Moves\Modules\Erp\Security\ScopeGrantRepository;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpAccessGateTest extends TestCase

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
 use Moves\Modules\Erp\Security\MfaSecretCipher;
 use Moves\Modules\Erp\Security\SecurityAuditRepository;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpMfaEnrollmentRepositoryTest extends TestCase

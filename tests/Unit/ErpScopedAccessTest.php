@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Moves\Modules\Erp\Security\ScopeGrantRepository;
 use Moves\Modules\Erp\Security\ScopedAccess;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpScopedAccessTest extends TestCase

@@ -6,7 +6,6 @@ use Moves\Core\HttpException;
 use Moves\Modules\Erp\Security\ScopeGrantRepository;
 use Moves\Modules\Erp\Security\ScopedAccess;
 use Moves\Modules\Erp\Security\ScopedAccessMiddleware;
-use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class ErpScopedAccessMiddlewareTest extends TestCase
