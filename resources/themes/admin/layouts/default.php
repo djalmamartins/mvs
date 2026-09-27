@@ -2,6 +2,9 @@
 
 use Moves\Core\Auth;
 use Moves\Core\NotificationCounter;
+use Moves\Boot\Connection;
+use Moves\Services\Platform\ProductEntitlement;
+use Moves\Services\Platform\TenantContext;
 
 /**
  * Moves Platform | Application Shell
@@ -21,6 +24,20 @@ if ($user !== null && ($activeProduct ?? '') === 'talk') {
 
 $activeProduct = $activeProduct ?? 'cms';
 $productName   = $productName ?? 'CMS';
+$availableTenants = [];
+$currentTenantId = null;
+$enabledProducts = array_fill_keys(ProductEntitlement::PRODUCTS, true);
+if ($user !== null) {
+    try {
+        $pdo = Connection::getInstance();
+        $tenantContext = new TenantContext($pdo);
+        $currentTenantId = $tenantContext->currentId((int) $user->id);
+        $availableTenants = $tenantContext->available((int) $user->id);
+        $enabledProducts = (new ProductEntitlement($pdo))->all($currentTenantId);
+    } catch (Throwable) {
+        $availableTenants = [];
+    }
+}
 
 $userName = $user !== null
     ? (string) $user->name
@@ -75,6 +92,7 @@ $apps = [
         'href'  => '/studio',
     ],
 ];
+$apps = array_values(array_filter($apps, static fn (array $app): bool => $app['key'] === 'day' || ($enabledProducts[$app['key']] ?? false)));
 
 ?>
 <!doctype html>
@@ -282,6 +300,15 @@ $apps = [
 
             <div class="top-actions">
 
+                <?php if (count($availableTenants) > 1): ?>
+                    <form method="post" action="/tenant/switch" class="tenant-switcher">
+                        <?= $this->csrf() ?>
+                        <label><span class="sr-only">Administradora ativa</span><select name="tenant_id" onchange="this.form.submit()">
+                            <?php foreach ($availableTenants as $tenant): ?><option value="<?= $tenant['id'] ?>" <?= $tenant['id']===$currentTenantId?'selected':'' ?>><?= $this->e($tenant['name']) ?></option><?php endforeach; ?>
+                        </select></label>
+                    </form>
+                <?php endif; ?>
+
                 <form
                         class="search"
                         method="get"
@@ -311,9 +338,11 @@ $apps = [
                 </a>
 
                 <?php if ($user !== null): ?>
-                    <button
+                    <div class="platform-user-menu"><button
                             class="user-chip"
+                            data-user-menu-trigger
                             type="button"
+                            aria-expanded="false"
                             title="<?= $this->e($userName) ?>"
                     >
                         <span class="mini-avatar">
@@ -323,7 +352,11 @@ $apps = [
                         <span><?= $this->e($userName) ?></span>
 
                         <i class="icon-chevron-down"></i>
-                    </button>
+                    </button><div class="platform-user-dropdown" data-user-menu hidden>
+                        <strong><?= $this->e($userName) ?></strong><small><?= $this->e((string)$user->email) ?></small>
+                        <a href="/app/profile">Meu perfil</a><a href="/settings">Administradora e produtos</a><a href="/studio/settings">Preferências do site</a>
+                        <form method="post" action="/logout"><?= $this->csrf() ?><button type="submit">Sair</button></form>
+                    </div></div>
                 <?php endif; ?>
 
             </div>

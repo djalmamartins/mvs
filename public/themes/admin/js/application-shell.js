@@ -32,6 +32,9 @@ function closeLauncher(){if(!launcher||!overlay)return;launcher.classList.remove
 const launcherBtn=document.querySelector("#launcherBtn"),launcherClose=document.querySelector("#launcherClose"),appSearch=document.querySelector("#appSearch");if(launcherBtn)launcherBtn.onclick=openLauncher;if(launcherClose)launcherClose.onclick=closeLauncher;if(overlay)overlay.onclick=closeLauncher;
 appSearch?.addEventListener("input",e=>{const q=e.target.value.toLowerCase();document.querySelectorAll("#appGrid button").forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?"":"none")});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLauncher()});render("studio");
+const userTrigger=document.querySelector("[data-user-menu-trigger]"),userMenu=document.querySelector("[data-user-menu]");
+userTrigger?.addEventListener("click",()=>{const open=userMenu?.hasAttribute("hidden")??true;if(open)userMenu?.removeAttribute("hidden");else userMenu?.setAttribute("hidden","");userTrigger.setAttribute("aria-expanded",open?"true":"false")});
+document.addEventListener("click",e=>{if(userMenu&&!userMenu.contains(e.target)&&e.target!==userTrigger&&!userTrigger?.contains(e.target)){userMenu.setAttribute("hidden","");userTrigger?.setAttribute("aria-expanded","false")}});
 document.querySelectorAll("[data-tabs] button").forEach(b=>b.addEventListener("click",()=>{b.parentElement.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active")}));
 const qs=document.querySelector("#tableSearch"),sf=document.querySelector("#statusFilter"),rows=[...document.querySelectorAll("#proposalRows tr")],rc=document.querySelector("#resultCount");
 function filterRows(){let q=(qs?.value||"").toLowerCase(),st=sf?.value||"",n=0;rows.forEach(r=>{let ok=(!q||r.textContent.toLowerCase().includes(q))&&(!st||r.dataset.status===st);r.style.display=ok?"":"none";if(ok)n++});if(rc)rc.textContent=n+" registro(s)"}

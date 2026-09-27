@@ -23,7 +23,7 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
-        if ($path === '/layout' || str_starts_with($path, '/layout/')) {
+        if ($path === '/layout' || str_starts_with($path, '/layout/') || $path === '/onboarding') {
             return 'layout';
         }
 
@@ -37,6 +37,8 @@ final class Theme
             '/talk',
             '/support',
             '/erp',
+            '/settings',
+            '/tenant',
         ];
 
         foreach ($adminPrefixes as $prefix) {
