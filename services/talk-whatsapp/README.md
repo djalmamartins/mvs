@@ -45,4 +45,6 @@ php scripts/talk-outbox-worker.php
 
 Use `--once` para processar no máximo um item, útil para cron, testes e diagnóstico. Em modo contínuo o worker aguarda `TALK_OUTBOX_IDLE_MILLISECONDS` quando a fila está vazia, aceita `SIGTERM`/`SIGINT` e recupera locks abandonados após `TALK_OUTBOX_LOCK_TIMEOUT` segundos.
 
+Autoatribuição e Jack usam outro processo supervisionado: `php scripts/talk-operations-worker.php`. Ele também aceita `--once`; veja [`docs/talk-realtime-v1.md`](../../docs/talk-realtime-v1.md) para comportamento e smoke operacional.
+
 Falhas temporárias recebem backoff exponencial até `TALK_OUTBOX_MAX_ATTEMPTS`. O canal e a `session_key` gravados no ticket são sempre preservados: um canal desconectado nunca provoca fallback para outro número. A chave de idempotência segue até o bridge, cujo recibo local impede um segundo envio após timeout ou reinício.

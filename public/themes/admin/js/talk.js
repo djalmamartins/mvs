@@ -89,27 +89,33 @@
     }
 
     const inboxTabs = page.querySelector('[data-talk-inbox-tabs]');
+    const applyInboxScope = () => {
+        const scope = inboxTabs?.querySelector('[data-talk-scope].active')?.dataset.talkScope || 'all';
+        page.querySelectorAll('.talk-inbox-row').forEach((row) => {
+            const status = row.dataset.talkStatus || '';
+            const unread = Number(row.dataset.talkUnread || 0);
+            row.hidden = scope === 'attending'
+                ? !['assigned', 'open'].includes(status)
+                : scope === 'unread' ? unread <= 0 : false;
+        });
+    };
     if (inboxTabs) {
         inboxTabs.addEventListener('click', (event) => {
             const button = event.target.closest('[data-talk-scope]');
             if (!button) return;
             const scope = button.dataset.talkScope || 'all';
             inboxTabs.querySelectorAll('[data-talk-scope]').forEach((element) => element.classList.toggle('active', element === button));
-            page.querySelectorAll('.talk-inbox-row').forEach((row) => {
-                const status = row.dataset.talkStatus || '';
-                const unread = Number(row.dataset.talkUnread || 0);
-                row.hidden = scope === 'attending'
-                    ? !['assigned', 'open'].includes(status)
-                    : scope === 'unread' ? unread <= 0 : false;
-            });
+            applyInboxScope();
         });
+        applyInboxScope();
     }
 
     const thread = page.querySelector('.talk-thread');
     if (thread) thread.scrollTop = thread.scrollHeight;
 
-    const textarea = page.querySelector('[data-talk-composer]');
-    if (textarea) {
+    const setupComposer = () => {
+        const textarea = page.querySelector('[data-talk-composer]');
+        if (!textarea) return;
         const idempotency = textarea.form?.querySelector('[data-talk-idempotency]');
         if (idempotency && !idempotency.value) {
             idempotency.value = window.crypto?.randomUUID?.()
@@ -127,7 +133,8 @@
             }
         });
         resize();
-    }
+    };
+    setupComposer();
 
     const file = page.querySelector('[data-talk-file]');
     const fileLabel = page.querySelector('[data-talk-file-name]');
@@ -143,76 +150,87 @@
     }));
 
     let revision = null;
-    let syncing = false;
-    let syncTimer = null;
-    const syncStatus = document.createElement('span');
-    syncStatus.className = 'talk-sync-status';
-    syncStatus.setAttribute('role', 'status');
-    syncStatus.setAttribute('aria-live', 'polite');
-    page.querySelector('.talk-homebar-actions')?.prepend(syncStatus);
-    const deliveryLabel = (status) => status === 'pending' ? 'Enviando' : status === 'failed' ? 'Falhou' : 'Enviada';
-    const renderThread = (ticket) => {
-        const target = page.querySelector('.talk-live-conversation .talk-thread');
-        if (!target || !ticket?.messages) return;
-        const pinnedToBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 80;
-        const fragment = document.createDocumentFragment();
-        ticket.messages.forEach((message) => {
-            const article = document.createElement('article');
-            article.className = `talk-message talk-message-${message.direction}`;
-            const meta = document.createElement('small');
-            meta.textContent = `${message.sender_name || (message.sender_type === 'contact' ? ticket.contact_name : 'Sistema')} · ${message.sent_at || message.created_at || ''}`;
-            const body = document.createElement('p'); body.textContent = message.body || '';
-            article.append(meta, body);
-            if (message.direction === 'outbound') { const status = message.delivery_status || 'sent'; const badge = document.createElement('span'); badge.className = `talk-delivery talk-delivery-${status}`; badge.textContent = deliveryLabel(status); article.append(badge); }
-            fragment.append(article);
-        });
-        target.replaceChildren(fragment);
-        if (pinnedToBottom) target.scrollTop = target.scrollHeight;
+    let appliedRevision = null;
+    let listedRevision = null;
+    let timer = null;
+    let polling = false;
+    const status = page.querySelector('[data-talk-sync-status]');
+    const setStatus = (state, label) => {
+        if (!status || status.dataset.state === state) return;
+        status.dataset.state = state;
+        status.textContent = label;
     };
-    const updateConversationRows = (rows) => {
-        const target = page.querySelector('.talk-inbox-list-body');
-        if (!target || !Array.isArray(rows)) return;
-        const byTicket = new Map(rows.map((row) => [String(row.ticket_id || 0), row]));
-        target.querySelectorAll('.talk-inbox-row').forEach((element) => {
-            const id = new URL(element.href).searchParams.get('ticket'); const row = byTicket.get(String(id));
-            if (!row) { element.remove(); return; }
-            element.dataset.talkStatus = row.ticket_status || row.status || ''; element.dataset.talkUnread = String(row.unread_count || 0);
-            const copy = element.querySelector('.talk-inbox-row-copy'); if (copy) { copy.querySelector('strong').textContent = row.contact_name || row.phone || 'Sem identificação'; copy.querySelector('small').textContent = row.last_message_preview || 'Conversa do WhatsApp'; }
-            byTicket.delete(String(id));
+    const schedule = (delay) => {
+        if (timer !== null) window.clearTimeout(timer);
+        timer = window.setTimeout(sync, delay);
+    };
+    const refreshWorkspace = async () => {
+        if (page.dataset.talkView !== 'inbox') return true;
+        const currentComposer = page.querySelector('[data-talk-composer]');
+        const editing = currentComposer && (document.activeElement === currentComposer || currentComposer.value.trim() !== '');
+        if (listedRevision === revision && editing) return false;
+        const response = await fetch(location.href, {
+            headers: { Accept: 'text/html' }, cache: 'no-store', credentials: 'same-origin',
         });
-        byTicket.forEach((row) => {
-            const link=document.createElement('a');link.className='talk-inbox-row';link.href=`/talk/view/inbox?ticket=${Number(row.ticket_id)||0}`;link.dataset.talkStatus=row.ticket_status||row.status||'';link.dataset.talkUnread=String(row.unread_count||0);
-            const avatar=document.createElement('span');avatar.className='talk-contact-avatar';avatar.textContent=String(row.contact_name||row.phone||'?').slice(0,1).toUpperCase();
-            const copy=document.createElement('span');copy.className='talk-inbox-row-copy';const name=document.createElement('strong');name.textContent=row.contact_name||row.phone||'Sem identificação';const preview=document.createElement('small');preview.textContent=row.last_message_preview||'Conversa do WhatsApp';const meta=document.createElement('span');meta.className='talk-inbox-row-meta';const queue=document.createElement('em');queue.textContent=row.queue_name||'WhatsApp';meta.append(queue);if(Number(row.unread_count)>0){const unread=document.createElement('b');unread.textContent=String(row.unread_count);meta.append(unread);}copy.append(name,preview,meta);link.append(avatar,copy);target.prepend(link);
-        });
-        const activeScope=page.querySelector('[data-talk-scope].active')?.dataset.talkScope||'all';
-        page.querySelectorAll('.talk-inbox-row').forEach((row)=>{const status=row.dataset.talkStatus||'';const unread=Number(row.dataset.talkUnread||0);row.hidden=activeScope==='attending'?!['assigned','open'].includes(status):activeScope==='unread'?unread<=0:false;});
+        if (!response.ok) throw new Error('Workspace indisponível');
+        const fresh = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextPage = fresh.querySelector('.talk-page[data-talk-view="inbox"]');
+        const nextList = nextPage?.querySelector('.talk-inbox-list-body');
+        const currentList = page.querySelector('.talk-inbox-list-body');
+        if (!nextList || !currentList) throw new Error('Workspace inválida');
+        currentList.replaceWith(nextList);
+        listedRevision = revision;
+        applyInboxScope();
+        const composer = page.querySelector('[data-talk-composer]');
+        if (composer && (document.activeElement === composer || composer.value.trim() !== '')) return false;
+        const shell = page.querySelector('.talk-home-shell');
+        const nextShell = nextPage.querySelector('.talk-home-shell');
+        const main = shell?.querySelector('main');
+        const context = shell?.querySelector('.talk-home-context');
+        const nextMain = nextShell?.querySelector('main');
+        const nextContext = nextShell?.querySelector('.talk-home-context');
+        if (!main || !context || !nextMain || !nextContext) throw new Error('Conversa inválida');
+        const oldThread = main.querySelector('.talk-thread');
+        const nearBottom = !oldThread || oldThread.scrollHeight - oldThread.scrollTop - oldThread.clientHeight < 48;
+        const oldScrollTop = oldThread?.scrollTop || 0;
+        main.replaceWith(nextMain);
+        context.replaceWith(nextContext);
+        const thread = page.querySelector('.talk-thread');
+        if (thread) thread.scrollTop = nearBottom ? thread.scrollHeight : oldScrollTop;
+        setupComposer();
+        return true;
     };
     const sync = async () => {
-        if (syncing) return;
-        syncing = true;
+        timer = null;
+        if (polling) return;
+        if (document.hidden) { schedule(15000); return; }
+        polling = true;
         try {
-            const current = new URL(location.href); const query = new URLSearchParams();
-            if (current.searchParams.get('ticket')) query.set('ticket', current.searchParams.get('ticket'));
-            if (current.searchParams.get('q')) query.set('q', current.searchParams.get('q'));
-            const response = await fetch(`/talk/sync?${query}`, {
+            const response = await fetch('/talk/sync', {
                 headers: { Accept: 'application/json' },
                 cache: 'no-store',
                 credentials: 'same-origin',
             });
-            if (!response.ok) throw new Error('sync unavailable');
+            if (!response.ok) throw new Error('Sincronização indisponível');
             const data = await response.json();
-            if (revision !== null && data.revision !== revision) { updateConversationRows(data.conversations); renderThread(data.ticket); }
-            revision = data.revision; syncStatus.textContent = '';
+            if (typeof data.revision !== 'string') throw new Error('Revisão inválida');
+            revision = data.revision;
+            if (appliedRevision !== revision && await refreshWorkspace()) appliedRevision = revision;
             const badge = document.querySelector('[data-talk-notification-count]');
             if (badge) {
                 badge.textContent = String(data.notifications || '');
                 badge.hidden = !data.notifications;
             }
-        } catch (_) { syncStatus.textContent = 'Reconectando…'; }
-        finally { syncing = false; scheduleSync(); }
+            setStatus('online', 'Atualizações conectadas');
+        } catch (_) {
+            setStatus('offline', 'Atualizações interrompidas. Tentando reconectar…');
+        } finally {
+            polling = false;
+            schedule(document.hidden ? 15000 : status?.dataset.state === 'offline' ? 5000 : 2000);
+        }
     };
-    const scheduleSync = () => { window.clearTimeout(syncTimer); syncTimer = window.setTimeout(sync, document.hidden ? 15000 : 2000); };
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { window.clearTimeout(syncTimer); sync(); } });
+    document.addEventListener('visibilitychange', () => {
+        if (!polling) schedule(document.hidden ? 15000 : 0);
+    });
     sync();
 })();

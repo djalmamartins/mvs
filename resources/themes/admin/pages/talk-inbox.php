@@ -5,6 +5,7 @@ $talkView=$talkView??'inbox';$conversations=$conversations??[];$selectedTicket=$
 <link rel="stylesheet" href="/themes/admin/css/support.css?v=20260919c"><link rel="stylesheet" href="<?= $this->e($this->asset('css/talk.css')) ?>">
 <section class="support-workspace-page studio-page talk-page talk-inbox-page" data-talk-view="<?= $this->e($talkView) ?>">
 <?php $this->insert('components/support-page-header',['heading'=>'Talk','description'=>'Central de atendimento WhatsApp da Moves.','actionHref'=>'/talk/view/connection','actionLabel'=>'Conexão WhatsApp']); ?>
+<p class="talk-sync-status" data-talk-sync-status role="status" aria-live="polite">Conectando atualizações…</p>
 <nav class="talk-workspace-nav" aria-label="Áreas do Talk">
 <?php foreach(['inbox'=>'Conversas','queue'=>'Fila','contacts'=>'Contatos','history'=>'Histórico','connection'=>'Conexão','jack'=>'Jack','team'=>'Equipe','settings'=>'Configurações'] as $key=>$label): ?><a href="/talk/view/<?= $key ?>" data-talk-view-link="<?= $key ?>" class="<?= $talkView===$key?'active':'' ?>"><?= $this->e($label) ?></a><?php endforeach; ?>
 </nav>
@@ -20,4 +21,4 @@ $talkView=$talkView??'inbox';$conversations=$conversations??[];$selectedTicket=$
 <?php elseif($talkView==='jack'): ?><section class="support-panel"><header><div><h2>Jack</h2><p>Interações do agente virtual no atendimento.</p></div></header><?php if(!$jack_interactions): ?><div class="support-empty-state"><h2>Sem interações</h2><p>As ações do Jack aparecerão aqui.</p></div><?php endif; ?></section>
 <?php elseif($talkView==='team'): ?><section class="support-panel"><header><div><h2>Equipe</h2><p>Atendentes, presença e capacidade.</p></div></header><div class="support-table"><table><thead><tr><th>Usuário</th><th>Perfil</th><th>Presença</th><th>Ativos</th></tr></thead><tbody><?php foreach($users as $row): ?><tr><td><?= $this->e((string)$row['name']) ?></td><td><?= $this->e((string)$row['talk_role']) ?></td><td><?= $this->e((string)$row['presence']) ?></td><td><?= (int)$row['active_tickets'] ?></td></tr><?php endforeach; ?></tbody></table></div></section>
 <?php else: ?><section class="support-panel"><header><div><h2>Configurações</h2><p>Regras gerais do atendimento.</p></div></header><div class="talk-connection-checks"><p><span>Autoatribuição</span><strong><?= ($settings['auto_assign.enabled']??'1')==='1'?'Ativa':'Inativa' ?></strong></p><p><span>Tempo padrão</span><strong><?= (int)($settings['auto_assign.default_seconds']??30) ?> segundos</strong></p></div></section><?php endif; ?>
-</section><script src="<?= $this->e($this->asset('js/talk.js')) ?>" defer></script>
+</section>
