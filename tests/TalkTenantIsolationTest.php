@@ -96,6 +96,23 @@ final class TalkTenantIsolationTest extends TestCase
         (new TalkTenantContext())->forUser((int)$this->a['user'], (int)$this->b['tenant']);
     }
 
+    public function testTenantContextRejectsInactiveGlobalUser(): void
+    {
+        $tenant=(int)$this->a['tenant'];
+        $user=(int)$this->a['user'];
+        $context=new TalkTenantContext();
+        self::assertSame($tenant,$context->forUser($user,$tenant));
+        $this->pdo->prepare("UPDATE users SET status='inactive' WHERE id=:id")->execute(['id'=>$user]);
+        try {
+            $context->forUser($user,$tenant);
+            self::fail('Usuário inativo não pode manter acesso ao tenant.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('Usuário sem acesso à empresa selecionada.',$exception->getMessage());
+        }
+        $this->pdo->prepare("UPDATE users SET status='active' WHERE id=:id")->execute(['id'=>$user]);
+        self::assertSame($tenant,$context->forUser($user,$tenant));
+    }
+
     public function testSearchHistoryReportsNotificationsAttachmentsAndTagsAreIsolated(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='closed',closed_at=NOW() WHERE id IN (:a,:b)")
