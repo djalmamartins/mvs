@@ -242,6 +242,123 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame(0,$this->countWhere('talk_events',(int)$this->a['tenant'],"ticket_id={$ticketId}"));
     }
 
+    public function testTransferChecksCapacityAndPreservesHistoryWhenRejected(): void
+    {
+        $tenant=(int)$this->a['tenant'];$user=(int)$this->a['user'];$ticket=(int)$this->a['ticket'];
+        $service=new TalkService($tenant);
+        $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")
+            ->execute(['tenant'=>$tenant,'user'=>$user]);
+
+        // Keeping one's own ticket consumes no extra slot.
+        $service->transfer($ticket,$user,$user,null,'mesmo atendente');
+        self::assertSame(1,$this->countWhere('talk_transfers',$tenant,"ticket_id={$ticket}"));
+
+        $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,assigned_user_id,status,source) VALUES(:tenant,:channel,:protocol,:conversation,:queue,:user,'assigned','whatsapp')")
+            ->execute(['tenant'=>$tenant,'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-extra'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue'],'user'=>$user]);
+        $extra=(int)$this->pdo->lastInsertId();
+        try {
+            $service->transfer($extra,$user,$user,null,'excesso');
+            self::fail('A transferência acima da capacidade deveria ser recusada.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('capacidade',$e->getMessage());
+        }
+        self::assertSame(0,$this->countWhere('talk_transfers',$tenant,"ticket_id={$extra}"));
+        self::assertSame(0,$this->countWhere('talk_events',$tenant,"ticket_id={$extra}"));
+        self::assertSame('assigned',$this->pdo->query("SELECT status FROM talk_tickets WHERE id={$extra}")->fetchColumn());
+    }
+
+    public function testTransferRejectsForeignUserAndInactiveQueue(): void
+    {
+        $tenant=(int)$this->a['tenant'];$ticket=(int)$this->a['ticket'];$user=(int)$this->a['user'];
+        $service=new TalkService($tenant);
+        try {
+            $service->transfer($ticket,$user,(int)$this->b['user'],null,'outro tenant');
+            self::fail('Usuário de outro tenant deveria ser recusado.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('empresa',$e->getMessage());
+        }
+        $this->pdo->prepare("UPDATE talk_queues SET status='inactive' WHERE id=:queue")->execute(['queue'=>$this->a['queue']]);
+        try {
+            $service->transfer($ticket,$user,null,(int)$this->a['queue'],'fila inativa');
+            self::fail('Fila inativa deveria ser recusada.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('ativa',$e->getMessage());
+        }
+        self::assertSame(0,$this->countWhere('talk_transfers',$tenant,"ticket_id={$ticket}"));
+    }
+
+    public function testTransferRejectsInactiveMemberAndCanReturnToActiveQueue(): void
+    {
+        $tenant=(int)$this->a['tenant'];$user=(int)$this->a['user'];$queue=(int)$this->a['queue'];$ticket=(int)$this->a['ticket'];
+        $service=new TalkService($tenant);
+        $this->pdo->prepare("UPDATE talk_queue_members SET status='inactive' WHERE tenant_id=:tenant AND queue_id=:queue AND user_id=:user")
+            ->execute(['tenant'=>$tenant,'queue'=>$queue,'user'=>$user]);
+        try {
+            $service->transfer($ticket,$user,$user,null,'membro inativo');
+            self::fail('Membro inativo não pode receber transferência direta.');
+        } catch (RuntimeException $e) {
+            self::assertStringContainsString('não pertence',$e->getMessage());
+        }
+        $service->transfer($ticket,$user,null,$queue,'devolver à fila');
+        $row=$this->pdo->query("SELECT status,assigned_user_id FROM talk_tickets WHERE id={$ticket}")->fetch(PDO::FETCH_ASSOC);
+        self::assertSame('queued',$row['status']);
+        self::assertNull($row['assigned_user_id']);
+        self::assertSame(1,$this->countWhere('talk_transfers',$tenant,"ticket_id={$ticket}"));
+    }
+
+    public function testTransferWaitsForClaimCapacityLock(): void
+    {
+        $tenant=(int)$this->a['tenant'];$target=(int)$this->a['user'];$ticket=(int)$this->a['ticket'];
+        $this->pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES('Transfer actor',:email,'test-only','active','admin')")
+            ->execute(['email'=>$this->prefix.'-transfer@example.test']);
+        $actor=(int)$this->pdo->lastInsertId();$process=null;$pipes=[];$claimProcess=null;$claimPipes=[];
+        try {
+            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')")
+                ->execute(['tenant'=>$tenant,'user'=>$actor]);
+            $this->pdo->prepare("UPDATE talk_tickets SET assigned_user_id=:actor WHERE id=:ticket")
+                ->execute(['actor'=>$actor,'ticket'=>$ticket]);
+            $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")
+                ->execute(['tenant'=>$tenant,'user'=>$target]);
+            $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,status,source) VALUES(:tenant,:channel,:protocol,:conversation,:queue,'queued','whatsapp')")
+                ->execute(['tenant'=>$tenant,'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-claim'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue']]);
+            $claimed=(int)$this->pdo->lastInsertId();
+            $this->pdo->beginTransaction();
+            $lock=$this->pdo->prepare('SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user FOR UPDATE');
+            $lock->execute(['tenant'=>$tenant,'user'=>$target]);self::assertSame($target,(int)$lock->fetchColumn());
+            $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-transfer-child.php',(string)$tenant,(string)$ticket,(string)$actor,(string)$target];
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            self::assertIsResource($process);fclose($pipes[0]);stream_set_timeout($pipes[1],5);
+            self::assertSame("ready\n",fgets($pipes[1]));
+            $claimCommand=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$tenant,(string)$claimed,(string)$target];
+            $claimProcess=proc_open($claimCommand,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$claimPipes,dirname(__DIR__),$_ENV);
+            self::assertIsResource($claimProcess);fclose($claimPipes[0]);stream_set_timeout($claimPipes[1],5);
+            self::assertSame("ready\n",fgets($claimPipes[1]));
+            usleep(200000);self::assertTrue(proc_get_status($process)['running']);self::assertTrue(proc_get_status($claimProcess)['running']);
+            $this->pdo->commit();
+            $transferResult=trim((string)stream_get_contents($pipes[1]));
+            $claimResult=trim((string)stream_get_contents($claimPipes[1]));
+            self::assertContains($transferResult,['transferred','rejected: Atendente atingiu a capacidade máxima de atendimentos.']);
+            self::assertContains($claimResult,['0','1']);
+            self::assertSame(1,(int)($transferResult==='transferred')+(int)($claimResult==='1'));
+            self::assertSame('',trim((string)stream_get_contents($pipes[2])));
+            self::assertSame('',trim((string)stream_get_contents($claimPipes[2])));
+            fclose($pipes[1]);fclose($pipes[2]);proc_close($process);$process=null;
+            fclose($claimPipes[1]);fclose($claimPipes[2]);proc_close($claimProcess);$claimProcess=null;
+            self::assertSame($transferResult==='transferred'?1:0,$this->countWhere('talk_transfers',$tenant,"ticket_id={$ticket}"));
+            self::assertSame($transferResult==='transferred'?$target:$actor,(int)$this->pdo->query("SELECT assigned_user_id FROM talk_tickets WHERE id={$ticket}")->fetchColumn());
+            self::assertSame($claimResult==='1'?$target:0,(int)$this->pdo->query("SELECT assigned_user_id FROM talk_tickets WHERE id={$claimed}")->fetchColumn());
+        } finally {
+            if(is_resource($process)){proc_terminate($process);foreach($pipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($process);}
+            if(is_resource($claimProcess)){proc_terminate($claimProcess);foreach($claimPipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($claimProcess);}
+            if($this->pdo->inTransaction())$this->pdo->rollBack();
+            $this->pdo->prepare('UPDATE talk_tickets SET assigned_user_id=NULL WHERE id=:id')->execute(['id'=>$ticket]);
+            $this->pdo->prepare('DELETE FROM talk_events WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$tenant,'user'=>$actor]);
+            $this->pdo->prepare('DELETE FROM talk_transfers WHERE tenant_id=:tenant AND created_by=:user')->execute(['tenant'=>$tenant,'user'=>$actor]);
+            $this->pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$tenant,'user'=>$actor]);
+            $this->pdo->prepare('DELETE FROM users WHERE id=:id')->execute(['id'=>$actor]);
+        }
+    }
+
     public function testJackAndOutboundRemainInsideTheSelectedTenant(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")

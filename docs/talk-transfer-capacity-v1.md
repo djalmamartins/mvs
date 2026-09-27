@@ -5,3 +5,7 @@ Transferências para um atendente bloqueiam primeiro o vínculo `(tenant_id,user
 Dentro da transação o serviço bloqueia e revalida o ticket, a permissão do ator, a fila ativa e a associação ativa do destinatário. O limite efetivo é o menor valor entre `talk_user_settings.max_active_tickets` e `talk_queue_members.capacity`. O próprio ticket é excluído da contagem, permitindo transferências para si sem consumir capacidade duas vezes.
 
 Quando a elegibilidade ou capacidade falha, ticket, histórico, evento e notificações permanecem inalterados. Transferências apenas para fila continuam deixando o ticket em `queued`, sem destinatário direto.
+
+O evento de transferência é gravado na mesma transação do ticket e do histórico. A capacidade padrão do usuário é 5 quando não há configuração individual, igual ao claim. Não há override de capacidade para supervisores na V1. O formulário de detalhe mostra a causa de uma transferência recusada.
+
+Um teste com dois processos disputa a última vaga entre claim e transferência. O smoke HTTP local em banco descartável confirmou recusa visível no formulário e transferência aceita com registro persistido.

@@ -4,4 +4,4 @@
 
 O lock é por vínculo `(tenant_id,user_id)`, de modo que atendentes de outros tenants continuam operando. A autoatribuição usa o mesmo método de claim e, portanto, obedece à mesma garantia.
 
-As transferências diretas para um atendente ainda possuem outra rota de atribuição e precisam de uma regra explícita de capacidade/override para supervisão. Esta entrega cobre apenas o comando de assumir ticket, manual ou disparado pela autoatribuição.
+As transferências diretas seguem a política de capacidade e elegibilidade documentada em [talk-transfer-capacity-v1.md](talk-transfer-capacity-v1.md). Esta entrega cobre o comando de assumir ticket, manual ou disparado pela autoatribuição.
