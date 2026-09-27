@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 namespace Moves\Boot;
-use MovesCode\Router\Router;use Moves\Middleware\AuthMiddleware;use Moves\Middleware\GuestMiddleware;use Moves\Middleware\PermissionMiddleware;
+use MovesCode\Router\Router;use Moves\Middleware\AuthMiddleware;use Moves\Middleware\GuestMiddleware;use Moves\Middleware\PermissionMiddleware;use Moves\Modules\Erp\ErpModule;
 final class Routes{public static function register(Router $router):void{
+ErpModule::register();
 $router->namespace('Moves\\Controllers')->group('');
 $router->get('/','Home:index','home');$router->get('/servicos','Home:services','site.services');$router->get('/projetos','Home:projects','site.projects');$router->get('/sobre','Home:about','site.about');$router->get('/conteudo','Home:content','site.content');$router->get('/conteudo/{slug}','Home:article','site.article');$router->get('/media/{id}','StudioModulesController:mediaFile','site.media.file');$router->get('/pagina/{slug}','Home:dynamicPage','site.dynamic.page');$router->get('/faq','Home:faq','site.faq');
 $router->get('/help','HelpController:index','help.home');$router->get('/help/search','HelpController:search','help.search');$router->get('/help/products/{slug}','HelpController:product','help.product');$router->get('/help/categories/{slug}','HelpController:category','help.category');$router->get('/help/articles/{slug}','HelpController:article','help.article');$router->post('/help/articles/{slug}/feedback','HelpController:feedback','help.article.feedback');$router->get('/contato','Home:contact','site.contact');$router->post('/contato','Home:contactSubmit','site.contact.submit');
