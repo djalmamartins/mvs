@@ -151,6 +151,97 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertNotSame($read, $a->syncState($userId)['revision']);
     }
 
+    public function testClaimWaitsForAttendantLockAndRejectsCapacityOverflow(): void
+    {
+        $tenant=(int)$this->a['tenant'];
+        $user=(int)$this->a['user'];
+        $first=(int)$this->a['ticket'];
+        $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL WHERE id=:id")
+            ->execute(['id'=>$first]);
+        $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")
+            ->execute(['tenant'=>$tenant,'user'=>$user]);
+        $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,status,source,queued_at) VALUES(:tenant,:channel,:protocol,:conversation,:queue,'queued','whatsapp',NOW())")
+            ->execute(['tenant'=>$tenant,'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-second'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue']]);
+        $second=(int)$this->pdo->lastInsertId();
+
+        $process=null;
+        $pipes=[];
+        $this->pdo->beginTransaction();
+        try {
+            $lock=$this->pdo->prepare("SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user FOR UPDATE");
+            $lock->execute(['tenant'=>$tenant,'user'=>$user]);
+            self::assertSame($user,(int)$lock->fetchColumn());
+            $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$tenant,(string)$second,(string)$user];
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            self::assertIsResource($process);
+            fclose($pipes[0]);
+            stream_set_timeout($pipes[1],5);
+            self::assertSame("ready\n",fgets($pipes[1]));
+            usleep(200000);
+            self::assertTrue(proc_get_status($process)['running'],'Claim concorrente deve aguardar o lock do atendente.');
+
+            $this->pdo->prepare("UPDATE talk_tickets SET status='assigned',assigned_user_id=:user WHERE id=:id")
+                ->execute(['user'=>$user,'id'=>$first]);
+            $this->pdo->prepare("INSERT INTO talk_events(tenant_id,ticket_id,user_id,actor_type,event_type,payload) VALUES(:tenant,:ticket,:user,'user','ticket.claimed','{}')")
+                ->execute(['tenant'=>$tenant,'ticket'=>$first,'user'=>$user]);
+            $this->pdo->commit();
+
+            self::assertSame('0',trim((string)stream_get_contents($pipes[1])));
+            self::assertSame('',trim((string)stream_get_contents($pipes[2])));
+            fclose($pipes[1]);fclose($pipes[2]);
+            proc_close($process);$process=null;
+            $row=$this->pdo->query("SELECT status,assigned_user_id FROM talk_tickets WHERE id={$second}")->fetch(PDO::FETCH_ASSOC);
+            self::assertSame('queued',$row['status']);
+            self::assertNull($row['assigned_user_id']);
+            self::assertSame(1,$this->countWhere('talk_events',$tenant,"event_type='ticket.claimed'"));
+        } finally {
+            if(is_resource($process)){proc_terminate($process);foreach($pipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($process);}
+            if($this->pdo->inTransaction())$this->pdo->rollBack();
+        }
+    }
+
+    public function testClaimInAnotherTenantDoesNotWaitForAttendantLock(): void
+    {
+        $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL WHERE id=:id")
+            ->execute(['id'=>$this->b['ticket']]);
+        $process=null;
+        $pipes=[];
+        $this->pdo->beginTransaction();
+        try {
+            $lock=$this->pdo->prepare("SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user FOR UPDATE");
+            $lock->execute(['tenant'=>$this->a['tenant'],'user'=>$this->a['user']]);
+            self::assertNotFalse($lock->fetchColumn());
+            $command=[PHP_BINARY,'-d','variables_order=EGPCS',__DIR__.'/fixtures/talk-claim-child.php',(string)$this->b['tenant'],(string)$this->b['ticket'],(string)$this->b['user']];
+            $process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,dirname(__DIR__),$_ENV);
+            self::assertIsResource($process);
+            fclose($pipes[0]);
+            stream_set_timeout($pipes[1],5);
+            self::assertSame("ready\n",fgets($pipes[1]));
+            self::assertSame("1\n",fgets($pipes[1]));
+            self::assertFalse(stream_get_meta_data($pipes[1])['timed_out']);
+            self::assertSame('',trim((string)stream_get_contents($pipes[2])));
+            fclose($pipes[1]);fclose($pipes[2]);
+            proc_close($process);$process=null;
+            self::assertSame(1,$this->countWhere('talk_events',(int)$this->b['tenant'],"event_type='ticket.claimed'"));
+        } finally {
+            if(is_resource($process)){proc_terminate($process);foreach($pipes as $pipe)if(is_resource($pipe))fclose($pipe);proc_close($process);}
+            if($this->pdo->inTransaction())$this->pdo->rollBack();
+        }
+    }
+
+    public function testManualClaimHonorsQueueMemberCapacity(): void
+    {
+        $this->pdo->prepare("UPDATE talk_queue_members SET capacity=1 WHERE tenant_id=:tenant AND queue_id=:queue AND user_id=:user")
+            ->execute(['tenant'=>$this->a['tenant'],'queue'=>$this->a['queue'],'user'=>$this->a['user']]);
+        $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,status,source,queued_at) VALUES(:tenant,:channel,:protocol,:conversation,:queue,'queued','whatsapp',NOW())")
+            ->execute(['tenant'=>$this->a['tenant'],'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-capacity'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue']]);
+        $ticketId=(int)$this->pdo->lastInsertId();
+        $service=new TalkService((int)$this->a['tenant']);
+        self::assertFalse($service->claim($ticketId,(int)$this->a['user']));
+        self::assertSame('queued',$this->pdo->query("SELECT status FROM talk_tickets WHERE id={$ticketId}")->fetchColumn());
+        self::assertSame(0,$this->countWhere('talk_events',(int)$this->a['tenant'],"ticket_id={$ticketId}"));
+    }
+
     public function testJackAndOutboundRemainInsideTheSelectedTenant(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")
