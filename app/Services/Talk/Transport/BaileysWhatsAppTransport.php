@@ -4,7 +4,7 @@ namespace Moves\Services\Talk\Transport;
 use RuntimeException;
 final class BaileysWhatsAppTransport implements WhatsAppTransport{
  public function __construct(private readonly string $baseUrl,private readonly string $token=''){}
- public function sendText(string $channelKey,string $to,string $text):array{return $this->request('POST',$this->channelPath($channelKey).'/send/text',['to'=>$to,'text'=>$text]);}
+ public function sendText(string $channelKey,string $to,string $text,?string $idempotencyKey=null):array{return $this->request('POST',$this->channelPath($channelKey).'/send/text',['to'=>$to,'text'=>$text,'idempotency_key'=>$idempotencyKey]);}
  public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{throw new RuntimeException('Envio de mídia pelo bridge local ainda não está habilitado.');}
  public function status(string $channelKey):array{try{$r=$this->request('GET',$this->channelPath($channelKey).'/status');return $r+['driver'=>'baileys'];}catch(\Throwable $e){return ['status'=>'disconnected','connected'=>false,'detail'=>'Bridge local indisponível: '.$e->getMessage(),'qr'=>null,'profile'=>null,'driver'=>'baileys'];}}
  public function connect(string $channelKey,string $externalId):array{return $this->request('POST',$this->channelPath($channelKey).'/connect',['channel_external_id'=>$externalId]);}

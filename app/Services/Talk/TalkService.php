@@ -66,10 +66,10 @@ final class TalkService
         $pdo=Connection::getInstance();$params=['tenant_id'=>$this->tenantId()];
         if($this->canManage($userId)){
             $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(created_at)),0) FROM talk_messages WHERE tenant_id=:tenant_id";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(COALESCE(delivery_updated_at,created_at))),0) FROM talk_messages WHERE tenant_id=:tenant_id";
         }else{
             $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id AND (assigned_user_id=:user_id OR status='queued')";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(m.created_at)),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.tenant_id=m.tenant_id AND t.id=m.ticket_id WHERE m.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR t.status='queued')";
+            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(COALESCE(m.delivery_updated_at,m.created_at))),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.tenant_id=m.tenant_id AND t.id=m.ticket_id WHERE m.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR t.status='queued')";
             $params['user_id']=$userId;
         }
         $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();

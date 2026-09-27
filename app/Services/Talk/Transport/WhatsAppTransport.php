@@ -14,7 +14,7 @@ namespace Moves\Services\Talk\Transport;
 interface WhatsAppTransport
 {
     /** @return array{message_id:string,status:string} */
-    public function sendText(string $channelKey, string $to, string $text): array;
+    public function sendText(string $channelKey, string $to, string $text, ?string $idempotencyKey = null): array;
 
     /** @return array{message_id:string,status:string} */
     public function sendMedia(string $channelKey, string $to, string $absolutePath, string $mimeType, ?string $caption = null): array;

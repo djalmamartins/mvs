@@ -12,7 +12,7 @@ use RuntimeException;
  */
 final class NullWhatsAppTransport implements WhatsAppTransport
 {
-    public function sendText(string $channelKey, string $to, string $text): array
+    public function sendText(string $channelKey, string $to, string $text, ?string $idempotencyKey = null): array
     {
         $this->assertRecipient($to);
         throw new RuntimeException('WhatsApp não está conectado. Configure um transporte antes de enviar mensagens.');

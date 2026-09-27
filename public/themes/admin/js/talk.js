@@ -110,6 +110,11 @@
 
     const textarea = page.querySelector('[data-talk-composer]');
     if (textarea) {
+        const idempotency = textarea.form?.querySelector('[data-talk-idempotency]');
+        if (idempotency && !idempotency.value) {
+            idempotency.value = window.crypto?.randomUUID?.()
+                || `intent-${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+        }
         const resize = () => {
             textarea.style.height = 'auto';
             textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;

@@ -34,3 +34,15 @@ POST /channels/:session_key/send/text
 `external_id` identifica o canal no inbound; `session_key` é gerado pelo servidor, validado e usado somente como chave segura de sessão. Nenhum deles vem de um `.env` global por número.
 
 Não versione `.env` nem `baileys_auth/`. O uso de Baileys é adequado ao desenvolvimento/teste local; para operação oficial, mantenha disponível o driver `meta_cloud`.
+
+## Outbox durável
+
+O request do atendente apenas confirma a mensagem e a outbox na mesma transação. O envio é feito fora do request pelo worker:
+
+```bash
+php scripts/talk-outbox-worker.php
+```
+
+Use `--once` para processar no máximo um item, útil para cron, testes e diagnóstico. Em modo contínuo o worker aguarda `TALK_OUTBOX_IDLE_MILLISECONDS` quando a fila está vazia, aceita `SIGTERM`/`SIGINT` e recupera locks abandonados após `TALK_OUTBOX_LOCK_TIMEOUT` segundos.
+
+Falhas temporárias recebem backoff exponencial até `TALK_OUTBOX_MAX_ATTEMPTS`. O canal e a `session_key` gravados no ticket são sempre preservados: um canal desconectado nunca provoca fallback para outro número. A chave de idempotência segue até o bridge, cujo recibo local impede um segundo envio após timeout ou reinício.

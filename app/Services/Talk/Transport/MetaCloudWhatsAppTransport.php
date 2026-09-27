@@ -22,7 +22,7 @@ final class MetaCloudWhatsAppTransport implements WhatsAppTransport
         }
     }
 
-    public function sendText(string $channelKey, string $to, string $text): array
+    public function sendText(string $channelKey, string $to, string $text, ?string $idempotencyKey = null): array
     {
         $to = $this->normalizeRecipient($to);
         $text = trim($text);
