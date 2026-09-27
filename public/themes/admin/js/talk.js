@@ -50,6 +50,14 @@
         const dialog = channels.querySelector('[data-channel-dialog]');
         const form = dialog?.querySelector('form');
         const csrf = form?.querySelector('input[name="_token"]')?.value || '';
+        const connectDialog = channels.querySelector('[data-connect-dialog]');
+        const removeDialog = channels.querySelector('[data-remove-dialog]');
+        const feedback = channels.querySelector('[data-channel-feedback]');
+        let connectTimer = null;
+        let qrTimer = null;
+        const stateLabels = { starting: 'Preparando conexão', qr: 'Aguardando QR', connected: 'Conectado', reconnecting: 'Reconectando', disconnected: 'Desconectado', error: 'Erro' };
+        const formatPhone = (value) => { const digits = String(value || '').replace(/\D/g, ''); const match = digits.match(/^55(\d{2})(\d{5})(\d{4})$/); return match ? `(${match[1]}) ${match[2]}-${match[3]}` : (digits || 'Não configurado'); };
+        const showFeedback = (message, error = false) => { if (!feedback) return; feedback.textContent = message; feedback.hidden = false; feedback.classList.toggle('is-error', error); window.setTimeout(() => { feedback.hidden = true; }, 4500); };
         const openDialog = (data = {}) => {
             if (!dialog || !form) return;
             form.reset();
@@ -61,20 +69,20 @@
             dialog.querySelector('[data-dialog-title]').textContent = data.id ? 'Editar canal' : 'Novo canal';
             dialog.showModal();
         };
-        channels.querySelector('[data-channel-new]')?.addEventListener('click', () => openDialog());
+        channels.querySelectorAll('[data-channel-new],[data-channel-empty-new]').forEach((button) => button.addEventListener('click', () => openDialog()));
         channels.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', () => dialog?.close()));
         channels.querySelectorAll('[data-channel-edit]').forEach((button) => button.addEventListener('click', () => {
             try { openDialog(JSON.parse(button.dataset.channelEdit || '{}')); } catch (_) { openDialog(); }
         }));
-        channels.querySelector('[data-qr-close]')?.addEventListener('click', () => { channels.querySelector('[data-channel-qr]').hidden = true; });
         const render = (row, status) => {
             const badge = row.querySelector('[data-channel-state]');
-            if (badge) { badge.textContent = status.status || 'disconnected'; badge.classList.toggle('success', Boolean(status.connected)); }
+            const state = status.status || 'disconnected';
+            if (badge) { badge.dataset.state = state; const label = badge.querySelector('span'); if (label) label.textContent = stateLabels[state] || 'Desconectado'; }
             const error = row.querySelector('[data-channel-error]');
-            if (error) error.textContent = status.status === 'error' ? (status.detail || '') : '';
-            const qr = channels.querySelector('[data-channel-qr]');
-            if (qr && status.qr) { qr.hidden = false; qr.querySelector('img').src = status.qr; }
-            else if (qr && status.connected) qr.hidden = true;
+            if (error) error.textContent = state === 'error' ? 'Não foi possível conectar o WhatsApp.' : '';
+            const phone = status.profile?.phone_number || '';
+            if (phone) { const element = row.querySelector('[data-channel-phone]'); if (element) { element.dataset.channelPhoneValue = phone; element.textContent = formatPhone(phone); } }
+            const connect = row.querySelector('[data-channel-connect]'); if (connect) connect.textContent = state === 'disconnected' || state === 'error' ? 'Conectar' : 'Reconectar';
         };
         const request = async (id, action) => {
             const response = await fetch(`/talk/channels/${id}/${action}`, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ _token: csrf }), credentials: 'same-origin' });
@@ -82,8 +90,28 @@
             if (!response.ok) throw new Error(data.error || 'Falha ao operar o canal.');
             const row = channels.querySelector(`[data-channel-row="${id}"]`); if (row) render(row, data); return data;
         };
-        channels.querySelectorAll('[data-channel-connect]').forEach((button) => button.addEventListener('click', async () => { try { await request(button.dataset.channelConnect, 'connect'); } catch (error) { window.alert(error.message); } }));
-        channels.querySelectorAll('[data-channel-logout]').forEach((button) => button.addEventListener('click', async () => { if (!window.confirm('Desconectar somente este canal?')) return; try { await request(button.dataset.channelLogout, 'logout'); } catch (error) { window.alert(error.message); } }));
+        const paintConnect = (status) => {
+            if (!connectDialog) return;
+            const state = status.status || 'error', title = connectDialog.querySelector('[data-connect-title]'), detail = connectDialog.querySelector('[data-connect-detail]'), qr = connectDialog.querySelector('[data-connect-qr]'), instructions = connectDialog.querySelector('[data-connect-instructions]'), success = connectDialog.querySelector('[data-connect-success]'), retry = connectDialog.querySelector('[data-connect-retry]'), done = connectDialog.querySelector('[data-connect-done]'), spinner = connectDialog.querySelector('.talk-spinner');
+            connectDialog.querySelector('[data-connect-stage]').dataset.connectStage = state;
+            qr.hidden = true; instructions.hidden = true; success.hidden = true; retry.hidden = true; done.hidden = true; spinner.hidden = !['starting','reconnecting'].includes(state);
+            if (state === 'starting') { title.textContent = 'Preparando o WhatsApp...'; detail.textContent = 'Aguarde enquanto a sessão é preparada.'; }
+            else if (state === 'qr' && status.qr) { title.textContent = 'Aguardando leitura...'; detail.textContent = 'Leia o QR Code com o número que será usado no atendimento.'; qr.src = status.qr; qr.hidden = false; instructions.hidden = false; window.clearTimeout(qrTimer); qrTimer = window.setTimeout(() => paintConnect({ status: 'expired' }), 60000); }
+            else if (state === 'connected') { title.textContent = 'WhatsApp conectado'; detail.textContent = 'O canal está pronto para receber e enviar mensagens.'; success.hidden = false; success.querySelector('[data-connect-phone]').textContent = formatPhone(status.profile?.phone_number); done.hidden = false; window.clearTimeout(qrTimer); }
+            else if (state === 'reconnecting') { title.textContent = 'Conectando ao WhatsApp...'; detail.textContent = 'Tentando recuperar a sessão existente.'; }
+            else if (state === 'expired') { title.textContent = 'O QR Code expirou.'; detail.textContent = 'Gere um novo código para continuar.'; retry.hidden = false; }
+            else { title.textContent = 'Não foi possível conectar o WhatsApp.'; detail.textContent = 'Verifique se o bridge está ativo e tente novamente.'; retry.hidden = false; }
+        };
+        const pollConnect = async (id) => { window.clearTimeout(connectTimer); try { const response = await fetch(`/talk/channels/${id}/status`, { headers: { Accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' }); const status = await response.json(); const row = channels.querySelector(`[data-channel-row="${id}"]`); if (row) render(row, status); paintConnect(status); if (!['connected','error','disconnected'].includes(status.status)) connectTimer = window.setTimeout(() => pollConnect(id), 1800); } catch (_) { paintConnect({ status: 'error' }); } };
+        const startConnect = async (id) => { if (!connectDialog) return; connectDialog.dataset.channelId = id; connectDialog.showModal(); paintConnect({ status: 'starting' }); try { const status = await request(id, 'connect'); paintConnect(status); if (status.status !== 'connected') connectTimer = window.setTimeout(() => pollConnect(id), 1200); } catch (_) { paintConnect({ status: 'error' }); } };
+        channels.querySelectorAll('[data-channel-connect]').forEach((button) => button.addEventListener('click', () => startConnect(button.dataset.channelConnect)));
+        channels.querySelectorAll('[data-connect-cancel]').forEach((button) => button.addEventListener('click', async () => { window.clearTimeout(connectTimer); window.clearTimeout(qrTimer); const id = connectDialog?.dataset.channelId; if (id && !connectDialog.querySelector('[data-connect-done]:not([hidden])')) { try { await request(id, 'disconnect'); } catch (_) {} } connectDialog?.close(); }));
+        connectDialog?.querySelector('[data-connect-done]')?.addEventListener('click', () => { connectDialog.close(); showFeedback('Canal conectado'); });
+        connectDialog?.querySelector('[data-connect-retry]')?.addEventListener('click', async () => { const id = connectDialog.dataset.channelId; paintConnect({ status: 'starting' }); try { await request(id, 'disconnect'); await startConnect(id); } catch (_) { paintConnect({ status: 'error' }); } });
+        channels.querySelectorAll('[data-channel-disconnect]').forEach((button) => button.addEventListener('click', async () => { try { await request(button.dataset.channelDisconnect, 'disconnect'); showFeedback('Canal desconectado'); } catch (_) { showFeedback('Não foi possível desconectar.', true); } }));
+        channels.querySelectorAll('[data-channel-remove]').forEach((button) => button.addEventListener('click', () => { const row = button.closest('[data-channel-row]'); removeDialog.dataset.channelId = button.dataset.channelRemove; removeDialog.querySelector('[data-remove-phone]').textContent = formatPhone(row?.querySelector('[data-channel-phone]')?.dataset.channelPhoneValue); removeDialog.showModal(); }));
+        removeDialog?.querySelectorAll('[data-remove-cancel]').forEach((button) => button.addEventListener('click', () => removeDialog.close()));
+        removeDialog?.querySelector('[data-remove-confirm]')?.addEventListener('click', async () => { const id = removeDialog.dataset.channelId; try { await request(id, 'remove'); channels.querySelector(`[data-channel-row="${id}"]`)?.remove(); removeDialog.close(); showFeedback('Canal removido. O histórico foi preservado.'); } catch (_) { showFeedback('Não foi possível remover o canal.', true); } });
         const refresh = async () => { for (const row of channels.querySelectorAll('[data-channel-row]')) { try { const response = await fetch(row.dataset.statusUrl, { headers: { Accept: 'application/json' }, cache: 'no-store', credentials: 'same-origin' }); if (response.ok) render(row, await response.json()); } catch (_) {} } };
         refresh(); window.setInterval(refresh, 3000);
     }
