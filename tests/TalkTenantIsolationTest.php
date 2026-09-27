@@ -113,6 +113,38 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame($tenant,$context->forUser($user,$tenant));
     }
 
+    public function testCreateAndAttachTagRequiresOperationAccessWithoutOrphans(): void
+    {
+        $tenant=(int)$this->a['tenant'];
+        $ticket=(int)$this->a['ticket'];
+        $user=(int)$this->a['user'];
+        $talk=new TalkService($tenant);
+        $metadata=new TalkMetadataService($tenant);
+        $talk->saveUserSettings($user,'agent',5);
+        $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL WHERE tenant_id=:tenant AND id=:ticket")
+            ->execute(['tenant'=>$tenant,'ticket'=>$ticket]);
+        self::assertTrue($talk->canViewTicket($ticket,$user));
+        self::assertFalse($talk->canOperateTicket($ticket,$user));
+        $tagCount=count($metadata->tags());
+        $eventCount=$this->countWhere('talk_events',$tenant,"ticket_id={$ticket}");
+        try {
+            $metadata->createAndAttachTag($ticket,$user,$this->prefix.' denied');
+            self::fail('Atendente sem operação não pode criar uma tag para o ticket.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('Você não pode alterar este atendimento.',$exception->getMessage());
+        }
+        self::assertCount($tagCount,$metadata->tags());
+        self::assertSame($eventCount,$this->countWhere('talk_events',$tenant,"ticket_id={$ticket}"));
+
+        $this->pdo->prepare("UPDATE talk_tickets SET status='assigned',assigned_user_id=:user WHERE tenant_id=:tenant AND id=:ticket")
+            ->execute(['tenant'=>$tenant,'ticket'=>$ticket,'user'=>$user]);
+        $tagId=$metadata->createAndAttachTag($ticket,$user,$this->prefix.' allowed');
+        self::assertGreaterThan(0,$tagId);
+        self::assertCount($tagCount+1,$metadata->tags());
+        self::assertContains($tagId,array_map('intval',array_column($metadata->ticketTags($ticket),'id')));
+        self::assertSame($eventCount+1,$this->countWhere('talk_events',$tenant,"ticket_id={$ticket}"));
+    }
+
     public function testSearchHistoryReportsNotificationsAttachmentsAndTagsAreIsolated(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='closed',closed_at=NOW() WHERE id IN (:a,:b)")
