@@ -26,10 +26,10 @@ app.use((req,res,next)=>req.headers.authorization===`Bearer ${bridgeToken}`?next
 app.get('/channels/:channel/status',(req,res)=>respond(res,()=>manager.state(req.params.channel)));
 app.post('/channels/:channel/connect',(req,res)=>respond(res,()=>manager.connect(req.params.channel,req.body?.channel_external_id)));
 app.post('/channels/:channel/logout',(req,res)=>respond(res,()=>manager.logout(req.params.channel)));
-app.post('/channels/:channel/send/text',(req,res)=>respond(res,()=>manager.sendText(req.params.channel,req.body?.to,req.body?.text)));
+app.post('/channels/:channel/send/text',(req,res)=>respond(res,()=>manager.sendText(req.params.channel,req.body?.to,req.body?.text,req.body?.idempotency_key)));
 // Compatibilidade transitória da sessão histórica; o domínio novo sempre usa /channels/:session_key.
 app.get('/status',(req,res)=>respond(res,()=>manager.state('whatsapp-default')));
-app.post('/send/text',(req,res)=>respond(res,()=>manager.sendText('whatsapp-default',req.body?.to,req.body?.text)));
+app.post('/send/text',(req,res)=>respond(res,()=>manager.sendText('whatsapp-default',req.body?.to,req.body?.text,req.body?.idempotency_key||`legacy-${Date.now()}-${Math.random().toString(16).slice(2)}`)));
 app.post('/logout',(req,res)=>respond(res,()=>manager.logout('whatsapp-default')));
 async function respond(res,action){try{return res.json(await action());}catch(error){return res.status(error.message==='Canal inválido'?400:503).json({error:error.message});}}
 const server=app.listen(port,host,()=>logger.info({host,port,inbound:movesInbound},'Moves Talk WhatsApp bridge multissessão iniciado'));

@@ -11,10 +11,24 @@ use Moves\Services\Talk\TalkJackService;
 use Moves\Services\Talk\TalkMetadataService;
 use Moves\Services\Talk\TalkNotificationService;
 use Moves\Services\Talk\TalkOutboundService;
+use Moves\Services\Talk\TalkOutboxWorker;
 use Moves\Services\Talk\TalkService;
 use Moves\Services\Talk\TalkTenantContext;
 use Moves\Services\Talk\Transport\WhatsAppTransport;
 use PHPUnit\Framework\TestCase;
+
+final class OutboxTestTransport implements WhatsAppTransport
+{
+    public int $calls=0;
+    public bool $offline=false;
+    public string $channelKey='';
+    /** @var null|callable */ public $duringSend=null;
+    public function sendText(string $channelKey,string $to,string $text,?string $idempotencyKey=null):array{$this->calls++;$this->channelKey=$channelKey;if($this->duringSend!==null){$callback=$this->duringSend;$this->duringSend=null;$callback();}if($this->offline)throw new RuntimeException('Bridge indisponível: Connection refused');return['message_id'=>'out-'.$this->calls,'status'=>'sent'];}
+    public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{return['message_id'=>'media','status'=>'sent'];}
+    public function status(string $channelKey):array{return['status'=>'connected','connected'=>true,'detail'=>null];}
+    public function connect(string $channelKey,string $externalId):array{return$this->status($channelKey);}
+    public function logout(string $channelKey):array{return['ok'=>true];}
+}
 
 final class TalkTenantIsolationTest extends TestCase
 {
@@ -39,7 +53,7 @@ final class TalkTenantIsolationTest extends TestCase
         foreach ([$this->a ?? [], $this->b ?? []] as $fixture) {
             if (isset($fixture['tenant'])) {
                 $tenant=(int)$fixture['tenant'];
-                foreach (['talk_notifications','talk_attachments','talk_ticket_tags','talk_jack_interactions','talk_events','talk_notes','talk_transfers','talk_messages','talk_tickets','talk_conversations','talk_contacts','talk_queue_members','talk_channels','talk_queues','talk_departments','talk_settings','talk_presence','talk_user_settings','talk_tenant_users'] as $table) {
+                foreach (['talk_notifications','talk_attachments','talk_ticket_tags','talk_jack_interactions','talk_events','talk_notes','talk_transfers','talk_outbox','talk_messages','talk_tickets','talk_conversations','talk_contacts','talk_queue_members','talk_channels','talk_queues','talk_departments','talk_settings','talk_presence','talk_user_settings','talk_tenant_users'] as $table) {
                     $this->pdo->prepare("DELETE FROM {$table} WHERE tenant_id=:tenant_id")->execute(['tenant_id'=>$tenant]);
                 }
                 $this->pdo->prepare('DELETE FROM talk_tenants WHERE id=:id')->execute(['id'=>$fixture['tenant']]);
@@ -123,20 +137,21 @@ final class TalkTenantIsolationTest extends TestCase
         $transport = new class implements WhatsAppTransport {
             public int $calls = 0;
             public string $channelKey = '';
-            public function sendText(string $channelKey,string $to,string $text): array { $this->calls++;$this->channelKey=$channelKey;return ['message_id'=>'out-'.$this->calls,'status'=>'sent']; }
+            public function sendText(string $channelKey,string $to,string $text,?string $idempotencyKey=null): array { $this->calls++;$this->channelKey=$channelKey;return ['message_id'=>'out-'.$this->calls,'status'=>'sent']; }
             public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null): array { return ['message_id'=>'media','status'=>'sent']; }
             public function status(string $channelKey): array { return ['status'=>'connected','connected'=>true,'detail'=>null]; }
             public function connect(string $channelKey,string $externalId): array { return $this->status($channelKey); }
             public function logout(string $channelKey): array { return ['ok'=>true]; }
         };
-        $outbound = new TalkOutboundService($transport, (int)$this->a['tenant']);
+        $outbound = new TalkOutboundService((int)$this->a['tenant']);
         try {
             $outbound->sendText((int)$this->b['ticket'], (int)$this->a['user'], 'não enviar');
             self::fail('Ticket de outro tenant deveria ser bloqueado.');
         } catch (RuntimeException) {
             self::assertSame(0, $transport->calls);
         }
-        self::assertGreaterThan(0, $outbound->sendText((int)$this->a['ticket'], (int)$this->a['user'], 'mensagem autorizada'));
+        self::assertGreaterThan(0, $outbound->sendText((int)$this->a['ticket'], (int)$this->a['user'], 'mensagem autorizada', 'tenant-test-intent-0001'));
+        self::assertSame('sent', (new TalkOutboxWorker($transport,(int)$this->a['tenant'],'tenant-worker'))->processNext()['status']);
         self::assertSame(1, $transport->calls);
         self::assertSame($this->prefix.'-a-session', $transport->channelKey);
         self::assertSame(0, $this->countWhere('talk_messages', (int)$this->b['tenant'], "external_id='out-1'"));
@@ -179,7 +194,7 @@ final class TalkTenantIsolationTest extends TestCase
 
         $transport = new class implements WhatsAppTransport {
             public array $keys=[];
-            public function sendText(string $channelKey,string $to,string $text):array{return ['message_id'=>'x','status'=>'sent'];}
+            public function sendText(string $channelKey,string $to,string $text,?string $idempotencyKey=null):array{return ['message_id'=>'x','status'=>'sent'];}
             public function sendMedia(string $channelKey,string $to,string $absolutePath,string $mimeType,?string $caption=null):array{return ['message_id'=>'x','status'=>'sent'];}
             public function status(string $channelKey):array{$this->keys[]=$channelKey;return ['status'=>'connected','connected'=>true,'profile'=>['id'=>'5511000000000@s.whatsapp.net','name'=>'Conta real']];}
             public function connect(string $channelKey,string $externalId):array{$this->keys[]=$channelKey;return ['status'=>'qr','connected'=>false,'qr'=>'data:test'];}
@@ -224,6 +239,79 @@ final class TalkTenantIsolationTest extends TestCase
         $sessionIndex=$this->pdo->query("SHOW INDEX FROM talk_channels WHERE Key_name='talk_channels_session_key'")->fetch(PDO::FETCH_ASSOC);
         self::assertIsArray($sessionIndex);
         self::assertSame(0,(int)$sessionIndex['Non_unique']);
+    }
+
+    public function testOutboundPersistsMessageAndOutboxAtomicallyWithSafeIdempotency():void
+    {
+        $service=new TalkOutboundService((int)$this->a['tenant']);
+        $key='outbox-atomic-intent-0001';
+        $first=$service->sendText((int)$this->a['ticket'],(int)$this->a['user'],'mesma mensagem',$key);
+        self::assertSame($first,$service->sendText((int)$this->a['ticket'],(int)$this->a['user'],'mesma mensagem',$key));
+        self::assertSame(1,$this->countWhere('talk_outbox',(int)$this->a['tenant'],"idempotency_key='outbox-atomic-intent-0001'"));
+        self::assertSame('pending',(string)$this->pdo->query('SELECT delivery_status FROM talk_messages WHERE id='.(int)$first)->fetchColumn());
+        $second=$service->sendText((int)$this->a['ticket'],(int)$this->a['user'],'mesma mensagem','outbox-atomic-intent-0002');
+        self::assertNotSame($first,$second);
+
+        $trigger='test_outbox_atomic_'.bin2hex(random_bytes(3));
+        $this->pdo->exec("CREATE TRIGGER {$trigger} BEFORE INSERT ON talk_outbox FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='atomic test'");
+        try{
+            $before=$this->countTenantRows('talk_messages',(int)$this->a['tenant']);
+            try{$service->sendText((int)$this->a['ticket'],(int)$this->a['user'],'deve reverter','outbox-atomic-intent-0003');self::fail('A outbox deveria falhar.');}catch(PDOException){self::assertSame($before,$this->countTenantRows('talk_messages',(int)$this->a['tenant']));}
+        }finally{$this->pdo->exec("DROP TRIGGER IF EXISTS {$trigger}");}
+    }
+
+    public function testWorkerUsesExactTenantChannelAndPersistsExternalId():void
+    {
+        $message=(new TalkOutboundService((int)$this->a['tenant']))->sendText((int)$this->a['ticket'],(int)$this->a['user'],'enviar','outbox-worker-intent-0001');
+        (new TalkOutboundService((int)$this->b['tenant']))->sendText((int)$this->b['ticket'],(int)$this->b['user'],'não misturar','outbox-worker-intent-0002');
+        $transport=new OutboxTestTransport();
+        $result=(new TalkOutboxWorker($transport,(int)$this->a['tenant'],'worker-a'))->processNext();
+        self::assertSame('sent',$result['status']);
+        self::assertSame(1,$transport->calls);
+        self::assertSame($this->prefix.'-a-session',$transport->channelKey);
+        $query=$this->pdo->query('SELECT delivery_status,external_id FROM talk_messages WHERE id='.(int)$message)->fetch(PDO::FETCH_ASSOC);
+        self::assertSame(['delivery_status'=>'sent','external_id'=>'out-1'],$query);
+        self::assertSame(1,$this->countWhere('talk_outbox',(int)$this->b['tenant'],"status='pending'"));
+    }
+
+    public function testOfflineRetryBackoffMaxAttemptsAndManualRequeue():void
+    {
+        $message=(new TalkOutboundService((int)$this->a['tenant']))->sendText((int)$this->a['ticket'],(int)$this->a['user'],'recuperar','outbox-retry-intent-0001');
+        $transport=new OutboxTestTransport();$transport->offline=true;
+        $worker=new TalkOutboxWorker($transport,(int)$this->a['tenant'],'retry-worker',1,2);
+        $first=$worker->processNext();self::assertSame('pending',$first['status']);self::assertSame(1,$first['attempts']);
+        $row=$this->pdo->query('SELECT id,status,attempts,available_at,last_error FROM talk_outbox WHERE message_id='.(int)$message)->fetch(PDO::FETCH_ASSOC);
+        self::assertSame('pending',$row['status']);self::assertGreaterThan(time(),strtotime((string)$row['available_at']));self::assertStringNotContainsString('token',(string)$row['last_error']);
+        $this->pdo->exec('UPDATE talk_outbox SET attempts=max_attempts-1,available_at=DATE_SUB(NOW(),INTERVAL 1 SECOND) WHERE id='.(int)$row['id']);
+        self::assertSame('failed',$worker->processNext()['status']);
+        self::assertSame('failed',(string)$this->pdo->query('SELECT delivery_status FROM talk_messages WHERE id='.(int)$message)->fetchColumn());
+        $worker->requeue((int)$row['id'],(int)$this->a['user'],(int)$this->a['tenant']);
+        self::assertSame('pending',(string)$this->pdo->query('SELECT status FROM talk_outbox WHERE id='.(int)$row['id'])->fetchColumn());
+        $transport->offline=false;
+        self::assertSame('sent',$worker->processNext()['status']);
+    }
+
+    public function testExpiredLockRecoversAndTwoWorkersDoNotSendSameItem():void
+    {
+        (new TalkOutboundService((int)$this->a['tenant']))->sendText((int)$this->a['ticket'],(int)$this->a['user'],'lock','outbox-lock-intent-0001');
+        $this->pdo->exec("UPDATE talk_outbox SET status='processing',attempts=1,locked_by='dead-worker',locked_at=DATE_SUB(NOW(),INTERVAL 10 SECOND) WHERE tenant_id=".(int)$this->a['tenant']." AND status='pending'");
+        $transport=new OutboxTestTransport();
+        $secondResult='not-called';
+        $transport->duringSend=function()use(&$secondResult):void{$secondResult=(new TalkOutboxWorker(new OutboxTestTransport(),(int)$this->a['tenant'],'worker-b',1,1))->processNext();};
+        $result=(new TalkOutboxWorker($transport,(int)$this->a['tenant'],'worker-a',1,1))->processNext();
+        self::assertSame('sent',$result['status']);
+        self::assertNull($secondResult);
+        self::assertSame(1,$transport->calls);
+        self::assertSame(2,(int)$this->pdo->query("SELECT attempts FROM talk_outbox WHERE tenant_id=".(int)$this->a['tenant']." AND idempotency_key='outbox-lock-intent-0001'")->fetchColumn());
+    }
+
+    public function testOutboxCompositeConstraintsRejectCrossTenantAssociations():void
+    {
+        $message=(new TalkOutboundService((int)$this->a['tenant']))->sendText((int)$this->a['ticket'],(int)$this->a['user'],'fk','outbox-fk-intent-0001');
+        $statement=$this->pdo->prepare("INSERT INTO talk_outbox(tenant_id,channel_id,ticket_id,message_id,status,available_at,idempotency_key,payload) VALUES(:tenant,:channel,:ticket,:message,'pending',NOW(),'outbox-fk-cross-0001',JSON_OBJECT())");
+        $this->assertConstraintViolation($statement,['tenant'=>$this->b['tenant'],'channel'=>$this->b['channel'],'ticket'=>$this->b['ticket'],'message'=>$message]);
+        $constraints=array_column($this->pdo->query("SELECT CONSTRAINT_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='talk_outbox'")->fetchAll(PDO::FETCH_ASSOC),'CONSTRAINT_NAME');
+        foreach(['talk_outbox_channel_tenant_fk','talk_outbox_ticket_tenant_fk','talk_outbox_message_tenant_fk'] as $required)self::assertContains($required,$constraints);
     }
 
     /** @return array<string,int|string> */
