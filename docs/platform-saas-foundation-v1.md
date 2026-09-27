@@ -28,6 +28,8 @@ A migration `20260927_015` cria os papéis e permissões por tenant, mapeia os
 vínculos existentes e habilita todos os produtos para tenants antigos. Esse
 backfill mantém o acesso que existia antes de o entitlement virar obrigatório.
 Novos tenants habilitam apenas os produtos selecionados no onboarding.
+A migration `20260927_016` associa as permissões legadas de Studio/CMS aos
+papéis proprietário e administrador, sem dispensar ou enfraquecer o MFA global.
 
 ## Segurança e auditoria
 

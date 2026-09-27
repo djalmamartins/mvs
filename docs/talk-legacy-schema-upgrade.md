@@ -45,6 +45,8 @@ constraints já existentes. O runner então aplica `012` e `013` normalmente.
 - Depois do upgrade: 41 migrations, 1 tenant, 13 vínculos, 7 mensagens, 6
   tickets e 1 entitlement de produto. O teste HTTP de autenticação passou em
   49 verificações e removeu seu usuário descartável.
+- As migrations SaaS `015` e `016` foram aplicadas depois dessa reconciliação,
+  levando o banco a 43 migrations sem alterar as contagens operacionais do Talk.
 
 O dump não inclui eventos do servidor nem stored routines: o event scheduler
 está desabilitado e as tabelas internas `mysql.proc` desta instalação MariaDB

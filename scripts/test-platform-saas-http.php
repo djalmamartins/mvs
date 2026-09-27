@@ -53,12 +53,11 @@ try {
     }
     echo "OK: login, tenant ativo, Talk habilitado, configurações e bloqueio de ERP validados por HTTP.\n";
 } finally {
-    curl_close($client);
     if ($tenantId > 0) {
         $pdo->prepare('DELETE FROM platform_audit_events WHERE tenant_id=? OR actor_user_id=?')->execute([$tenantId,$userId]);
         $pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=?')->execute([$tenantId]);
         $pdo->prepare('DELETE FROM erp_administrators WHERE tenant_id=?')->execute([$tenantId]);
         $pdo->prepare('DELETE FROM talk_tenants WHERE id=?')->execute([$tenantId]);
     }
-    if ($userId > 0) { $pdo->prepare('DELETE FROM login_attempts WHERE email=?')->execute([$email]); $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$userId]); }
+    if ($userId > 0) { $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$userId]); }
 }

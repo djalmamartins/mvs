@@ -9,6 +9,7 @@ use Moves\Boot\Environment;
 use Moves\Core\Config;
 use Moves\Core\Settings;
 use MovesCode\Model\Connection as ModelConnection;
+use Moves\Services\Platform\CompanyService;
 
 /**
  * Moves | Admin Settings HTTP Test
@@ -33,6 +34,7 @@ $password = bin2hex(random_bytes(16));
 $original = Settings::get('app_name', 'Moves');
 $client = curl_init();
 $id = null;
+$tenantId = null;
 $managedUserId = null;
 $versionId = null;
 $logFingerprint = null;
@@ -80,8 +82,9 @@ $request = static function (string $path, ?array $data = null) use ($client, $ba
 
 try {
     $insert = $pdo->prepare('INSERT INTO users (name, email, password, status, role) VALUES (?, ?, ?, ?, ?)');
-    $insert->execute(['Admin settings test', $email, password_hash($password, PASSWORD_DEFAULT), 'active', 'admin']);
+    $insert->execute(['Admin settings test', $email, password_hash($password, PASSWORD_DEFAULT), 'active', 'user']);
     $id = (int) $pdo->lastInsertId();
+    $tenantId = (new CompanyService($pdo))->create(['name'=>'Studio HTTP test','legal_name'=>'Studio HTTP test'], $id, ['studio','cms']);
 
     $login = $request('/login');
     preg_match('/name="_token"\s+value="([^"]+)"/', $login['body'], $match);
@@ -153,7 +156,7 @@ try {
         }
     }
 
-    $editorPage = $request('/studio/articles?create=1');
+    $editorPage = $request('/studio/articles/create/0');
     $nonEditorPage = $request('/studio/users');
     if (!str_contains($editorPage['body'], 'js/moves-editor.js') || !str_contains($editorPage['body'], 'data-editor="moves"') || str_contains($nonEditorPage['body'], 'js/moves-editor.js')) {
         throw new RuntimeException('FAIL: carregamento condicional do Moves Editor está incorreto.');
@@ -287,6 +290,12 @@ try {
     if ($projectTaxonomyId !== null) { $pdo->prepare('DELETE FROM studio_taxonomies WHERE id=?')->execute([$projectTaxonomyId]); }
     foreach (array_reverse($mediaIds) as $mediaId) { $pdo->prepare('DELETE FROM studio_media WHERE id=?')->execute([$mediaId]); }
     foreach ($mediaPaths as $mediaPath) { if (is_file($mediaPath)) { @unlink($mediaPath); } }
+    if ($tenantId !== null) {
+        $pdo->prepare('DELETE FROM platform_audit_events WHERE tenant_id=? OR actor_user_id=?')->execute([$tenantId,$id]);
+        $pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=?')->execute([$tenantId]);
+        $pdo->prepare('DELETE FROM erp_administrators WHERE tenant_id=?')->execute([$tenantId]);
+        $pdo->prepare('DELETE FROM talk_tenants WHERE id=?')->execute([$tenantId]);
+    }
     if ($id !== null) {
         $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
     }
