@@ -65,7 +65,7 @@ final class Application
             $controller = new ErrorController($router);
 
             $controller->show(
-                500,
+                $exception instanceof HttpException ? $exception->statusCode() : 500,
                 $exception
             );
         }

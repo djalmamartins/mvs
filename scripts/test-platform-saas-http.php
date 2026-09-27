@@ -56,6 +56,7 @@ try {
     curl_close($client);
     if ($tenantId > 0) {
         $pdo->prepare('DELETE FROM platform_audit_events WHERE tenant_id=? OR actor_user_id=?')->execute([$tenantId,$userId]);
+        $pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=?')->execute([$tenantId]);
         $pdo->prepare('DELETE FROM erp_administrators WHERE tenant_id=?')->execute([$tenantId]);
         $pdo->prepare('DELETE FROM talk_tenants WHERE id=?')->execute([$tenantId]);
     }
