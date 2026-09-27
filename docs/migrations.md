@@ -19,3 +19,9 @@ Para recuperar: interrompa a promoção, preserve logs e o banco afetado, identi
 ## Concorrência
 
 Uma segunda execução não deve prosseguir enquanto `moves:migrations` estiver adquirido. Falha em obter o lock é tratada como erro, evitando dois deploys alterando o schema simultaneamente.
+
+## Convergência de tenants ERP e Talk
+
+`20260927_014_link_erp_administrators_to_tenants.sql` usa `talk_tenants` como tabela canônica de tenants da plataforma, apesar do nome histórico. Cada `erp_administrators` recebe um `tenant_id` único; administradoras existentes ganham um tenant correspondente, sem alterar seus IDs de ERP. A migração cria `platform_tenant_products`, habilita Talk para tenants Talk existentes e ERP apenas para os tenants vinculados a administradoras. Grants ERP existentes geram vínculos em `talk_tenant_users`. As permissões de escopo ERP continuam em `erp_scope_grants`; o acesso exige grant, vínculo ativo, usuário ativo, tenant ativo e produto ERP habilitado. A criação de administradoras passa a criar o tenant e a habilitação ERP na mesma transação.
+
+Teste esta migração em banco descartável novo e em cópia descartável de banco com migrations até 013. Ela não foi aplicada ao banco XAMPP em uso.

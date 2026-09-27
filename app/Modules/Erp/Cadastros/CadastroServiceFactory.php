@@ -8,6 +8,8 @@ use Moves\Boot\Connection;
 use Moves\Modules\Erp\Security\ScopeGrantRepository;
 use Moves\Modules\Erp\Security\ScopedAccess;
 use Moves\Modules\Erp\Security\SecurityAuditRepository;
+use Moves\Modules\Erp\Security\AdministratorTenantAccess;
+use Moves\Modules\Erp\Security\AccessScope;
 use PDO;
 
 /**
@@ -21,7 +23,11 @@ final class CadastroServiceFactory
     public static function access(?PDO $pdo = null): CadastroAccessService
     {
         $pdo ??= Connection::getInstance();
-        $scopedAccess = new ScopedAccess(new ScopeGrantRepository($pdo));
+        $tenantAccess = new AdministratorTenantAccess($pdo);
+        $scopedAccess = new ScopedAccess(
+            new ScopeGrantRepository($pdo),
+            static fn (int $userId, AccessScope $scope): bool => $tenantAccess->allows($userId, $scope)
+        );
 
         return new CadastroAccessService(
             new AdministratorRepository($pdo),
@@ -33,7 +39,11 @@ final class CadastroServiceFactory
     public static function write(?PDO $pdo = null): CadastroWriteService
     {
         $pdo ??= Connection::getInstance();
-        $scopedAccess = new ScopedAccess(new ScopeGrantRepository($pdo));
+        $tenantAccess = new AdministratorTenantAccess($pdo);
+        $scopedAccess = new ScopedAccess(
+            new ScopeGrantRepository($pdo),
+            static fn (int $userId, AccessScope $scope): bool => $tenantAccess->allows($userId, $scope)
+        );
 
         return new CadastroWriteService(
             new AdministratorRepository($pdo),

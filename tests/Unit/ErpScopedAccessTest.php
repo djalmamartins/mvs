@@ -26,7 +26,7 @@ final class ErpScopedAccessTest extends TestCase
             )'
         );
 
-        $this->access = new ScopedAccess(new ScopeGrantRepository($this->pdo));
+        $this->access = new ScopedAccess(new ScopeGrantRepository($this->pdo), static fn (int $userId, \Moves\Modules\Erp\Security\AccessScope $scope): bool => true);
     }
 
     public function testAllowsOnlyActiveGrantMatchingTrustedRouteScope(): void

@@ -4,16 +4,11 @@ declare(strict_types=1);
 
 namespace Moves\Controllers\Api\V1;
 
-use Moves\Boot\Connection;
 use Moves\Core\ApiResponse;
 use Moves\Core\Auth;
 use Moves\Core\Controller;
 use Moves\Core\Response;
-use Moves\Modules\Erp\Cadastros\AdministratorRepository;
-use Moves\Modules\Erp\Cadastros\CadastroAccessService;
-use Moves\Modules\Erp\Cadastros\CondominiumRepository;
-use Moves\Modules\Erp\Security\ScopeGrantRepository;
-use Moves\Modules\Erp\Security\ScopedAccess;
+use Moves\Modules\Erp\Cadastros\CadastroServiceFactory;
 
 /**
  * Versioned HTTP boundary for ERP cadastros.
@@ -33,12 +28,7 @@ final class ErpCadastrosController extends Controller
             Response::json(ApiResponse::error('invalid_scope', 'Invalid administrator scope.'), 400);
         }
 
-        $pdo = Connection::getInstance();
-        $service = new CadastroAccessService(
-            new AdministratorRepository($pdo),
-            new CondominiumRepository($pdo),
-            new ScopedAccess(new ScopeGrantRepository($pdo)),
-        );
+        $service = CadastroServiceFactory::access();
 
         Response::json(ApiResponse::data(
             $service->listCondominiums((int) $user->id, $administratorId)

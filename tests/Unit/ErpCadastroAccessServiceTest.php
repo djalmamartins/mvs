@@ -26,7 +26,7 @@ final class ErpCadastroAccessServiceTest extends TestCase
         $this->pdo->exec("INSERT INTO erp_administrators VALUES (10, 'Admin A', NULL, 'A', 'active', '', ''), (20, 'Admin B', NULL, 'B', 'active', '', '')");
         $this->pdo->exec("INSERT INTO erp_condominiums VALUES (101, 10, 'Condo A', NULL, 'CA', 'America/Sao_Paulo', 'active', '', ''), (202, 20, 'Condo B', NULL, 'CB', 'America/Sao_Paulo', 'active', '', '')");
 
-        $access = new ScopedAccess(new ScopeGrantRepository($this->pdo));
+        $access = new ScopedAccess(new ScopeGrantRepository($this->pdo), static fn (int $userId, \Moves\Modules\Erp\Security\AccessScope $scope): bool => true);
         $this->service = new CadastroAccessService(
             new AdministratorRepository($this->pdo),
             new CondominiumRepository($this->pdo),

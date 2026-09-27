@@ -33,13 +33,36 @@ final class AdministratorRepository
 
     public function create(string $legalName, ?string $tradeName, string $taxId): int
     {
-        $stmt = $this->pdo->prepare('INSERT INTO erp_administrators (legal_name, trade_name, tax_id) VALUES (:legal_name, :trade_name, :tax_id)');
-        $stmt->execute([
-            'legal_name' => trim($legalName),
-            'trade_name' => $tradeName === null ? null : trim($tradeName),
-            'tax_id' => trim($taxId),
-        ]);
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) {
+            $this->pdo->beginTransaction();
+        }
+        try {
+            $name = trim($legalName);
+            $taxId = trim($taxId);
+            $tenant = $this->pdo->prepare('INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,\'active\')');
+            $tenant->execute(['name' => $name, 'slug' => 'erp-' . substr(hash('sha256', $taxId), 0, 32)]);
+            $tenantId = (int) $this->pdo->lastInsertId();
 
-        return (int) $this->pdo->lastInsertId();
+            $stmt = $this->pdo->prepare('INSERT INTO erp_administrators (tenant_id,legal_name,trade_name,tax_id) VALUES (:tenant_id,:legal_name,:trade_name,:tax_id)');
+            $stmt->execute([
+                'tenant_id' => $tenantId,
+                'legal_name' => $name,
+                'trade_name' => $tradeName === null ? null : trim($tradeName),
+                'tax_id' => $taxId,
+            ]);
+            $administratorId = (int) $this->pdo->lastInsertId();
+            $product = $this->pdo->prepare('INSERT INTO platform_tenant_products(tenant_id,product,enabled) VALUES(:tenant_id,\'erp\',1)');
+            $product->execute(['tenant_id' => $tenantId]);
+            if ($ownsTransaction) {
+                $this->pdo->commit();
+            }
+            return $administratorId;
+        } catch (\Throwable $exception) {
+            if ($ownsTransaction) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 }

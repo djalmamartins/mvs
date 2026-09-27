@@ -750,6 +750,7 @@ final class TalkTenantIsolationTest extends TestCase
         $pdo=$this->pdo;$slug=$this->prefix.'-'.$suffix;
         $s=$pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES(:name,:email,'test-only','active','admin')");$s->execute(['name'=>'Tenant '.strtoupper($suffix),'email'=>$slug.'@example.test']);$user=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");$s->execute(['name'=>'Empresa '.strtoupper($suffix),'slug'=>$slug]);$tenant=(int)$pdo->lastInsertId();
+        $pdo->prepare("INSERT INTO platform_tenant_products(tenant_id,product,enabled) VALUES(:tenant,'talk',1)")->execute(['tenant'=>$tenant]);
         $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,'admin','active',1)")->execute(['tenant'=>$tenant,'user'=>$user]);
         $s=$pdo->prepare("INSERT INTO talk_channels(tenant_id,type,name,external_id,driver,status,connection_status,session_key) VALUES(:tenant,'whatsapp',:name,:external,'baileys','active','connected',:session_key)");$s->execute(['tenant'=>$tenant,'name'=>'WhatsApp '.$suffix,'external'=>$slug.'-channel','session_key'=>$slug.'-session']);$channel=(int)$pdo->lastInsertId();
         $s=$pdo->prepare("INSERT INTO talk_departments(tenant_id,name,slug,status) VALUES(:tenant,:name,:slug,'active')");$s->execute(['tenant'=>$tenant,'name'=>'Departamento '.$suffix,'slug'=>$slug.'-department']);$department=(int)$pdo->lastInsertId();

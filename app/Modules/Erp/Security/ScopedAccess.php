@@ -12,7 +12,8 @@ namespace Moves\Modules\Erp\Security;
  */
 final readonly class ScopedAccess
 {
-    public function __construct(private ScopeGrantRepository $grants)
+    /** @param ?\Closure(int,AccessScope):bool $tenantAllowed */
+    public function __construct(private ScopeGrantRepository $grants, private ?\Closure $tenantAllowed = null)
     {
     }
 
@@ -25,6 +26,10 @@ final readonly class ScopedAccess
 
         $scope = ScopeContext::fromRoute($routeAttributes);
         if ($scope === null) {
+            return false;
+        }
+
+        if ($this->tenantAllowed === null || !($this->tenantAllowed)($userId, $scope)) {
             return false;
         }
 

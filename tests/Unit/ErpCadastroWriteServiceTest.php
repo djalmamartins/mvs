@@ -29,7 +29,7 @@ final class ErpCadastroWriteServiceTest extends TestCase
         $this->service = new CadastroWriteService(
             new AdministratorRepository($this->pdo),
             new CondominiumRepository($this->pdo),
-            new ScopedAccess(new ScopeGrantRepository($this->pdo)),
+            new ScopedAccess(new ScopeGrantRepository($this->pdo), static fn (int $userId, \Moves\Modules\Erp\Security\AccessScope $scope): bool => true),
             new SecurityAuditRepository($this->pdo),
         );
     }

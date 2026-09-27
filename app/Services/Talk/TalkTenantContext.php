@@ -28,7 +28,7 @@ final class TalkTenantContext
     public function forUser(int $userId, ?int $requestedTenantId = null): int
     {
         $pdo = Connection::getInstance();
-        $sql = "SELECT tu.tenant_id FROM talk_tenant_users tu INNER JOIN talk_tenants t ON t.id=tu.tenant_id INNER JOIN users u ON u.id=tu.user_id WHERE tu.user_id=:user_id AND tu.status='active' AND t.status='active' AND u.status='active'";
+        $sql = "SELECT tu.tenant_id FROM talk_tenant_users tu INNER JOIN talk_tenants t ON t.id=tu.tenant_id INNER JOIN platform_tenant_products product ON product.tenant_id=tu.tenant_id AND product.product='talk' AND product.enabled=1 INNER JOIN users u ON u.id=tu.user_id WHERE tu.user_id=:user_id AND tu.status='active' AND t.status='active' AND u.status='active'";
         $params = ['user_id' => $userId];
         if ($requestedTenantId !== null) {
             $sql .= ' AND tu.tenant_id=:tenant_id';
@@ -47,7 +47,7 @@ final class TalkTenantContext
     /** @return array{id:int,tenant_id:int,type:string,external_id:string,driver:string,status:string} */
     public function inboundChannel(string $externalId, string $type = 'whatsapp'): array
     {
-        $statement = Connection::getInstance()->prepare("SELECT id,tenant_id,type,external_id,driver,status FROM talk_channels WHERE external_id=:external_id AND type=:type AND status='active' LIMIT 1");
+        $statement = Connection::getInstance()->prepare("SELECT ch.id,ch.tenant_id,ch.type,ch.external_id,ch.driver,ch.status FROM talk_channels ch INNER JOIN talk_tenants tenant ON tenant.id=ch.tenant_id AND tenant.status='active' INNER JOIN platform_tenant_products product ON product.tenant_id=ch.tenant_id AND product.product='talk' AND product.enabled=1 WHERE ch.external_id=:external_id AND ch.type=:type AND ch.status='active' LIMIT 1");
         $statement->execute(['external_id' => $externalId, 'type' => $type]);
         $channel = $statement->fetch(PDO::FETCH_ASSOC);
         if (!is_array($channel)) {

@@ -27,7 +27,7 @@ final class ErpScopedAccessMiddlewareTest extends TestCase
                 revoked_at TEXT NULL
             )'
         );
-        $this->access = new ScopedAccess(new ScopeGrantRepository($this->pdo));
+        $this->access = new ScopedAccess(new ScopeGrantRepository($this->pdo), static fn (int $userId, \Moves\Modules\Erp\Security\AccessScope $scope): bool => true);
     }
 
     public function testAllowsAuthenticatedUserWithActiveGrantAndTrustedRouteScope(): void
