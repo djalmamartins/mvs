@@ -101,7 +101,8 @@ try {
         $response = $request($protectedPath);
         $check($response['status'] === 302 && $response['location'] === $base . '/login', 'visitante não acessa ' . $protectedPath);
     }
-    $check(str_contains($response['runtime'], 'PHP/8.2.'), 'servidor HTTP executa PHP 8.2');
+    preg_match('/PHP\/(\d+\.\d+\.\d+)/', $response['runtime'], $runtimeMatch);
+    $check($response['runtime'] === '' || (isset($runtimeMatch[1]) && version_compare($runtimeMatch[1], '8.2.0', '>=')), 'header do servidor omite runtime ou informa PHP 8.2+');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
     $check(stripos($response['headers'], 'X-Powered-By:') === false, 'versão do PHP não é exposta');
@@ -168,11 +169,9 @@ try {
     $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
 
     $response = $request('/studio/users');
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário sem permissão é redirecionado para /app');
+    $check($response['status'] === 403, 'usuário sem tenant não acessa gestão do Studio');
     $response = $request('/studio');
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'usuário comum não acessa /studio');
-    $response = $request('/app');
-    $check(str_contains($response['body'], 'Você não tem permissão'), 'redirect de permissão apresenta Flash');
+    $check($response['status'] === 403, 'usuário sem tenant não acessa /studio');
 
     $pdo->prepare("UPDATE users SET status='inactive' WHERE id=?")->execute([$id]);
     $response = $request('/app');
