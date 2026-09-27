@@ -63,18 +63,23 @@ final class TalkService
     private function event(int $ticketId,?int $userId,string $type,array $payload): void { $s=Connection::getInstance()->prepare("INSERT INTO talk_events(tenant_id,ticket_id,user_id,actor_type,event_type,payload) VALUES(:tenant_id,:ticket_id,:user_id,:actor_type,:event_type,:payload)");$s->execute(['tenant_id'=>$this->tenantId(),'ticket_id'=>$ticketId,'user_id'=>$userId,'actor_type'=>$userId===null?'system':'user','event_type'=>$type,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]); }
     public function syncState(int $userId): array
     {
-        $pdo=Connection::getInstance();$params=['tenant_id'=>$this->tenantId()];
-        if($this->canManage($userId)){
-            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(COALESCE(delivery_updated_at,created_at))),0) FROM talk_messages WHERE tenant_id=:tenant_id";
-        }else{
-            $ticketSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(updated_at)),0) FROM talk_tickets WHERE tenant_id=:tenant_id AND (assigned_user_id=:user_id OR status='queued')";
-            $messageSql="SELECT COALESCE(UNIX_TIMESTAMP(MAX(COALESCE(m.delivery_updated_at,m.created_at))),0) FROM talk_messages m INNER JOIN talk_tickets t ON t.tenant_id=m.tenant_id AND t.id=m.ticket_id WHERE m.tenant_id=:tenant_id AND (t.assigned_user_id=:user_id OR t.status='queued')";
+        $pdo=Connection::getInstance();
+        $params=['tenant_id'=>$this->tenantId()];
+        $visibility='';
+        if(!$this->canManage($userId)){
+            $visibility=" AND (t.assigned_user_id=:user_id OR (t.status='queued' AND EXISTS (SELECT 1 FROM talk_queue_members qm WHERE qm.tenant_id=t.tenant_id AND qm.queue_id=t.queue_id AND qm.user_id=:queue_user_id AND qm.status='active')))";
             $params['user_id']=$userId;
+            $params['queue_user_id']=$userId;
         }
-        $s=$pdo->prepare($ticketSql);$s->execute($params);$tickets=(int)$s->fetchColumn();
-        $s=$pdo->prepare($messageSql);$s->execute($params);$messages=(int)$s->fetchColumn();
-        return ['revision'=>max($tickets,$messages),'server_time'=>time()];
+        $ticketSql="SELECT t.id,t.status,t.assigned_user_id,t.queue_id,t.updated_at FROM talk_tickets t WHERE t.tenant_id=:tenant_id{$visibility} ORDER BY t.id";
+        $s=$pdo->prepare($ticketSql);$s->execute($params);
+        $tickets=$s->fetchAll(PDO::FETCH_ASSOC);
+        $eventSql="SELECT COALESCE(MAX(e.id),0) FROM talk_events e INNER JOIN talk_tickets t ON t.tenant_id=e.tenant_id AND t.id=e.ticket_id WHERE e.tenant_id=:tenant_id{$visibility}";
+        $s=$pdo->prepare($eventSql);$s->execute($params);$eventId=(int)$s->fetchColumn();
+        $messageSql="SELECT COALESCE(MAX(m.id),0) newest_id,COUNT(CASE WHEN m.direction='inbound' AND m.read_at IS NULL THEN 1 END) unread,COALESCE(SUM(CRC32(CONCAT(m.id,':',COALESCE(m.delivery_status,''),':',COALESCE(m.external_id,''),':',COALESCE(m.delivery_error,'')))),0) delivery_hash FROM talk_messages m INNER JOIN talk_tickets t ON t.tenant_id=m.tenant_id AND t.id=m.ticket_id WHERE m.tenant_id=:tenant_id{$visibility}";
+        $s=$pdo->prepare($messageSql);$s->execute($params);$messages=$s->fetch(PDO::FETCH_ASSOC);
+        $revision=hash('sha256',json_encode([$tickets,$eventId,$messages],JSON_THROW_ON_ERROR));
+        return ['revision'=>$revision,'server_time'=>time()];
     }
     public function conversations(string $search=''): array { $search=trim($search);$sql="SELECT cv.id,cv.channel,cv.status,cv.last_message_at,c.name contact_name,c.phone,t.id ticket_id,t.protocol,t.status ticket_status,q.name queue_name,u.name assigned_name,(SELECT m.body FROM talk_messages m WHERE m.tenant_id=cv.tenant_id AND m.conversation_id=cv.id ORDER BY COALESCE(m.sent_at,m.created_at) DESC,m.id DESC LIMIT 1) last_message_preview,(SELECT COUNT(*) FROM talk_messages um WHERE um.tenant_id=cv.tenant_id AND um.ticket_id=t.id AND um.direction='inbound' AND um.read_at IS NULL) unread_count FROM talk_conversations cv INNER JOIN talk_contacts c ON c.tenant_id=cv.tenant_id AND c.id=cv.contact_id LEFT JOIN talk_tickets t ON t.tenant_id=cv.tenant_id AND t.id=(SELECT tt.id FROM talk_tickets tt WHERE tt.tenant_id=cv.tenant_id AND tt.conversation_id=cv.id ORDER BY tt.id DESC LIMIT 1) LEFT JOIN talk_queues q ON q.tenant_id=cv.tenant_id AND q.id=t.queue_id LEFT JOIN users u ON u.id=t.assigned_user_id WHERE cv.tenant_id=:tenant_id";$params=['tenant_id'=>$this->tenantId()];if($search!==''){$sql.=" AND (c.name LIKE :search_name OR c.phone LIKE :search_phone OR t.protocol LIKE :search_protocol)";$like='%'.$search.'%';$params['search_name']=$like;$params['search_phone']=$like;$params['search_protocol']=$like;}$sql.=" ORDER BY COALESCE(cv.last_message_at,cv.created_at) DESC,cv.id DESC LIMIT 100";$statement=Connection::getInstance()->prepare($sql);$statement->execute($params);return $statement->fetchAll(PDO::FETCH_ASSOC); }
     public function markTicketRead(int $ticketId): void { $statement=Connection::getInstance()->prepare("UPDATE talk_messages SET read_at=NOW() WHERE tenant_id=:tenant_id AND ticket_id=:ticket_id AND direction='inbound' AND read_at IS NULL");$statement->execute(['tenant_id'=>$this->tenantId(),'ticket_id'=>$ticketId]); }

@@ -10,6 +10,7 @@ use Moves\Services\Talk\TalkInboundService;
 use Moves\Services\Talk\TalkJackService;
 use Moves\Services\Talk\TalkMetadataService;
 use Moves\Services\Talk\TalkNotificationService;
+use Moves\Services\Talk\TalkOperationsWorker;
 use Moves\Services\Talk\TalkOutboundService;
 use Moves\Services\Talk\TalkOutboxWorker;
 use Moves\Services\Talk\TalkService;
@@ -124,6 +125,32 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame([], $metadataA->ticketTags((int)$this->b['ticket']));
     }
 
+    public function testSyncRevisionTracksSameSecondEventsWithoutCrossTenantNoise(): void
+    {
+        $a = new TalkService((int)$this->a['tenant']);
+        $userId = (int)$this->a['user'];
+        $initial = $a->syncState($userId)['revision'];
+        self::assertIsString($initial);
+
+        $event = $this->pdo->prepare("INSERT INTO talk_events(tenant_id,ticket_id,user_id,actor_type,event_type,payload,created_at) VALUES(:tenant,:ticket,NULL,'system','message.sent','{}',:created_at)");
+        $sameSecond = date('Y-m-d H:i:s');
+        $event->execute(['tenant'=>$this->b['tenant'],'ticket'=>$this->b['ticket'],'created_at'=>$sameSecond]);
+        self::assertSame($initial, $a->syncState($userId)['revision']);
+
+        $event->execute(['tenant'=>$this->a['tenant'],'ticket'=>$this->a['ticket'],'created_at'=>$sameSecond]);
+        $first = $a->syncState($userId)['revision'];
+        self::assertNotSame($initial, $first);
+        $event->execute(['tenant'=>$this->a['tenant'],'ticket'=>$this->a['ticket'],'created_at'=>$sameSecond]);
+        $second = $a->syncState($userId)['revision'];
+        self::assertNotSame($first, $second);
+        $a->markTicketRead((int)$this->a['ticket']);
+        $read = $a->syncState($userId)['revision'];
+        self::assertNotSame($second, $read);
+        $this->pdo->prepare("UPDATE talk_messages SET delivery_status='failed',delivery_error='temporário' WHERE tenant_id=:tenant AND id=:id")
+            ->execute(['tenant'=>$this->a['tenant'],'id'=>$this->a['message']]);
+        self::assertNotSame($read, $a->syncState($userId)['revision']);
+    }
+
     public function testJackAndOutboundRemainInsideTheSelectedTenant(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")
@@ -155,6 +182,22 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame(1, $transport->calls);
         self::assertSame($this->prefix.'-a-session', $transport->channelKey);
         self::assertSame(0, $this->countWhere('talk_messages', (int)$this->b['tenant'], "external_id='out-1'"));
+    }
+
+    public function testOperationsWorkerRunsJackForEachTenantOnlyOnce(): void
+    {
+        $this->pdo->prepare("UPDATE talk_tickets SET status='queued',assigned_user_id=NULL,queued_at=DATE_SUB(NOW(),INTERVAL 5 MINUTE) WHERE id IN (:a,:b)")
+            ->execute(['a'=>$this->a['ticket'],'b'=>$this->b['ticket']]);
+        $this->pdo->prepare("INSERT INTO talk_settings(tenant_id,setting_key,setting_value) VALUES(:tenant,'auto_assign.enabled','0')")
+            ->execute(['tenant'=>$this->a['tenant']]);
+        $this->pdo->prepare("INSERT INTO talk_settings(tenant_id,setting_key,setting_value) VALUES(:tenant,'auto_assign.enabled','0')")
+            ->execute(['tenant'=>$this->b['tenant']]);
+
+        $worker = new TalkOperationsWorker();
+        self::assertSame(['assigned'=>0,'jack'=>2], $worker->processDue());
+        self::assertSame(['assigned'=>0,'jack'=>0], $worker->processDue());
+        self::assertSame(1, $this->countTenantRows('talk_jack_interactions', (int)$this->a['tenant']));
+        self::assertSame(1, $this->countTenantRows('talk_jack_interactions', (int)$this->b['tenant']));
     }
 
     public function testInboundResolvesTenantFromGloballyUniqueChannel(): void
