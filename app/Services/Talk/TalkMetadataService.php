@@ -42,6 +42,29 @@ final class TalkMetadataService
         $insert=$pdo->prepare('INSERT INTO talk_tags(tenant_id,name,slug) VALUES(:tenant_id,:name,:slug)');$insert->execute(['tenant_id'=>$this->tenantId(),'name'=>$name,'slug'=>$slug]);return (int)$pdo->lastInsertId();
     }
 
+    public function createAndAttachTag(int $ticketId,int $userId,string $name): int
+    {
+        $pdo=Connection::getInstance();
+        $pdo->beginTransaction();
+        try {
+            $member=$pdo->prepare("SELECT user_id FROM talk_tenant_users WHERE tenant_id=:tenant_id AND user_id=:user_id AND status='active' FOR UPDATE");
+            $member->execute(['tenant_id'=>$this->tenantId(),'user_id'=>$userId]);
+            if(!$member->fetchColumn())throw new \RuntimeException('Você não pode alterar este atendimento.');
+            $lock=$pdo->prepare('SELECT id FROM talk_tickets WHERE tenant_id=:tenant_id AND id=:id FOR UPDATE');
+            $lock->execute(['tenant_id'=>$this->tenantId(),'id'=>$ticketId]);
+            if(!$lock->fetchColumn() || !(new TalkService($this->tenantId()))->canOperateTicket($ticketId,$userId)) {
+                throw new \RuntimeException('Você não pode alterar este atendimento.');
+            }
+            $tagId=$this->createTag($name);
+            $this->attachTag($ticketId,$tagId,$userId);
+            $pdo->commit();
+            return $tagId;
+        } catch (\Throwable $exception) {
+            if($pdo->inTransaction())$pdo->rollBack();
+            throw $exception;
+        }
+    }
+
     public function attachTag(int $ticketId,int $tagId,int $userId): void
     {
         if (!(new TalkService($this->tenantId()))->canOperateTicket($ticketId,$userId)) { throw new \RuntimeException('Você não pode alterar este atendimento.'); }
