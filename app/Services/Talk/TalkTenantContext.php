@@ -28,7 +28,7 @@ final class TalkTenantContext
     public function forUser(int $userId, ?int $requestedTenantId = null): int
     {
         $pdo = Connection::getInstance();
-        $sql = "SELECT tu.tenant_id FROM talk_tenant_users tu INNER JOIN talk_tenants t ON t.id=tu.tenant_id WHERE tu.user_id=:user_id AND tu.status='active' AND t.status='active'";
+        $sql = "SELECT tu.tenant_id FROM talk_tenant_users tu INNER JOIN talk_tenants t ON t.id=tu.tenant_id INNER JOIN users u ON u.id=tu.user_id WHERE tu.user_id=:user_id AND tu.status='active' AND t.status='active' AND u.status='active'";
         $params = ['user_id' => $userId];
         if ($requestedTenantId !== null) {
             $sql .= ' AND tu.tenant_id=:tenant_id';

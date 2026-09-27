@@ -96,6 +96,45 @@ final class TalkTenantIsolationTest extends TestCase
         (new TalkTenantContext())->forUser((int)$this->a['user'], (int)$this->b['tenant']);
     }
 
+    public function testInactiveUserMembershipOrTenantRevokesAssignedTicketAccess(): void
+    {
+        $tenant=(int)$this->a['tenant'];
+        $user=(int)$this->a['user'];
+        $ticket=(int)$this->a['ticket'];
+        $service=new TalkService($tenant);
+        $service->saveUserSettings($user,'agent',5);
+
+        self::assertSame('agent',$service->permissions($user)['talk_role']);
+        self::assertTrue($service->canViewTicket($ticket,$user));
+        self::assertTrue($service->canOperateTicket($ticket,$user));
+
+        $cases=[
+            ['table'=>'users','where'=>'id=:id','id'=>$user],
+            ['table'=>'talk_tenant_users','where'=>'tenant_id=:tenant AND user_id=:id','id'=>$user],
+            ['table'=>'talk_tenants','where'=>'id=:id','id'=>$tenant],
+        ];
+        foreach($cases as $case){
+            $sql="UPDATE {$case['table']} SET status=:status WHERE {$case['where']}";
+            $params=['status'=>'inactive','id'=>$case['id'],'tenant'=>$tenant];
+            if($case['table']!=='talk_tenant_users')unset($params['tenant']);
+            $this->pdo->prepare($sql)->execute($params);
+            self::assertSame('none',$service->permissions($user)['talk_role']);
+            self::assertFalse($service->canViewTicket($ticket,$user),$case['table']);
+            self::assertFalse($service->canOperateTicket($ticket,$user),$case['table']);
+            try {
+                (new TalkTenantContext())->forUser($user,$tenant);
+                self::fail('Contexto de empresa não pode aceitar acesso inativo: '.$case['table']);
+            } catch (RuntimeException $exception) {
+                self::assertSame('Usuário sem acesso à empresa selecionada.',$exception->getMessage());
+            }
+            $params['status']='active';
+            $this->pdo->prepare($sql)->execute($params);
+            self::assertTrue($service->canViewTicket($ticket,$user),$case['table']);
+            self::assertTrue($service->canOperateTicket($ticket,$user),$case['table']);
+            self::assertSame($tenant,(new TalkTenantContext())->forUser($user,$tenant));
+        }
+    }
+
     public function testSearchHistoryReportsNotificationsAttachmentsAndTagsAreIsolated(): void
     {
         $this->pdo->prepare("UPDATE talk_tickets SET status='closed',closed_at=NOW() WHERE id IN (:a,:b)")
