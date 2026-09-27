@@ -464,6 +464,33 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertStringNotContainsString('processEligible',$match[1]);
     }
 
+    public function testDirectTransferHonorsTargetEligibilityAndCapacity():void
+    {
+        $email=$this->prefix.'-transfer@example.test';$this->pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES('Destino',:email,'test-only','active','user')")->execute(['email'=>$email]);$target=(int)$this->pdo->lastInsertId();
+        try{
+            $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')")->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare("INSERT INTO talk_queue_members(tenant_id,queue_id,user_id,role,capacity,status) VALUES(:tenant,:queue,:user,'agent',1,'active')")->execute(['tenant'=>$this->a['tenant'],'queue'=>$this->a['queue'],'user'=>$target]);
+            $this->pdo->prepare("INSERT INTO talk_user_settings(tenant_id,user_id,talk_role,max_active_tickets) VALUES(:tenant,:user,'agent',1)")->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,assigned_user_id,status,priority,subject,source) VALUES(:tenant,:channel,:protocol,:conversation,:queue,:user,'assigned','normal','Capacidade','whatsapp')")->execute(['tenant'=>$this->a['tenant'],'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-transfer-cap'),'conversation'=>$this->a['conversation'],'queue'=>$this->a['queue'],'user'=>$target]);$capacityTicket=(int)$this->pdo->lastInsertId();
+            $before=$this->countTenantRows('talk_transfers',(int)$this->a['tenant']);
+            try{(new TalkService((int)$this->a['tenant']))->transfer((int)$this->a['ticket'],(int)$this->a['user'],$target,(int)$this->a['queue'],'lotado');self::fail('Transferência acima da capacidade deveria falhar.');}catch(RuntimeException $error){self::assertStringContainsString('capacidade máxima',$error->getMessage());}
+            self::assertSame($before,$this->countTenantRows('talk_transfers',(int)$this->a['tenant']));
+            $this->pdo->exec("UPDATE talk_tickets SET status='closed' WHERE id={$capacityTicket}");
+            (new TalkService((int)$this->a['tenant']))->transfer((int)$this->a['ticket'],(int)$this->a['user'],$target,(int)$this->a['queue'],'disponível');
+            self::assertSame($target,(int)$this->pdo->query('SELECT assigned_user_id FROM talk_tickets WHERE id='.(int)$this->a['ticket'])->fetchColumn());
+            self::assertSame($before+1,$this->countTenantRows('talk_transfers',(int)$this->a['tenant']));
+            $this->pdo->exec('DELETE FROM talk_tickets WHERE id='.$capacityTicket);
+            $this->pdo->prepare('UPDATE talk_tickets SET assigned_user_id=:user WHERE id=:id')->execute(['user'=>$this->a['user'],'id'=>$this->a['ticket']]);
+        }finally{
+            $this->pdo->prepare('DELETE FROM talk_transfers WHERE tenant_id=:tenant AND to_user_id=:user')->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare('DELETE FROM talk_notifications WHERE tenant_id=:tenant AND recipient_id=:user')->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare('DELETE FROM talk_user_settings WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare('DELETE FROM talk_queue_members WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$this->a['tenant'],'user'=>$target]);
+            $this->pdo->prepare('DELETE FROM users WHERE id=:user')->execute(['user'=>$target]);
+        }
+    }
+
     /** @return array<string,int|string> */
     private function fixture(string $suffix): array
     {
