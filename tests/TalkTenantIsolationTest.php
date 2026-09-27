@@ -314,6 +314,22 @@ final class TalkTenantIsolationTest extends TestCase
         foreach(['talk_outbox_channel_tenant_fk','talk_outbox_ticket_tenant_fk','talk_outbox_message_tenant_fk'] as $required)self::assertContains($required,$constraints);
     }
 
+    public function testSyncRevisionDetectsDeliveryChangesAndEndpointDoesNotRunJobs():void
+    {
+        $service=new TalkService((int)$this->a['tenant']);
+        $before=$service->syncState((int)$this->a['user']);
+        $this->pdo->prepare("UPDATE talk_messages SET delivery_status='failed',delivery_error='temporário',delivery_updated_at=NOW() WHERE tenant_id=:tenant AND id=:id")->execute(['tenant'=>$this->a['tenant'],'id'=>$this->a['message']]);
+        $after=$service->syncState((int)$this->a['user']);
+        self::assertNotSame($before['revision'],$after['revision']);
+        self::assertIsString($after['revision']);
+        self::assertSame(64,strlen($after['revision']));
+        $controller=(string)file_get_contents(dirname(__DIR__).'/app/Controllers/TalkController.php');
+        preg_match('/public function sync\(\):never\{(.+?)\}\npublic function conversations/s',$controller,$match);
+        self::assertArrayHasKey(1,$match);
+        self::assertStringNotContainsString('autoAssign',$match[1]);
+        self::assertStringNotContainsString('processEligible',$match[1]);
+    }
+
     /** @return array<string,int|string> */
     private function fixture(string $suffix): array
     {
