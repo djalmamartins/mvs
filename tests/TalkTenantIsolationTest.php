@@ -242,6 +242,26 @@ final class TalkTenantIsolationTest extends TestCase
         self::assertSame(0,$this->countWhere('talk_events',(int)$this->a['tenant'],"ticket_id={$ticketId}"));
     }
 
+    public function testClaimRejectsInactiveUserAndQueueWithoutMutation(): void
+    {
+        $tenant=(int)$this->a['tenant'];$user=(int)$this->a['user'];$queue=(int)$this->a['queue'];
+        $this->pdo->prepare("INSERT INTO talk_tickets(tenant_id,channel_id,protocol,conversation_id,queue_id,status,source,queued_at) VALUES(:tenant,:channel,:protocol,:conversation,:queue,'queued','whatsapp',DATE_SUB(NOW(),INTERVAL 5 MINUTE))")
+            ->execute(['tenant'=>$tenant,'channel'=>$this->a['channel'],'protocol'=>strtoupper($this->prefix.'-inactive'),'conversation'=>$this->a['conversation'],'queue'=>$queue]);
+        $ticket=(int)$this->pdo->lastInsertId();$service=new TalkService($tenant);
+        $this->pdo->prepare("UPDATE users SET status='inactive' WHERE id=:id")->execute(['id'=>$user]);
+        self::assertFalse($service->claim($ticket,$user));
+        $this->pdo->prepare("UPDATE users SET status='active' WHERE id=:id")->execute(['id'=>$user]);
+        $this->pdo->prepare("UPDATE talk_queues SET status='inactive' WHERE id=:id")->execute(['id'=>$queue]);
+        self::assertFalse($service->claim($ticket,$user));
+        $service->updatePresence($user,'online');
+        self::assertSame(0,$service->autoAssign());
+        self::assertSame('queued',$this->pdo->query("SELECT status FROM talk_tickets WHERE id={$ticket}")->fetchColumn());
+        self::assertSame(0,$this->countWhere('talk_events',$tenant,"ticket_id={$ticket}"));
+        $this->pdo->prepare("UPDATE talk_queues SET status='active' WHERE id=:id")->execute(['id'=>$queue]);
+        self::assertTrue($service->claim($ticket,$user));
+        self::assertSame(1,$this->countWhere('talk_events',$tenant,"ticket_id={$ticket} AND event_type='ticket.claimed'"));
+    }
+
     public function testTransferChecksCapacityAndPreservesHistoryWhenRejected(): void
     {
         $tenant=(int)$this->a['tenant'];$user=(int)$this->a['user'];$ticket=(int)$this->a['ticket'];
