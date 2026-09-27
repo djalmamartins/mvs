@@ -1,6 +1,6 @@
 const A=document.querySelector('#app'),T=document.querySelector('#toast');
 const products={
-'meu-dia':{name:'Meu Dia',icon:'◷',pages:[['dashboard','Visão geral'],['agenda','Agenda'],['tarefas','Tarefas'],['encaixes','Encaixes'],['demandas','Demandas'],['visitas','Visitas'],['chamados','Chamados']]},
+'meu-dia':{name:'Meu Dia',icon:'◷',pages:[['dashboard','Meu Dia'],['agenda','Agenda'],['tarefas','Tarefas'],['demandas','Demandas'],['visitas','Visitas'],['chamados','Chamados'],['atividades','Atividades']]},
 talk:{name:'Talk',icon:'◉',pages:[['dashboard','Dashboard'],['inbox','Caixa de entrada'],['fila','Fila'],['contatos','Contatos'],['chamados','Chamados'],['transferencias','Transferências'],['historico','Histórico'],['jack','Jack'],['equipe','Equipe'],['supervisao','Supervisão'],['relatorios','Relatórios'],['configuracoes','Configurações']]},
 suporte:{name:'Suporte',icon:'?',pages:[['dashboard','Dashboard'],['chamados','Chamados'],['fila','Fila'],['sla','SLA'],['base','Base de conhecimento'],['equipe','Equipe'],['relatorios','Relatórios'],['configuracoes','Configurações']]},
 erp:{name:'ERP',icon:'▤',pages:[['dashboard','Dashboard'],['condominios','Condomínios'],['unidades','Unidades'],['pessoas','Pessoas'],['financeiro','Financeiro'],['cobrancas','Cobranças'],['inadimplencia','Inadimplência'],['fornecedores','Fornecedores'],['contratos','Contratos'],['assembleias','Assembleias'],['documentos','Documentos'],['relatorios','Relatórios']]},
