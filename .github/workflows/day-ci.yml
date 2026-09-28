@@ -31,16 +31,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
-    env:
-      APP_ENV: testing
-      APP_DEBUG: 'false'
-      APP_URL: http://localhost
-      APP_TIMEZONE: America/Sao_Paulo
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_DATABASE: moves
-      DB_USERNAME: root
-      DB_PASSWORD: ''
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
