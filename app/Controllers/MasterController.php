@@ -10,6 +10,8 @@ use Moves\Core\Csrf;
 use Moves\Core\Flash;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Boot\Connection;
+use CoffeeCode\Uploader\Image;
 use Moves\Services\Master\MasterAdministratorService;
 use RuntimeException;
 use Throwable;
@@ -59,7 +61,7 @@ final class MasterController extends Controller
     public function brandingSave(array $params=[]): void
     {
         $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id.'/branding');
-        try{(new MasterAdministratorService())->updateBranding($id,['trade_name'=>(string)Request::post('trade_name',''),'logo_path'=>(string)Request::post('logo_path',''),'primary_color'=>(string)Request::post('primary_color',''),'secondary_color'=>(string)Request::post('secondary_color','')],(int)Auth::user()?->id);Flash::set('success','Identidade visual atualizada.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
+        try{$logo=(string)Request::post('logo_path','');$upload=$_FILES['logo']??[];if((int)($upload['size']??0)>0){if((int)($upload['size']??0)>4*1024*1024)throw new RuntimeException('O logotipo deve ter no máximo 4 MB.');$path=(new Image(dirname(__DIR__,2).'/storage','media'))->upload($upload,(string)($upload['name']??'logo'),1600);$info=getimagesize($path);$pdo=Connection::getInstance();$statement=$pdo->prepare('INSERT INTO studio_media(name,path,mime,size,width,height,created_by) VALUES(?,?,?,?,?,?,?)');$statement->execute([basename($path),$path,(string)($info['mime']??'application/octet-stream'),filesize($path),$info[0]??null,$info[1]??null,Auth::user()?->id]);$logo='/media/'.(int)$pdo->lastInsertId();}(new MasterAdministratorService())->updateBranding($id,['trade_name'=>(string)Request::post('trade_name',''),'logo_path'=>$logo,'primary_color'=>(string)Request::post('primary_color',''),'secondary_color'=>(string)Request::post('secondary_color','')],(int)Auth::user()?->id);Flash::set('success','Identidade visual atualizada.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
         Response::to('/master/administrators/'.$id.'/branding');
     }
     public function productSave(array $params=[]): void
