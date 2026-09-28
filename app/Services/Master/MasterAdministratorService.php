@@ -127,7 +127,7 @@ final class MasterAdministratorService
     {
         if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
         $name=mb_substr(trim(strip_tags((string)($branding['trade_name']??''))),0,160);
-        $logo=mb_substr(trim((string)($branding['logo_path']??'')),0,500);
+        $logo=mb_substr(trim((string)($branding['logo_path']??'')),0,500);if($logo!==''&&!preg_match('~^(?:/uploads/[A-Za-z0-9_./-]+|https://[A-Za-z0-9.-]+(?:/[A-Za-z0-9_./?&=%+-]*)?)$~',$logo))throw new RuntimeException('Logotipo deve usar /uploads/ ou uma URL HTTPS válida.');
         $primary=strtoupper(trim((string)($branding['primary_color']??'#6E00B3')));$secondary=strtoupper(trim((string)($branding['secondary_color']??'')));
         if(!preg_match('/^#[0-9A-F]{6}$/',$primary))throw new RuntimeException('Cor primária inválida.');
         if($secondary!==''&&!preg_match('/^#[0-9A-F]{6}$/',$secondary))throw new RuntimeException('Cor secundária inválida.');
