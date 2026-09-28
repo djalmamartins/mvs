@@ -1,0 +1,53 @@
+name: MVS Quality
+
+on:
+  pull_request:
+    branches:
+      - feat/mvs-base
+  workflow_dispatch:
+
+jobs:
+  php-quality:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: moves
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      APP_NAME: Moves
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      APP_URL: http://127.0.0.1
+      APP_TIMEZONE: America/Sao_Paulo
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: moves
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_mysql, mbstring
+          coverage: none
+      - uses: ramsey/composer-install@v3
+      - name: Validate Composer
+        run: composer validate --strict
+      - name: Security audit
+        run: composer audit
+      - name: Apply migrations
+        run: php scripts/migrate.php
+      - name: PHPUnit
+        run: vendor/bin/phpunit
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
