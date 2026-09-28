@@ -59,6 +59,10 @@ final class DayServiceTest extends TestCase
         self::assertIsString($routes);self::assertIsString($sidebar);
         self::assertStringContainsString("DayController:index",$routes);
         self::assertStringContainsString("DayController:task",$routes);
+        $controller=file_get_contents(dirname(__DIR__).'/app/Controllers/DayController.php');
+        self::assertIsString($controller);
+        self::assertStringContainsString('Csrf::validate',$controller);
+        self::assertStringNotContainsString('requireCsrf',$controller);
         self::assertStringContainsString("\$activeProduct==='day'",$sidebar);
         self::assertStringNotContainsString('\\n',$sidebar);
     }
