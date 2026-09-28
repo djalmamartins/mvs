@@ -15,6 +15,7 @@ use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Models\User;
 use Moves\Services\Auth\UserInvitationService;
+use Moves\Services\Auth\PasswordPolicy;
 use Moves\Services\Mail\SmtpInvitationMailer;
 use Moves\Services\Platform\TenantContext;
 use MovesCode\Pager\Pager;
@@ -52,8 +53,90 @@ final class UserController extends Controller
             [
                 'title' => 'Meu perfil',
                 'user' => $user,
+                'preferences' => $this->profilePreferences((int) $user->id),
             ]
         );
+    }
+
+    public function updateProfile(): never
+    {
+        $this->validateCsrf();
+        $user = Auth::user();
+        if ($user === null) { Response::to('/login'); }
+
+        $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
+        $theme = (string) Request::post('theme', 'system');
+        $locale = (string) Request::post('locale', 'pt-BR');
+        $notifications = Request::post('email_notifications') === '1' ? 1 : 0;
+        if (mb_strlen($name) < 2 || !in_array($theme, ['light', 'dark', 'system'], true) || !in_array($locale, ['pt-BR', 'en-US'], true)) {
+            Flash::set('error', 'Revise os dados e preferências do perfil.');
+            Response::to('/app/profile');
+        }
+
+        $pdo = Connection::getInstance();
+        try {
+            $pdo->beginTransaction();
+            $pdo->prepare('UPDATE users SET name=? WHERE id=?')->execute([$name, (int) $user->id]);
+            $pdo->prepare(
+                'INSERT INTO user_preferences(user_id,locale,theme,email_notifications) VALUES(?,?,?,?) '
+                . 'ON DUPLICATE KEY UPDATE locale=VALUES(locale),theme=VALUES(theme),email_notifications=VALUES(email_notifications)'
+            )->execute([(int) $user->id, $locale, $theme, $notifications]);
+            $pdo->commit();
+            Logger::info('Perfil atualizado.', ['actor_id' => $user->id]);
+            Flash::set('success', 'Perfil atualizado com sucesso.');
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            Logger::exception($exception);
+            Flash::set('error', 'Não foi possível atualizar o perfil.');
+        }
+        Response::to('/app/profile');
+    }
+
+    public function updatePassword(): never
+    {
+        $this->validateCsrf();
+        $user = Auth::user();
+        if ($user === null) { Response::to('/login'); }
+
+        $current = (string) Request::post('current_password', '');
+        $password = (string) Request::post('password', '');
+        $confirmation = (string) Request::post('password_confirmation', '');
+        $errors = PasswordPolicy::errors($password);
+        if (!password_verify($current, (string) $user->password)) {
+            $errors[] = 'A senha atual está incorreta.';
+        }
+        if (!hash_equals($password, $confirmation)) {
+            $errors[] = 'A confirmação deve ser igual à nova senha.';
+        }
+        if ($current !== '' && password_verify($password, (string) $user->password)) {
+            $errors[] = 'A nova senha deve ser diferente da senha atual.';
+        }
+        if ($errors !== []) {
+            foreach ($errors as $error) { Flash::set('error', $error); }
+            Response::to('/app/profile');
+        }
+
+        Connection::getInstance()->prepare('UPDATE users SET password=? WHERE id=?')
+            ->execute([password_hash($password, PASSWORD_DEFAULT), (int) $user->id]);
+        Logger::info('Senha alterada pelo perfil.', ['actor_id' => $user->id]);
+        Auth::logout();
+        Flash::set('success', 'Senha alterada. Entre novamente com a nova senha.');
+        Response::to('/login');
+    }
+
+    /** @return array{locale:string,theme:string,email_notifications:int} */
+    private function profilePreferences(int $userId): array
+    {
+        $statement = Connection::getInstance()->prepare(
+            'SELECT locale,theme,email_notifications FROM user_preferences WHERE user_id=?'
+        );
+        $statement->execute([$userId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        return is_array($row) ? [
+            'locale' => (string) $row['locale'],
+            'theme' => (string) $row['theme'],
+            'email_notifications' => (int) $row['email_notifications'],
+        ] : ['locale' => 'pt-BR', 'theme' => 'system', 'email_notifications' => 1];
     }
 
     /**
