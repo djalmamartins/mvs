@@ -75,6 +75,13 @@ final class MasterController extends Controller
         Response::to('/master/administrators/'.$id);
     }
 
+    public function inviteUser(array $params=[]): void
+    {
+        $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id);
+        try{(new MasterAdministratorService())->inviteUser($id,['name'=>(string)Request::post('name',''),'email'=>(string)Request::post('email',''),'role'=>(string)Request::post('role','agent')],(int)Auth::user()?->id);Flash::set('success','Usuário vinculado à administradora.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
+        Response::to('/master/administrators/'.$id);
+    }
+
     public function edit(array $params=[]): void
     {
         $id=(int)($params['id']??0);$administrator=(new MasterAdministratorService())->find($id);
