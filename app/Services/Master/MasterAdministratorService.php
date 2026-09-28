@@ -11,32 +11,22 @@ use Throwable;
 
 final class MasterAdministratorService
 {
-    /** @return array{items:list<array<string,mixed>>,total:int,active:int,inactive:int} */
-    public function search(string $query = '', string $status = ''): array
+    /** @return array{items:list<array<string,mixed>>,total:int,filtered:int,active:int,inactive:int,page:int,pages:int,per_page:int} */
+    public function search(string $query = '', string $status = '', int $page = 1, int $perPage = 25): array
     {
-        $pdo = Connection::getInstance();
-        $where = ['1=1'];
-        $params = [];
-        $query = mb_substr(trim($query), 0, 120);
-        if ($query !== '') {
-            $where[] = '(a.legal_name LIKE :q1 OR a.trade_name LIKE :q2 OR a.tax_id LIKE :q3 OR t.name LIKE :q4)';
-            $like = '%' . $query . '%';
-            $params += ['q1'=>$like,'q2'=>$like,'q3'=>$like,'q4'=>$like];
-        }
-        if (in_array($status, ['active','inactive','suspended'], true)) {
-            $where[] = 'a.status=:status';
-            $params['status'] = $status;
-        }
-        $sql = 'SELECT a.tenant_id,a.legal_name,a.trade_name,a.tax_id,a.contact_name,a.contact_email,a.contact_phone,a.status,a.updated_at,t.slug,
-                (SELECT COUNT(*) FROM talk_tenant_users tu WHERE tu.tenant_id=a.tenant_id AND tu.status=\'active\') users_count,
-                (SELECT COUNT(*) FROM talk_channels c WHERE c.tenant_id=a.tenant_id AND c.status=\'active\') channels_count
-                FROM mst_administrators a INNER JOIN talk_tenants t ON t.id=a.tenant_id
-                WHERE '.implode(' AND ',$where).' ORDER BY a.legal_name,a.tenant_id LIMIT 200';
-        $statement = $pdo->prepare($sql);
-        $statement->execute($params);
-        $items = $statement->fetchAll(PDO::FETCH_ASSOC);
-        $stats = $pdo->query("SELECT COUNT(*) total,SUM(status='active') active,SUM(status<>'active') inactive FROM mst_administrators")->fetch(PDO::FETCH_ASSOC) ?: [];
-        return ['items'=>array_values($items),'total'=>(int)($stats['total']??0),'active'=>(int)($stats['active']??0),'inactive'=>(int)($stats['inactive']??0)];
+        $pdo=Connection::getInstance();$where=['1=1'];$params=[];$query=mb_substr(trim($query),0,120);
+        if($query!==''){$where[]='(a.legal_name LIKE :q1 OR a.trade_name LIKE :q2 OR a.tax_id LIKE :q3 OR t.name LIKE :q4)';$like='%'.$query.'%';$params+=['q1'=>$like,'q2'=>$like,'q3'=>$like,'q4'=>$like];}
+        if(in_array($status,['active','inactive','suspended'],true)){$where[]='a.status=:status';$params['status']=$status;}
+        $whereSql=implode(' AND ',$where);$page=max(1,$page);$perPage=max(10,min(100,$perPage));
+        $count=$pdo->prepare('SELECT COUNT(*) FROM mst_administrators a INNER JOIN talk_tenants t ON t.id=a.tenant_id WHERE '.$whereSql);$count->execute($params);$filtered=(int)$count->fetchColumn();$pages=max(1,(int)ceil($filtered/$perPage));$page=min($page,$pages);$offset=($page-1)*$perPage;
+        $sql='SELECT a.tenant_id,a.legal_name,a.trade_name,a.tax_id,a.contact_name,a.contact_email,a.contact_phone,a.status,a.updated_at,t.slug,
+        (SELECT COUNT(*) FROM talk_tenant_users tu WHERE tu.tenant_id=a.tenant_id AND tu.status=\'active\') users_count,
+        (SELECT COUNT(*) FROM talk_channels ch WHERE ch.tenant_id=a.tenant_id AND ch.status=\'active\') channels_count,
+        (SELECT GROUP_CONCAT(p.product_key ORDER BY p.product_key SEPARATOR \', \') FROM mst_tenant_products p WHERE p.tenant_id=a.tenant_id AND p.status=\'active\') products
+        FROM mst_administrators a INNER JOIN talk_tenants t ON t.id=a.tenant_id WHERE '.$whereSql.' ORDER BY a.legal_name,a.tenant_id LIMIT '.$perPage.' OFFSET '.$offset;
+        $statement=$pdo->prepare($sql);$statement->execute($params);$items=$statement->fetchAll(PDO::FETCH_ASSOC);
+        $stats=$pdo->query("SELECT COUNT(*) total,SUM(status='active') active,SUM(status<>'active') inactive FROM mst_administrators")->fetch(PDO::FETCH_ASSOC)?:[];
+        return ['items'=>array_values($items),'total'=>(int)($stats['total']??0),'filtered'=>$filtered,'active'=>(int)($stats['active']??0),'inactive'=>(int)($stats['inactive']??0),'page'=>$page,'pages'=>$pages,'per_page'=>$perPage];
     }
 
     /** @return array<string,mixed>|null */
