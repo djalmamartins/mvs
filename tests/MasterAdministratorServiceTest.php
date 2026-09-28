@@ -54,7 +54,7 @@ final class MasterAdministratorServiceTest extends TestCase
     {
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Invite '.$token,'trade_name'=>'Invite '.$token,'tax_id'=>'INV-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
         $email='mst-'.$token.'@example.test';$user=$service->inviteUser($id,['name'=>'Usuário MST','email'=>$email,'role'=>'supervisor'],$this->actor);$this->users[]=$user;$row=$service->find($id);
-        self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
+        self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertSame('inactive',$row['memberships'][0]['global_status']);self::assertSame('inactive',$row['memberships'][0]['membership_status']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
     }
 
     public function testLastActiveAdminCannotBeRemoved(): void
