@@ -18,11 +18,9 @@ use Moves\Core\Validator;
 use Moves\Models\User;
 use Moves\Modules\Erp\Security\MfaChallengeService;
 use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
-use Moves\Modules\Erp\Security\MfaRequirementPolicy;
 use Moves\Modules\Erp\Security\MfaRuntimeConfig;
 use Moves\Modules\Erp\Security\TotpVerifier;
 use Moves\Services\Auth\MfaRecoveryCodeService;
-use Moves\Services\Auth\MfaSetupService;
 use Moves\Services\Platform\PlatformAudit;
 use Moves\Services\Platform\TenantContext;
 
@@ -40,7 +38,7 @@ final class AuthController extends Controller
     private const MFA_PENDING_TTL = 300;
     public function entry(): void
     {
-        Response::to(Auth::check() ? '/app' : '/login');
+        Response::to(Auth::check() ? '/day' : '/login');
     }
 
     public function login(): void
@@ -94,15 +92,26 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
-        if ((new MfaRequirementPolicy())->requiresMfa(isset($user->role) ? (string) $user->role : null)) {
-            Session::set(self::MFA_PENDING_KEY, [
+        try {
+            $pdo = Connection::getInstance();
+            $repository = new MfaEnrollmentRepository($pdo, MfaRuntimeConfig::fromEnvironment()->cipher());
+            if ($repository->hasActiveTotp((int) ($user->id ?? 0))) {
+                Session::set(self::MFA_PENDING_KEY, [
+                    'user_id' => (int) ($user->id ?? 0),
+                    'email' => strtolower($email),
+                    'ip' => $ip,
+                    'issued_at' => time(),
+                ]);
+                Csrf::regenerate();
+                Response::to('/login/2fa');
+            }
+        } catch (\Throwable $exception) {
+            Logger::error('Falha ao consultar estado MFA durante o login.', [
                 'user_id' => (int) ($user->id ?? 0),
-                'email' => strtolower($email),
-                'ip' => $ip,
-                'issued_at' => time(),
+                'exception' => $exception::class,
             ]);
-            Csrf::regenerate();
-            Response::to('/login/2fa');
+            Flash::set('error', 'Não foi possível validar a segurança da conta. Tente novamente.');
+            Response::to('/login');
         }
 
         if (!Auth::establishSession($user)) {
@@ -123,7 +132,7 @@ final class AuthController extends Controller
             // Authentication also supports platform operators without a tenant.
         }
         Flash::set('success', 'Login realizado com sucesso.');
-        Response::to('/app');
+        Response::to('/day');
     }
 
     public function mfaChallenge(): void
@@ -134,28 +143,10 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
-        $setup = null;
-        try {
-            $pdo = Connection::getInstance();
-            $repository = new MfaEnrollmentRepository($pdo, MfaRuntimeConfig::fromEnvironment()->cipher());
-            if (!$repository->hasActiveTotp((int) $pending['user_id'])) {
-                $service = new MfaSetupService($pdo, $repository, new TotpVerifier());
-                $setup = $service->pending((int) $pending['user_id'], (string) $pending['email'])
-                    ?? $service->begin((int) $pending['user_id'], (string) $pending['email']);
-            }
-        } catch (\Throwable $exception) {
-            Logger::error('Falha ao preparar enrollment MFA no login.', [
-                'user_id' => (int) $pending['user_id'],
-                'exception' => $exception::class,
-            ]);
-            Flash::set('error', 'Não foi possível preparar a verificação em duas etapas.');
-            Response::to('/login');
-        }
-
         echo $this->view->render('pages/mfa-challenge', [
             'title' => 'Verificação em duas etapas',
             'version' => '0.0.1',
-            'setup' => $setup,
+            'setup' => null,
         ]);
     }
 
@@ -191,13 +182,6 @@ final class AuthController extends Controller
                 if ($repository->hasActiveTotp((int) $user->id)) {
                     $valid = (new MfaChallengeService($repository, new TotpVerifier()))
                         ->verifyTotp((int) $user->id, $code);
-                } else {
-                    $recoveryCodes = (new MfaSetupService($pdo, $repository, new TotpVerifier()))
-                        ->confirm((int) $user->id, $code);
-                    $valid = $recoveryCodes !== null;
-                    if ($valid) {
-                        Session::set('mfa_recovery_codes_once', $recoveryCodes);
-                    }
                 }
             } else {
                 $valid = (new MfaRecoveryCodeService($pdo))->consume((int) $user->id, $code);
@@ -226,12 +210,7 @@ final class AuthController extends Controller
         Csrf::regenerate();
         $this->recordLoginAudit($user, (string) $pending['ip']);
         Flash::set('success', 'Login realizado com sucesso.');
-        if (isset($recoveryCodes)) {
-            Flash::set('success', '2FA ativado e login realizado. Guarde seus códigos de recuperação.');
-            Response::to('/app/security/2fa');
-        }
-
-        Response::to('/app');
+        Response::to('/day');
     }
 
     /** @return array{user_id:int,email:string,ip:string,issued_at:int}|null */
@@ -271,7 +250,7 @@ final class AuthController extends Controller
 
         if (!is_string($token) || !Csrf::validate($token)) {
             Flash::set('error', 'Token de segurança inválido.');
-            Response::to('/app');
+            Response::to('/day');
         }
 
         $user = Auth::user();
