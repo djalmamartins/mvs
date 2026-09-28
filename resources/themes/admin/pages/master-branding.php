@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+$a=$administrator;$this->layout('layouts/default',['title'=>$title,'productName'=>'Master','activeProduct'=>'master','currentPage'=>'administrators']);
+?>
+<header class="page-heading"><div><span class="kicker">ADMINISTRADORA #<?= (int)$a['tenant_id'] ?></span><h1>Identidade visual</h1><p>White-label permitido para esta administradora, preservando o padrão da Moves Platform.</p></div><a class="secondary-btn" href="/master/administrators/<?= (int)$a['tenant_id'] ?>">Voltar</a></header>
+<form class="surface mst-form" method="post" enctype="multipart/form-data" action="/master/administrators/<?= (int)$a['tenant_id'] ?>/branding"><?= $this->csrf() ?>
+<div class="mst-form-section"><div><h2>Marca</h2><p>Nome e logotipo apresentados dentro do tenant.</p></div><div class="mst-fields"><label>Nome de exibição<input maxlength="160" name="trade_name" value="<?= $this->e((string)$a['trade_name']) ?>"></label><label>Logotipo<input type="file" name="logo" accept="image/jpeg,image/png,image/webp,image/gif"><small>PNG, JPG, WebP ou GIF · máximo 4 MB.</small><input type="hidden" name="logo_path" value="<?= $this->e((string)($a['logo_path']??'')) ?>"><?php if(!empty($a['logo_path'])):?><img class="mst-brand-preview" src="<?= $this->e((string)$a['logo_path']) ?>" alt="Logotipo atual"><?php endif;?></label></div></div>
+<div class="mst-form-section"><div><h2>Cores</h2><p>Cores institucionais aplicáveis aos pontos white-label.</p></div><div class="mst-fields"><label>Cor primária<input type="color" name="primary_color" value="<?= $this->e((string)($a['primary_color']??'#6E00B3')) ?>"></label><label>Cor secundária<input name="secondary_color" value="<?= $this->e((string)($a['secondary_color']??'')) ?>" placeholder="#FFFFFF" pattern="#[0-9A-Fa-f]{6}"></label></div></div>
+<footer class="mst-form-actions"><button class="primary-btn" type="submit">Salvar identidade</button></footer></form>
