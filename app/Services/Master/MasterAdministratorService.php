@@ -63,8 +63,8 @@ final class MasterAdministratorService
             $tenant = $pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,:status)");
             $tenant->execute(['name'=>$data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name'],'slug'=>$slug,'status'=>$data['status']==='active'?'active':'inactive']);
             $id = (int)$pdo->lastInsertId();
-            $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes)');
-            $insert->execute(['tenant_id'=>$id]+$data);
+            $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes,primary_color,secondary_color) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes,:primary_color,:secondary_color)');
+            $insert->execute(['tenant_id'=>$id]+$data+['primary_color'=>'#6E00B3','secondary_color'=>null]);
             $pdo->prepare("INSERT INTO mst_onboarding(tenant_id,step) VALUES(:tenant,'created')")->execute(['tenant'=>$id]);
             foreach(['day','talk','support','erp','cms'] as $product){$pdo->prepare("INSERT INTO mst_tenant_products(tenant_id,product_key,status) VALUES(:tenant,:product,'inactive')")->execute(['tenant'=>$id,'product'=>$product]);}
             $pdo->prepare("INSERT INTO mst_security_settings(tenant_id) VALUES(:tenant)")->execute(['tenant'=>$id]);
