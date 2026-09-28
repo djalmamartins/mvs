@@ -47,6 +47,6 @@ jobs:
             mysql -h127.0.0.1 -umoves -pmoves moves_test < "$migration"
           done
       - name: PHPUnit
-        run: composer test
+        run: php -d variables_order=EGPCS vendor/bin/phpunit
       - name: PHPStan
         run: composer analyse
