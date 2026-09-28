@@ -52,6 +52,20 @@ jobs:
         run: composer validate --strict
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+      - name: Create CI environment
+        run: |
+          cat > .env <<'EOF'
+          APP_NAME=Moves
+          APP_ENV=testing
+          APP_DEBUG=false
+          APP_URL=http://localhost
+          APP_TIMEZONE=America/Sao_Paulo
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=moves
+          DB_USERNAME=root
+          DB_PASSWORD=
+          EOF
       - name: Run migrations
         run: php scripts/migrate.php
       - name: Run Day tests
