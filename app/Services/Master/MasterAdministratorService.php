@@ -52,6 +52,9 @@ final class MasterAdministratorService
         $audit = Connection::getInstance()->prepare('SELECT event_type,created_at FROM mst_audit WHERE tenant_id=:id ORDER BY id DESC LIMIT 12');
         $audit->execute(['id'=>$tenantId]);
         $row['audit'] = $audit->fetchAll(PDO::FETCH_ASSOC);
+        $products=Connection::getInstance()->prepare('SELECT product_key,status,updated_at FROM mst_tenant_products WHERE tenant_id=:id ORDER BY product_key');$products->execute(['id'=>$tenantId]);$row['products']=$products->fetchAll(PDO::FETCH_ASSOC);
+        $users=Connection::getInstance()->prepare('SELECT u.id,u.name,u.email,u.status global_status,tu.role,tu.status membership_status,tu.is_default,tu.updated_at FROM talk_tenant_users tu INNER JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=:id ORDER BY u.name');$users->execute(['id'=>$tenantId]);$row['memberships']=$users->fetchAll(PDO::FETCH_ASSOC);
+        $channels=Connection::getInstance()->prepare('SELECT id,type,name,driver,status,connection_status,phone_number FROM talk_channels WHERE tenant_id=:id ORDER BY type,name');$channels->execute(['id'=>$tenantId]);$row['integrations']=$channels->fetchAll(PDO::FETCH_ASSOC);
         return $row;
     }
 
@@ -109,6 +112,41 @@ final class MasterAdministratorService
         $clean['legal_name']=mb_substr($clean['legal_name'],0,180);$clean['trade_name']=mb_substr($clean['trade_name'],0,160);$clean['tax_id']=mb_substr($clean['tax_id'],0,20);
         $clean['contact_name']=mb_substr($clean['contact_name'],0,120);$clean['contact_email']=mb_substr($clean['contact_email'],0,190);$clean['contact_phone']=mb_substr($clean['contact_phone'],0,40);$clean['notes']=mb_substr($clean['notes'],0,1000);
         return $clean;
+    }
+
+    /** @param array<string,string> $branding */
+    public function updateBranding(int $tenantId,array $branding,int $actorUserId): void
+    {
+        if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
+        $name=mb_substr(trim(strip_tags((string)($branding['trade_name']??''))),0,160);
+        $logo=mb_substr(trim((string)($branding['logo_path']??'')),0,500);
+        $primary=strtoupper(trim((string)($branding['primary_color']??'#6E00B3')));$secondary=strtoupper(trim((string)($branding['secondary_color']??'')));
+        if(!preg_match('/^#[0-9A-F]{6}$/',$primary))throw new RuntimeException('Cor primária inválida.');
+        if($secondary!==''&&!preg_match('/^#[0-9A-F]{6}$/',$secondary))throw new RuntimeException('Cor secundária inválida.');
+        Connection::getInstance()->prepare('UPDATE mst_administrators SET trade_name=:name,logo_path=:logo,primary_color=:primary,secondary_color=:secondary WHERE tenant_id=:id')->execute(['name'=>$name,'logo'=>$logo?:null,'primary'=>$primary,'secondary'=>$secondary?:null,'id'=>$tenantId]);
+        $this->audit($tenantId,$actorUserId,'mst.branding.updated',['primary_color'=>$primary]);
+    }
+
+    public function setProduct(int $tenantId,string $product,string $status,int $actorUserId): void
+    {
+        if(!in_array($product,['day','talk','support','erp','cms'],true)||!in_array($status,['active','inactive'],true))throw new RuntimeException('Produto ou status inválido.');
+        $s=Connection::getInstance()->prepare('INSERT INTO mst_tenant_products(tenant_id,product_key,status) VALUES(:tenant,:product,:status) ON DUPLICATE KEY UPDATE status=VALUES(status),updated_at=NOW()');$s->execute(['tenant'=>$tenantId,'product'=>$product,'status'=>$status]);
+        $this->audit($tenantId,$actorUserId,'mst.product.updated',['product'=>$product,'status'=>$status]);
+    }
+
+    public function saveMembership(int $tenantId,int $userId,string $role,string $status,int $actorUserId): void
+    {
+        if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
+        if(!in_array($role,['admin','supervisor','agent'],true)||!in_array($status,['active','inactive'],true))throw new RuntimeException('Papel ou status inválido.');
+        $exists=Connection::getInstance()->prepare('SELECT id FROM users WHERE id=:id');$exists->execute(['id'=>$userId]);if(!(int)$exists->fetchColumn())throw new RuntimeException('Usuário não encontrado.');
+        Connection::getInstance()->prepare('INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,:status,0) ON DUPLICATE KEY UPDATE role=VALUES(role),status=VALUES(status),updated_at=NOW()')->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role,'status'=>$status]);
+        $this->audit($tenantId,$actorUserId,'mst.membership.updated',['user_id'=>$userId,'role'=>$role,'status'=>$status]);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function availableUsers(int $tenantId): array
+    {
+        $s=Connection::getInstance()->prepare('SELECT u.id,u.name,u.email FROM users u WHERE u.status=\'active\' AND NOT EXISTS(SELECT 1 FROM talk_tenant_users tu WHERE tu.tenant_id=:tenant AND tu.user_id=u.id) ORDER BY u.name LIMIT 200');$s->execute(['tenant'=>$tenantId]);return $s->fetchAll(PDO::FETCH_ASSOC);
     }
 
     private function uniqueSlug(string $value): string
