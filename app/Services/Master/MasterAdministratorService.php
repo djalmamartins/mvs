@@ -47,6 +47,7 @@ final class MasterAdministratorService
         $channels=Connection::getInstance()->prepare('SELECT id,type,name,driver,status,connection_status,phone_number FROM talk_channels WHERE tenant_id=:id ORDER BY type,name');$channels->execute(['id'=>$tenantId]);$row['integrations']=$channels->fetchAll(PDO::FETCH_ASSOC);
         $security=Connection::getInstance()->prepare('SELECT require_mfa,session_timeout_minutes,allowed_email_domains,updated_at FROM mst_security_settings WHERE tenant_id=:id');$security->execute(['id'=>$tenantId]);$row['security']=$security->fetch(PDO::FETCH_ASSOC)?:['require_mfa'=>0,'session_timeout_minutes'=>480,'allowed_email_domains'=>''];
         $onboarding=Connection::getInstance()->prepare('SELECT step,completed_at,updated_at FROM mst_onboarding WHERE tenant_id=:id');$onboarding->execute(['id'=>$tenantId]);$row['onboarding']=$onboarding->fetch(PDO::FETCH_ASSOC)?:['step'=>'created','completed_at'=>null];
+        $onboarding=Connection::getInstance()->prepare('SELECT step,completed_at,updated_at FROM mst_onboarding WHERE tenant_id=:id');$onboarding->execute(['id'=>$tenantId]);$row['onboarding']=$onboarding->fetch(PDO::FETCH_ASSOC)?:['step'=>'created','completed_at'=>null];
         return $row;
     }
 
