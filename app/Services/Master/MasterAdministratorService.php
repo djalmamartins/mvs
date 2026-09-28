@@ -152,8 +152,10 @@ final class MasterAdministratorService
         $this->audit($tenantId,$actorUserId,'mst.membership.updated',['user_id'=>$userId,'role'=>$role,'status'=>$status]);
     }
 
-    /** @param array<string,string> $data */
-    public function inviteUser(int $tenantId,array $data,int $actorUserId): int
+    /** @param array<string,string> $data
+     * @return array{user_id:int,invitation_token:?string}
+     */
+    public function inviteUser(int $tenantId,array $data,int $actorUserId): array
     {
         if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
         $name=mb_substr(trim(strip_tags((string)($data['name']??''))),0,120);$email=mb_strtolower(mb_substr(trim((string)($data['email']??'')),0,190));$role=(string)($data['role']??'agent');
@@ -161,11 +163,28 @@ final class MasterAdministratorService
         if(!in_array($role,['admin','supervisor','agent'],true))throw new RuntimeException('Papel inválido.');
         $pdo=Connection::getInstance();$pdo->beginTransaction();
         try{
-            $find=$pdo->prepare('SELECT id,status FROM users WHERE email=:email LIMIT 1');$find->execute(['email'=>$email]);$existing=$find->fetch(PDO::FETCH_ASSOC);
+            $find=$pdo->prepare('SELECT id,status FROM users WHERE email=:email LIMIT 1');$find->execute(['email'=>$email]);$existing=$find->fetch(PDO::FETCH_ASSOC);$token=null;
             if(is_array($existing)){$userId=(int)$existing['id'];}
-            else{$temporary=bin2hex(random_bytes(32));$insert=$pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(:name,:email,:password,'user','inactive')");$insert->execute(['name'=>$name,'email'=>$email,'password'=>password_hash($temporary,PASSWORD_DEFAULT)]);$userId=(int)$pdo->lastInsertId();}
-            $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,:membership_status,0) ON DUPLICATE KEY UPDATE role=VALUES(role),status=VALUES(status),updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role,'membership_status'=>is_array($existing)?'active':'inactive']);
-            $this->audit($tenantId,$actorUserId,'mst.membership.invited',['user_id'=>$userId,'email'=>$email,'role'=>$role,'account_created'=>!is_array($existing)]);$pdo->commit();return $userId;
+            else{$temporary=bin2hex(random_bytes(32));$insert=$pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(:name,:email,:password,'user','inactive')");$insert->execute(['name'=>$name,'email'=>$email,'password'=>password_hash($temporary,PASSWORD_DEFAULT)]);$userId=(int)$pdo->lastInsertId();$token=bin2hex(random_bytes(32));$invite=$pdo->prepare('INSERT INTO mst_user_invitations(tenant_id,user_id,token_hash,expires_at,created_by) VALUES(:tenant,:user,:hash,DATE_ADD(NOW(),INTERVAL 48 HOUR),:actor)');$invite->execute(['tenant'=>$tenantId,'user'=>$userId,'hash'=>hash('sha256',$token),'actor'=>$actorUserId?:null]);}
+            $membershipStatus=is_array($existing)&&((string)($existing['status']??'')==='active')?'active':'inactive';
+            $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,:membership_status,0) ON DUPLICATE KEY UPDATE role=VALUES(role),status=VALUES(status),updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role,'membership_status'=>$membershipStatus]);
+            $this->audit($tenantId,$actorUserId,'mst.membership.invited',['user_id'=>$userId,'email'=>$email,'role'=>$role,'account_created'=>!is_array($existing)]);$pdo->commit();return ['user_id'=>$userId,'invitation_token'=>$token];
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+
+    public function acceptInvitation(string $token,string $password): int
+    {
+        if(!preg_match('/^[a-f0-9]{64}$/',$token))throw new RuntimeException('Convite inválido ou expirado.');
+        if(strlen($password)<12)throw new RuntimeException('A senha deve ter pelo menos 12 caracteres.');
+        $pdo=Connection::getInstance();$pdo->beginTransaction();
+        try{
+            $statement=$pdo->prepare('SELECT id,tenant_id,user_id FROM mst_user_invitations WHERE token_hash=:hash AND accepted_at IS NULL AND expires_at>NOW() LIMIT 1 FOR UPDATE');$statement->execute(['hash'=>hash('sha256',$token)]);$invite=$statement->fetch(PDO::FETCH_ASSOC);
+            if(!is_array($invite))throw new RuntimeException('Convite inválido ou expirado.');
+            $userId=(int)$invite['user_id'];$tenantId=(int)$invite['tenant_id'];
+            $pdo->prepare("UPDATE users SET password=:password,status='active',updated_at=NOW() WHERE id=:id")->execute(['password'=>password_hash($password,PASSWORD_DEFAULT),'id'=>$userId]);
+            $pdo->prepare("UPDATE talk_tenant_users SET status='active',updated_at=NOW() WHERE tenant_id=:tenant AND user_id=:user")->execute(['tenant'=>$tenantId,'user'=>$userId]);
+            $pdo->prepare('UPDATE mst_user_invitations SET accepted_at=NOW() WHERE id=:id')->execute(['id'=>(int)$invite['id']]);
+            $this->audit($tenantId,$userId,'mst.membership.invitation_accepted',['user_id'=>$userId]);$pdo->commit();return $userId;
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
 
