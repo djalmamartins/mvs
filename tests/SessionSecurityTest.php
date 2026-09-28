@@ -83,39 +83,35 @@ final class SessionSecurityTest extends TestCase
 
         self::assertSame('Lax', session_get_cookie_params()['samesite']);
     }
-    public function testAuthenticatedSessionExpiresAfterIdleTimeout(): void
+    public function testExpiredAuthenticatedSessionFailsClosedAndIsDestroyed(): void
     {
         $_ENV['SESSION_IDLE_TIMEOUT'] = '60';
         Session::set('auth_user', 7);
-        Session::set('auth_last_activity', 1000);
+        Session::set('auth_last_activity', time() - 61);
+        Session::set('auth_authenticated_at', time() - 61);
 
-        self::assertTrue(Auth::sessionIsFresh(1060));
-        self::assertFalse(Auth::sessionIsFresh(1061));
+        self::assertFalse(Auth::check());
+        self::assertSame('', session_id());
+        self::assertSame(PHP_SESSION_NONE, session_status());
+        self::assertSame([], $_SESSION);
     }
 
     public function testAuthenticatedSessionWithoutActivityTimestampFailsClosed(): void
     {
         Session::set('auth_user', 7);
+        Session::set('auth_authenticated_at', time());
 
-        self::assertFalse(Auth::sessionIsFresh(1000));
+        self::assertFalse(Auth::check());
+        self::assertSame('', session_id());
     }
 
-    public function testFutureActivityTimestampFailsClosed(): void
+    public function testAuthenticatedSessionWithoutAuthenticationTimestampFailsClosed(): void
     {
         Session::set('auth_user', 7);
-        Session::set('auth_last_activity', 1001);
+        Session::set('auth_last_activity', time());
 
-        self::assertFalse(Auth::sessionIsFresh(1000));
-    }
-
-    public function testInvalidIdleTimeoutFallsBackToThirtyMinutes(): void
-    {
-        $_ENV['SESSION_IDLE_TIMEOUT'] = '0';
-        Session::set('auth_user', 7);
-        Session::set('auth_last_activity', 1000);
-
-        self::assertTrue(Auth::sessionIsFresh(2800));
-        self::assertFalse(Auth::sessionIsFresh(2801));
+        self::assertFalse(Auth::check());
+        self::assertSame('', session_id());
     }
 
 }
