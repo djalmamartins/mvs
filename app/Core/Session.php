@@ -109,7 +109,7 @@ final class Session
         self::start();
 
         if (!session_regenerate_id(true)) {
-            throw new \\RuntimeException('Não foi possível regenerar a sessão.');
+            throw new \RuntimeException('Não foi possível regenerar a sessão.');
         }
     }
 
