@@ -1,0 +1,21 @@
+<?php declare(strict_types=1);
+$this->layout('layouts/default',['title'=>$title??'Hoje','productName'=>'Meu Dia','activeProduct'=>'day','currentPage'=>'today']);
+$d=$day??[];$summary=$d['summary']??[];$tasks=$d['tasks']??[];$talk=$d['talk']??[];$timeline=$d['timeline']??[];
+$fmt=static fn(?string $v):string=>$v?date('d/m H:i',strtotime($v)):'Sem prazo';
+?>
+<link rel="stylesheet" href="<?= $this->e($this->asset('css/day.css')) ?>">
+<section class="day-page">
+<header class="day-header"><div><span class="day-kicker"><?= $this->e(ucfirst((new DateTimeImmutable())->format('l'))) ?></span><h1>Meu Dia</h1><p>O que precisa da sua atenção hoje, em um só lugar.</p></div><time><?= date('d/m/Y') ?></time></header>
+<div class="day-summary" aria-label="Resumo de hoje">
+<article><strong><?= (int)($summary['pending']??0) ?></strong><span>Pendências</span></article>
+<article><strong><?= (int)($summary['today']??0) ?></strong><span>Para hoje</span></article>
+<article><strong><?= (int)($summary['overdue']??0) ?></strong><span>Em atraso</span></article>
+<article><strong><?= (int)($summary['talk']??0) ?></strong><span>Talk ativos</span></article>
+</div>
+<div class="day-grid">
+<section class="day-panel day-tasks"><header><div><h2>Tarefas e pendências</h2><p>Prioridade, prazo e origem do trabalho.</p></div></header>
+<?php if(!$tasks): ?><div class="day-empty"><i class="icon-checkmark-circle-outline"></i><strong>Nenhuma tarefa pendente</strong><span>Quando algo for atribuído a você, aparecerá aqui.</span></div>
+<?php else: ?><div class="day-list"><?php foreach($tasks as $task): ?><article class="day-task <?= $this->e((string)$task['status']) ?>"><div><span class="day-priority"><?= $this->e((string)$task['priority']) ?></span><h3><?= $this->e((string)$task['title']) ?></h3><p><?= $this->e((string)($task['description']??'')) ?></p><small><?= $this->e($fmt($task['due_at']??null)) ?> · <?= $this->e((string)$task['source_type']) ?></small></div><div class="day-task-actions"><?php if(!empty($task['source_url'])): ?><a class="studio-btn" href="<?= $this->e((string)$task['source_url']) ?>">Abrir origem</a><?php endif; ?><form method="post" action="/day/tasks/<?= (int)$task['id'] ?>"><?= $this->csrf() ?><input type="hidden" name="status" value="<?= $task['status']==='done'?'pending':'done' ?>"><button class="studio-btn<?= $task['status']==='done'?'':' studio-btn-primary' ?>" type="submit"><?= $task['status']==='done'?'Reabrir':'Concluir' ?></button></form></div></article><?php endforeach; ?></div><?php endif; ?></section>
+<aside class="day-column"><section class="day-panel"><header><div><h2>Talk</h2><p>Atendimentos sob sua responsabilidade.</p></div><a href="/talk/view/inbox">Ver Talk</a></header><?php if(!$talk): ?><div class="day-empty compact"><strong>Nenhum atendimento ativo</strong><span>Sua caixa do Talk está em dia.</span></div><?php else: ?><div class="day-list compact"><?php foreach($talk as $ticket): ?><a class="day-talk-row" href="/talk/view/inbox?ticket=<?= (int)$ticket['id'] ?>"><div><strong><?= $this->e((string)($ticket['contact_name']?:$ticket['protocol'])) ?></strong><span><?= $this->e((string)$ticket['protocol']) ?> · <?= $this->e((string)$ticket['priority']) ?></span></div><i class="icon-chevron-forward"></i></a><?php endforeach; ?></div><?php endif; ?></section>
+<section class="day-panel"><header><div><h2>Timeline</h2><p>Sequência do seu dia.</p></div></header><?php if(!$timeline): ?><div class="day-empty compact"><strong>Dia livre</strong><span>Nenhum evento para exibir.</span></div><?php else: ?><ol class="day-timeline"><?php foreach($timeline as $item): ?><li><time><?= $this->e($fmt((string)$item['at'])) ?></time><a href="<?= $this->e((string)$item['url']) ?>"><strong><?= $this->e((string)$item['title']) ?></strong><span><?= $this->e((string)$item['meta']) ?></span></a></li><?php endforeach; ?></ol><?php endif; ?></section></aside>
+</div></section>
