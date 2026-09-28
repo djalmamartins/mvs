@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use Moves\Boot\Environment;
-use Moves\Core\Connection;
+use Moves\Boot\Connection;
 use Moves\Services\Support\TicketService;
 use PHPUnit\Framework\TestCase;
 
