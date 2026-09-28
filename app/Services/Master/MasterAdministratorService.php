@@ -90,13 +90,14 @@ final class MasterAdministratorService
         $current = $this->find($tenantId);
         if ($current === null) throw new RuntimeException('Administradora não encontrada.');
         $data = $this->validate($data);
+        $data['status']=(string)$current['status'];
         $pdo = Connection::getInstance();
         $pdo->beginTransaction();
         try {
-            $statement=$pdo->prepare('UPDATE mst_administrators SET legal_name=:legal_name,trade_name=:trade_name,tax_id=:tax_id,contact_name=:contact_name,contact_email=:contact_email,contact_phone=:contact_phone,status=:status,notes=:notes WHERE tenant_id=:tenant_id');
-            $statement->execute($data+['tenant_id'=>$tenantId]);
-            $pdo->prepare('UPDATE talk_tenants SET name=:name,status=:status WHERE id=:id')->execute(['name'=>$data['trade_name']!==''?$data['trade_name']:$data['legal_name'],'status'=>$data['status']==='active'?'active':'inactive','id'=>$tenantId]);
-            $this->audit($tenantId,$actorUserId,'mst.administrator.updated',['previous_status'=>(string)$current['status'],'status'=>$data['status']]);
+            $statement=$pdo->prepare('UPDATE mst_administrators SET legal_name=:legal_name,trade_name=:trade_name,tax_id=:tax_id,contact_name=:contact_name,contact_email=:contact_email,contact_phone=:contact_phone,notes=:notes WHERE tenant_id=:tenant_id');
+            $statement->execute(['legal_name'=>$data['legal_name'],'trade_name'=>$data['trade_name'],'tax_id'=>$data['tax_id'],'contact_name'=>$data['contact_name'],'contact_email'=>$data['contact_email'],'contact_phone'=>$data['contact_phone'],'notes'=>$data['notes'],'tenant_id'=>$tenantId]);
+            $pdo->prepare('UPDATE talk_tenants SET name=:name WHERE id=:id')->execute(['name'=>$data['trade_name']!==''?$data['trade_name']:$data['legal_name'],'id'=>$tenantId]);
+            $this->audit($tenantId,$actorUserId,'mst.administrator.updated',['fields'=>'company_contact']);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
