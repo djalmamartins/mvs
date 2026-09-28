@@ -132,7 +132,7 @@ final class MasterAdministratorService
         if(!preg_match('/^#[0-9A-F]{6}$/',$primary))throw new RuntimeException('Cor primária inválida.');
         if($secondary!==''&&!preg_match('/^#[0-9A-F]{6}$/',$secondary))throw new RuntimeException('Cor secundária inválida.');
         Connection::getInstance()->prepare('UPDATE mst_administrators SET trade_name=:name,logo_path=:logo,primary_color=:primary,secondary_color=:secondary WHERE tenant_id=:id')->execute(['name'=>$name,'logo'=>$logo?:null,'primary'=>$primary,'secondary'=>$secondary?:null,'id'=>$tenantId]);
-        $this->audit($tenantId,$actorUserId,'mst.branding.updated',['primary_color'=>$primary]);
+        $this->audit($tenantId,$actorUserId,'mst.branding.updated',['trade_name'=>$name,'primary_color'=>$primary,'secondary_color'=>$secondary,'logo_configured'=>$logo!=='']);
     }
 
     public function setProduct(int $tenantId,string $product,string $status,int $actorUserId): void
