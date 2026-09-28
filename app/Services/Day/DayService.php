@@ -14,7 +14,15 @@ final class DayService
     public static function safeSourceUrl(?string $url): string
     {
         $url=trim((string)$url);
-        if($url===''||!str_starts_with($url,'/')||str_starts_with($url,'//')||preg_match('/[\\r\\n]/',$url)===1)return '/day';
+        if (
+            $url==='' ||
+            !str_starts_with($url,'/') ||
+            str_starts_with($url,'//') ||
+            str_contains($url,'\\') ||
+            preg_match('/[\\x00-\\x1F\\x7F]/',$url)===1
+        ) {
+            return '/day';
+        }
         return $url;
     }
 
