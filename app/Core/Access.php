@@ -23,6 +23,7 @@ final class Access
      */
     private const PERMISSIONS = [
         'admin' => [
+            'master.manage',
             'users.manage',
             'settings.manage',
             'diagnostics.view',
