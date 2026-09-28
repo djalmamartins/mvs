@@ -11,8 +11,11 @@ final class ErpPhysicalStructureServiceTest extends TestCase {
   $this->pdo=new PDO('sqlite::memory:');$this->pdo->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
   $this->pdo->exec('CREATE TABLE erp_blocks (id INTEGER PRIMARY KEY AUTOINCREMENT, condominium_id INTEGER, code TEXT, name TEXT, status TEXT DEFAULT "active")');
   $this->pdo->exec('CREATE TABLE erp_units (id INTEGER PRIMARY KEY AUTOINCREMENT, condominium_id INTEGER, block_id INTEGER, code TEXT, ideal_fraction REAL, status TEXT DEFAULT "active")');
+  $this->pdo->exec('CREATE TABLE erp_parking_spaces (id INTEGER PRIMARY KEY AUTOINCREMENT, condominium_id INTEGER, unit_id INTEGER, code TEXT, kind TEXT, status TEXT DEFAULT "active")');
+  $this->pdo->exec('CREATE TABLE erp_common_areas (id INTEGER PRIMARY KEY AUTOINCREMENT, condominium_id INTEGER, code TEXT, name TEXT, reservable INTEGER, capacity INTEGER, status TEXT DEFAULT "active")');
   $this->pdo->exec('CREATE TABLE erp_scope_grants (id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER,capability TEXT,scope_type TEXT,scope_id INTEGER,revoked_at TEXT)');
   $this->pdo->exec("INSERT INTO erp_blocks(condominium_id,code,name) VALUES(10,'A','Bloco A'),(20,'B','Bloco B')");
+  $this->pdo->exec("INSERT INTO erp_units(id,condominium_id,block_id,code,ideal_fraction) VALUES(101,10,1,'101',0.01),(202,20,2,'202',0.01)");
   $this->service=new PhysicalStructureService(new PhysicalStructureRepository($this->pdo),new ScopedAccess(new ScopeGrantRepository($this->pdo)));
  }
  public function testWriteRequiresMatchingCondominiumGrant(): void {
@@ -28,6 +31,19 @@ final class ErpPhysicalStructureServiceTest extends TestCase {
   $this->grant(7,'erp.structure.write',10);
   $result=$this->service->importUnits(7,10,[['code'=>'101','block_id'=>1,'ideal_fraction'=>0.02],['code'=>'102','block_id'=>2]]);
   self::assertCount(1,$result['created']);self::assertCount(1,$result['errors']);
+ }
+ public function testParkingSpaceRejectsUnitFromAnotherCondominium(): void {
+  $this->grant(7,'erp.structure.write',10);
+  self::assertNotNull($this->service->createParkingSpace(7,10,101,'V01'));
+  $this->expectException(InvalidArgumentException::class);
+  $this->service->createParkingSpace(7,10,202,'V02');
+ }
+ public function testCommonAreaRequiresWriteGrantAndValidCapacity(): void {
+  $this->grant(7,'erp.structure.write',10);
+  self::assertNotNull($this->service->createCommonArea(7,10,'SALAO','Salão de Festas',true,80));
+  self::assertNull($this->service->createCommonArea(8,10,'ACADEMIA','Academia'));
+  $this->expectException(InvalidArgumentException::class);
+  $this->service->createCommonArea(7,10,'PISCINA','Piscina',true,0);
  }
  private function grant(int $userId,string $capability,int $scopeId): void {
   $stmt=$this->pdo->prepare('INSERT INTO erp_scope_grants(user_id,capability,scope_type,scope_id,revoked_at) VALUES(?,?,?, ?,NULL)');
