@@ -9,13 +9,24 @@ $this->layout('layouts/default', ['title' => $title]);
             <img class="auth-logo" src="/themes/site/images/brand/moves-logo.svg" alt="Moves" width="194" height="28">
             <p class="auth-eyebrow">Acesso seguro</p>
             <h1 id="mfa-title"><?= $this->e($title) ?></h1>
-            <p class="auth-lead">Confirme sua identidade com o código do autenticador ou use um dos seus códigos de recuperação.</p>
+            <?php if (is_array($setup ?? null)): ?>
+                <p class="auth-lead">Configure o autenticador antes de entrar. Leia o QR Code abaixo e informe o primeiro código de 6 dígitos.</p>
+                <div class="auth-mfa-setup">
+                    <img src="<?= $this->e((string) $setup['qr']) ?>" alt="QR Code para configurar o autenticador Moves">
+                    <p>Se preferir, use esta chave manual:</p>
+                    <code><?= $this->e((string) $setup['secret']) ?></code>
+                </div>
+            <?php else: ?>
+                <p class="auth-lead">Confirme sua identidade com o código do autenticador ou use um dos seus códigos de recuperação.</p>
+            <?php endif; ?>
 
             <form id="auth-form" class="auth-form" method="post" action="/login/2fa" novalidate>
                 <?= $this->csrf() ?>
                 <label for="code">Código de verificação</label>
                 <input type="text" id="code" name="code" autocomplete="one-time-code" inputmode="text" maxlength="14" required autofocus aria-describedby="mfa-help">
-                <small id="mfa-help">Digite os 6 números do autenticador ou um recovery code no formato XXXX-XXXX-XXXX.</small>
+                <small id="mfa-help"><?= is_array($setup ?? null)
+                    ? 'Digite os 6 números gerados pelo autenticador após ler o QR Code.'
+                    : 'Digite os 6 números do autenticador ou um recovery code no formato XXXX-XXXX-XXXX.' ?></small>
                 <button type="submit">Verificar e entrar</button>
             </form>
 
