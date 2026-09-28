@@ -75,6 +75,22 @@ final class MasterAdministratorServiceTest extends TestCase
         $this->expectException(RuntimeException::class);$this->expectExceptionMessage('inválido ou expirado');$service->acceptInvitation((string)$invitation['invitation_token'],'SenhaSegura!123');
     }
 
+    public function testMembershipLifecycleIsIsolatedBetweenTenants(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));
+        $tenantA=$service->create(['legal_name'=>'Tenant A '.$token,'trade_name'=>'Tenant A','tax_id'=>'TA-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$tenantA;
+        $tenantB=$service->create(['legal_name'=>'Tenant B '.$token,'trade_name'=>'Tenant B','tax_id'=>'TB-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$tenantB;
+        $email='isolation-'.$token.'@example.test';$invitation=$service->inviteUser($tenantA,['name'=>'Usuário Isolado','email'=>$email,'role'=>'agent'],$this->actor);$userId=$invitation['user_id'];$this->users[]=$userId;$service->acceptInvitation((string)$invitation['invitation_token'],'SenhaSegura!123');
+        $service->saveMembership($tenantB,$userId,'supervisor','active',$this->actor);
+        $service->saveMembership($tenantA,$userId,'supervisor','inactive',$this->actor);
+        $a=$this->pdo->query('SELECT role,status FROM talk_tenant_users WHERE tenant_id='.$tenantA.' AND user_id='.$userId)->fetch(PDO::FETCH_ASSOC);$b=$this->pdo->query('SELECT role,status FROM talk_tenant_users WHERE tenant_id='.$tenantB.' AND user_id='.$userId)->fetch(PDO::FETCH_ASSOC);
+        self::assertSame('supervisor',$a['role']);self::assertSame('inactive',$a['status']);self::assertSame('supervisor',$b['role']);self::assertSame('active',$b['status']);
+        $service->saveMembership($tenantA,$userId,'agent','active',$this->actor);
+        $a=$this->pdo->query('SELECT role,status FROM talk_tenant_users WHERE tenant_id='.$tenantA.' AND user_id='.$userId)->fetch(PDO::FETCH_ASSOC);$b=$this->pdo->query('SELECT role,status FROM talk_tenant_users WHERE tenant_id='.$tenantB.' AND user_id='.$userId)->fetch(PDO::FETCH_ASSOC);
+        self::assertSame('agent',$a['role']);self::assertSame('active',$a['status']);self::assertSame('supervisor',$b['role']);self::assertSame('active',$b['status']);
+        $events=array_column($service->find($tenantA)['audit'],'event_type');self::assertContains('mst.membership.updated',$events);
+    }
+
     public function testLastActiveAdminCannotBeRemoved(): void
     {
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Admin Guard '.$token,'trade_name'=>'Admin Guard '.$token,'tax_id'=>'ADM-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;$service->saveMembership($id,$this->actor,'admin','active',$this->actor);
