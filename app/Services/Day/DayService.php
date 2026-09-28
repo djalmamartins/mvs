@@ -11,6 +11,13 @@ final class DayService
     private int $tenantId;
     public function __construct(?int $tenantId=null){$this->tenantId=$tenantId??(new TalkTenantContext())->currentTenantId();}
 
+    public static function safeSourceUrl(?string $url): string
+    {
+        $url=trim((string)$url);
+        if($url===''||!str_starts_with($url,'/')||str_starts_with($url,'//')||preg_match('/[\\r\\n]/',$url)===1)return '/day';
+        return $url;
+    }
+
     /** @return array<string,mixed> */
     public function dashboard(int $userId): array
     {
@@ -18,8 +25,8 @@ final class DayService
         $talk=$this->talk($userId);
         $events=$this->events($userId);
         $timeline=[];
-        foreach($tasks as $task){if($task['status']==='done')continue;$timeline[]=['type'=>'task','at'=>$task['due_at']??$task['created_at'],'title'=>$task['title'],'meta'=>$task['priority'],'url'=>$task['source_url']?:'/day'];}
-        foreach($events as $event){$timeline[]=['type'=>'event','at'=>$event['starts_at'],'title'=>$event['title'],'meta'=>$event['source_type'],'url'=>$event['source_url']?:'/day'];}
+        foreach($tasks as $task){if($task['status']==='done')continue;$timeline[]=['type'=>'task','at'=>$task['due_at']??$task['created_at'],'title'=>$task['title'],'meta'=>$task['priority'],'url'=>self::safeSourceUrl($task['source_url']??null)];}
+        foreach($events as $event){$timeline[]=['type'=>'event','at'=>$event['starts_at'],'title'=>$event['title'],'meta'=>$event['source_type'],'url'=>self::safeSourceUrl($event['source_url']??null)];}
         foreach($talk as $ticket){$timeline[]=['type'=>'talk','at'=>$ticket['updated_at'],'title'=>'Talk · '.$ticket['protocol'],'meta'=>$ticket['contact_name']?:'Contato','url'=>'/talk/view/inbox?ticket='.(int)$ticket['id']];}
         usort($timeline,static fn(array $a,array $b):int=>strcmp((string)$a['at'],(string)$b['at']));$timeline=array_slice($timeline,0,30);
         $today=date('Y-m-d');
