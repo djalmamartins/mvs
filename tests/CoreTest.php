@@ -50,6 +50,9 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/forgot-password';
         self::assertSame('auth', Theme::active());
 
+        $_SERVER['REQUEST_URI'] = '/password-recovery/code';
+        self::assertSame('auth', Theme::active());
+
         $_SERVER['REQUEST_URI'] = '/site';
         self::assertSame('site', Theme::active());
     }
@@ -78,6 +81,29 @@ final class CoreTest extends TestCase
         self::assertStringContainsString('action="/login"', $output);
         self::assertStringContainsString('autocomplete="current-password"', $output);
         self::assertStringNotContainsString('Moobys', $output);
+    }
+
+    public function testRecoveryCodeViewUsesOneTimeCodeSemanticsAndSafeActions(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/password-recovery/code';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/recovery-code', [
+            'title' => 'Digite o código',
+            'version' => '0.0.1',
+            'maskedEmail' => 'an•••@example.com',
+            'verified' => false,
+            'maxAttempts' => 5,
+        ]);
+
+        self::assertStringContainsString('autocomplete="one-time-code"', $output);
+        self::assertStringContainsString('action="/password-recovery/code"', $output);
+        self::assertStringContainsString('action="/password-recovery/resend"', $output);
+        self::assertStringContainsString('an•••@example.com', $output);
+        self::assertStringNotContainsString('ana@example.com', $output);
     }
 
     public function testValidatorCollectsErrors(): void

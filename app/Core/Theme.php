@@ -23,7 +23,12 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
-        if ($path === '/login' || $path === '/logout' || $path === '/forgot-password') {
+        if (
+            $path === '/login'
+            || $path === '/logout'
+            || $path === '/forgot-password'
+            || str_starts_with($path, '/password-recovery/')
+        ) {
             return 'auth';
         }
 
