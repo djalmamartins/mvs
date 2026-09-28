@@ -82,6 +82,22 @@ jobs:
       - name: PHP syntax
         run: find app tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l > /tmp/php-lint.log
 
+      - name: Authentication HTTP E2E
+        env:
+          APP_URL: http://127.0.0.1:8080
+          SESSION_SECURE: 'false'
+          SESSION_HTTP_ONLY: 'true'
+          SESSION_SAME_SITE: Lax
+        run: |
+          php -S 127.0.0.1:8080 -t public public/index.php >/tmp/mvs-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8080/login >/dev/null; then break; fi
+            sleep 0.5
+          done
+          php scripts/test-auth-middleware.php
+
   javascript:
     name: JavaScript and WhatsApp bridge
     runs-on: ubuntu-latest
