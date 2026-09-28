@@ -47,6 +47,9 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/login';
         self::assertSame('auth', Theme::active());
 
+        $_SERVER['REQUEST_URI'] = '/login/2fa';
+        self::assertSame('auth', Theme::active());
+
         $_SERVER['REQUEST_URI'] = '/forgot-password';
         self::assertSame('auth', Theme::active());
 
@@ -81,6 +84,31 @@ final class CoreTest extends TestCase
         self::assertStringContainsString('action="/login"', $output);
         self::assertStringContainsString('autocomplete="current-password"', $output);
         self::assertStringNotContainsString('Moobys', $output);
+    }
+
+    public function testMfaChallengeUsesAuthThemeAndSupportsFirstEnrollment(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/login/2fa';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/mfa-challenge', [
+            'title' => 'Verificação em duas etapas',
+            'version' => '0.0.1',
+            'setup' => [
+                'secret' => 'JBSWY3DPEHPK3PXP',
+                'uri' => 'otpauth://totp/Moves:test@example.com',
+                'qr' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+            ],
+        ]);
+
+        self::assertSame('auth', Theme::active());
+        self::assertStringContainsString('Configure o autenticador antes de entrar.', $output);
+        self::assertStringContainsString('JBSWY3DPEHPK3PXP', $output);
+        self::assertStringContainsString('action="/login/2fa"', $output);
+        self::assertStringContainsString('autocomplete="one-time-code"', $output);
     }
 
     public function testRecoveryCodeViewUsesOneTimeCodeSemanticsAndSafeActions(): void
