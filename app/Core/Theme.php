@@ -23,6 +23,10 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
+        if ($path === '/login' || $path === '/logout') {
+            return 'auth';
+        }
+
         if ($path === '/layout' || str_starts_with($path, '/layout/') || $path === '/onboarding') {
             return 'layout';
         }

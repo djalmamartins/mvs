@@ -45,7 +45,36 @@ final class CoreTest extends TestCase
         self::assertSame('help', Theme::active());
 
         $_SERVER['REQUEST_URI'] = '/login';
+        self::assertSame('auth', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/site';
         self::assertSame('site', Theme::active());
+    }
+
+    public function testMovesEntryUsesAuthenticationFlowAndPreservesInstitutionalSite(): void
+    {
+        $routes = file_get_contents(dirname(__DIR__) . '/app/Boot/Routes.php');
+
+        self::assertIsString($routes);
+        self::assertStringContainsString("get('/','AuthController:entry','home')", $routes);
+        self::assertStringContainsString("get('/site','Home:index','site.home')", $routes);
+    }
+
+    public function testOfficialLoginUsesMovesIdentityAndDevelopmentVersion(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/login';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/login', ['title' => 'Entrar na Moves', 'version' => '0.0.1']);
+
+        self::assertStringContainsString('Entrar na Moves', $output);
+        self::assertStringContainsString('Moves 0.0.1', $output);
+        self::assertStringContainsString('action="/login"', $output);
+        self::assertStringContainsString('autocomplete="current-password"', $output);
+        self::assertStringNotContainsString('Moobys', $output);
     }
 
     public function testValidatorCollectsErrors(): void

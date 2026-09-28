@@ -34,9 +34,17 @@ use Moves\Services\Platform\TenantContext;
  */
 final class AuthController extends Controller
 {
+    public function entry(): void
+    {
+        Response::to(Auth::check() ? '/app' : '/login');
+    }
+
     public function login(): void
     {
-        echo $this->view->render('pages/login', ['title' => 'Entrar']);
+        echo $this->view->render('pages/login', [
+            'title' => 'Entrar na Moves',
+            'version' => '0.0.1',
+        ]);
     }
 
     public function authenticate(): void
