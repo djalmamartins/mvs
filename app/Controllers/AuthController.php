@@ -13,14 +13,15 @@ use Moves\Core\Logger;
 use Moves\Core\LoginThrottle;
 use Moves\Core\Request;
 use Moves\Core\Response;
+use Moves\Core\Session;
 use Moves\Core\Validator;
 use Moves\Models\User;
 use Moves\Modules\Erp\Security\MfaChallengeService;
 use Moves\Modules\Erp\Security\MfaEnrollmentRepository;
-use Moves\Modules\Erp\Security\MfaLoginGate;
 use Moves\Modules\Erp\Security\MfaRequirementPolicy;
 use Moves\Modules\Erp\Security\MfaRuntimeConfig;
 use Moves\Modules\Erp\Security\TotpVerifier;
+use Moves\Services\Auth\MfaRecoveryCodeService;
 use Moves\Services\Platform\PlatformAudit;
 use Moves\Services\Platform\TenantContext;
 
@@ -172,7 +173,7 @@ final class AuthController extends Controller
             } else {
                 $valid = (new MfaRecoveryCodeService($pdo))->consume((int) $user->id, $code);
             }
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             Logger::error('Falha fechada no challenge MFA.', [
                 'user_id' => (int) ($user->id ?? 0),
                 'exception' => $exception::class,
@@ -225,7 +226,7 @@ final class AuthController extends Controller
             $pdo = Connection::getInstance();
             $tenantId = (new TenantContext($pdo))->currentId((int) $user->id);
             (new PlatformAudit($pdo))->record($tenantId, (int) $user->id, 'auth.login', 'user', (int) $user->id, ['ip_hash' => hash('sha256', $ip)]);
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             // Authentication also supports platform operators without a tenant.
         }
     }
