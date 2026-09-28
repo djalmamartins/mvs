@@ -1,6 +1,9 @@
 name: MVS Quality
 
 on:
+  push:
+    branches:
+      - feat/mvs-mst
   pull_request:
     branches:
       - feat/mvs-base
