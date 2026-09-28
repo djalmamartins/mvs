@@ -11,7 +11,7 @@ use Moves\Core\Flash;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Boot\Connection;
-use CoffeeCode\Uploader\Image;
+use MovesCode\Storage\Image;
 use Moves\Services\Master\MasterAdministratorService;
 use RuntimeException;
 use Throwable;
