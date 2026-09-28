@@ -18,7 +18,7 @@ final readonly class PhysicalStructureService {
   if(!$this->access->allows($userId,'erp.structure.write',['scope_type'=>'condominium','scope_id'=>$condominiumId])) return ['created'=>[],'errors'=>[['row'=>0,'message'=>'forbidden']]];
   $created=[];$errors=[];
   foreach($rows as $index=>$row){try{
-   $code=trim((string)($row['code']??'')); if($code==='') throw new \InvalidArgumentException('Unit code is required.');
+   $code=trim($row['code']); if($code==='') throw new \InvalidArgumentException('Unit code is required.');
    $created[]=$this->repository->createUnit($condominiumId,isset($row['block_id'])?(int)$row['block_id']:null,$code,(float)($row['ideal_fraction']??0));
   }catch(\Throwable $e){$errors[]=['row'=>$index+1,'message'=>$e->getMessage()];}}
   return ['created'=>$created,'errors'=>$errors];
