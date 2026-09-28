@@ -23,7 +23,7 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
-        if ($path === '/login' || $path === '/logout') {
+        if ($path === '/login' || $path === '/logout' || $path === '/forgot-password') {
             return 'auth';
         }
 

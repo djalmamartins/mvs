@@ -19,7 +19,7 @@ $this->layout('layouts/default', ['title' => $title]);
 
                 <div class="password-label">
                     <label for="password">Senha</label>
-                    <span aria-disabled="true" title="Disponível na próxima etapa de segurança">Esqueci minha senha</span>
+                    <a href="/forgot-password">Esqueci minha senha</a>
                 </div>
                 <input type="password" id="password" name="password" autocomplete="current-password" required minlength="8">
 

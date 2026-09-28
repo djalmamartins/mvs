@@ -1,0 +1,20 @@
+.password-label a,
+.auth-back a {
+    color: var(--moves);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.password-label a {
+    margin: 0 0 7px;
+}
+
+.password-label a:hover,
+.auth-back a:hover {
+    text-decoration: underline;
+}
+
+.auth-back {
+    margin: 22px 0 0;
+    text-align: center;
+}

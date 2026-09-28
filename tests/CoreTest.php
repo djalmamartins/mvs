@@ -47,6 +47,9 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/login';
         self::assertSame('auth', Theme::active());
 
+        $_SERVER['REQUEST_URI'] = '/forgot-password';
+        self::assertSame('auth', Theme::active());
+
         $_SERVER['REQUEST_URI'] = '/site';
         self::assertSame('site', Theme::active());
     }

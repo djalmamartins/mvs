@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#6e00b3">
     <link rel="icon" href="/themes/site/images/brand/favicon.png" type="image/png">
     <link rel="stylesheet" href="<?= $this->e($this->asset('css/auth.css')) ?>">
+    <link rel="stylesheet" href="<?= $this->e($this->asset('css/recovery.css')) ?>">
 </head>
 <body>
     <a class="skip-link" href="#auth-form">Ir para o formulário</a>
