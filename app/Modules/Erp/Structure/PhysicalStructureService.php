@@ -8,6 +8,14 @@ final readonly class PhysicalStructureService {
   if(!$this->access->allows($userId,'erp.structure.write',['scope_type'=>'condominium','scope_id'=>$condominiumId])) return null;
   return $this->repository->createUnit($condominiumId,$blockId,$code,$idealFraction);
  }
+ public function createParkingSpace(int $userId,int $condominiumId,?int $unitId,string $code,string $kind='vehicle'): ?int {
+  if(!$this->access->allows($userId,'erp.structure.write',['scope_type'=>'condominium','scope_id'=>$condominiumId])) return null;
+  return $this->repository->createParkingSpace($condominiumId,$unitId,$code,$kind);
+ }
+ public function createCommonArea(int $userId,int $condominiumId,string $code,string $name,bool $reservable=false,?int $capacity=null): ?int {
+  if(!$this->access->allows($userId,'erp.structure.write',['scope_type'=>'condominium','scope_id'=>$condominiumId])) return null;
+  return $this->repository->createCommonArea($condominiumId,$code,$name,$reservable,$capacity);
+ }
  /** @return list<array<string,mixed>> */
  public function listUnits(int $userId,int $condominiumId): array {
   if(!$this->access->allows($userId,'erp.structure.read',['scope_type'=>'condominium','scope_id'=>$condominiumId])) return [];
