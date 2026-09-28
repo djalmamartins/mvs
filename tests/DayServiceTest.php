@@ -20,6 +20,7 @@ final class DayServiceTest extends TestCase
         self::assertIsString($page);
         self::assertStringContainsString('Nenhuma tarefa pendente',$page);
         self::assertStringContainsString('/talk/view/inbox?ticket=',$page);
+        self::assertStringContainsString('Agenda de hoje',$page);
         self::assertStringNotContainsString('João da Silva',$page);
     }
     public function testDayFoundationEnforcesTenantAndAssigneeInSql(): void
@@ -30,6 +31,8 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString('tenant_id=:tenant AND assigned_user_id=:user',$service);
         self::assertStringContainsString('WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user',$service);
         self::assertStringContainsString('FOREIGN KEY (tenant_id) REFERENCES talk_tenants(id)',$migration);
+        self::assertStringContainsString('CREATE TABLE IF NOT EXISTS day_events',$migration);
+        self::assertStringContainsString("FROM day_events WHERE tenant_id=:tenant AND assigned_user_id=:user",$service);
     }
 
     public function testTalkDeepLinkIsPermissionCheckedByTalkController(): void
