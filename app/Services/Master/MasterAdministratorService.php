@@ -46,6 +46,7 @@ final class MasterAdministratorService
         $users=Connection::getInstance()->prepare('SELECT u.id,u.name,u.email,u.status global_status,tu.role,tu.status membership_status,tu.is_default,tu.updated_at FROM talk_tenant_users tu INNER JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=:id ORDER BY u.name');$users->execute(['id'=>$tenantId]);$row['memberships']=$users->fetchAll(PDO::FETCH_ASSOC);
         $channels=Connection::getInstance()->prepare('SELECT id,type,name,driver,status,connection_status,phone_number FROM talk_channels WHERE tenant_id=:id ORDER BY type,name');$channels->execute(['id'=>$tenantId]);$row['integrations']=$channels->fetchAll(PDO::FETCH_ASSOC);
         $security=Connection::getInstance()->prepare('SELECT require_mfa,session_timeout_minutes,allowed_email_domains,updated_at FROM mst_security_settings WHERE tenant_id=:id');$security->execute(['id'=>$tenantId]);$row['security']=$security->fetch(PDO::FETCH_ASSOC)?:['require_mfa'=>0,'session_timeout_minutes'=>480,'allowed_email_domains'=>''];
+        $onboarding=Connection::getInstance()->prepare('SELECT step,completed_at,updated_at FROM mst_onboarding WHERE tenant_id=:id');$onboarding->execute(['id'=>$tenantId]);$row['onboarding']=$onboarding->fetch(PDO::FETCH_ASSOC)?:['step'=>'created','completed_at'=>null];
         return $row;
     }
 
@@ -62,6 +63,9 @@ final class MasterAdministratorService
             $id = (int)$pdo->lastInsertId();
             $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes)');
             $insert->execute(['tenant_id'=>$id]+$data);
+            $pdo->prepare("INSERT INTO mst_onboarding(tenant_id,step) VALUES(:tenant,'created')")->execute(['tenant'=>$id]);
+            foreach(['day','talk','support','erp','cms'] as $product){$pdo->prepare("INSERT INTO mst_tenant_products(tenant_id,product_key,status) VALUES(:tenant,:product,'inactive')")->execute(['tenant'=>$id,'product'=>$product]);}
+            $pdo->prepare("INSERT INTO mst_security_settings(tenant_id) VALUES(:tenant)")->execute(['tenant'=>$id]);
             $this->audit($id,$actorUserId,'mst.administrator.created',['status'=>$data['status']]);
             $pdo->commit();
             return $id;
