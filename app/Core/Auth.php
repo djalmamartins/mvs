@@ -18,6 +18,8 @@ use Moves\Models\User;
 final class Auth
 {
     private const SESSION_KEY = 'auth_user';
+    private const LAST_ACTIVITY_KEY = 'auth_last_activity';
+    private const DEFAULT_IDLE_TIMEOUT = 1800;
 
     /**
      * Valida credenciais sem conceder uma sessão autenticada.
@@ -60,6 +62,7 @@ final class Auth
         }
 
         Session::set(self::SESSION_KEY, (int) $user->id);
+        Session::set(self::LAST_ACTIVITY_KEY, time());
         session_regenerate_id(true);
 
         return true;
@@ -107,7 +110,37 @@ final class Auth
      */
     public static function check(): bool
     {
-        return self::user() !== null;
+        if (!self::sessionIsFresh()) {
+            self::logout();
+            return false;
+        }
+
+        $user = self::user();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        Session::set(self::LAST_ACTIVITY_KEY, time());
+
+        return true;
+    }
+
+    private static function sessionIsFresh(): bool
+    {
+        $userId = Session::get(self::SESSION_KEY);
+        if (!is_int($userId)) {
+            return true;
+        }
+
+        $lastActivity = Session::get(self::LAST_ACTIVITY_KEY);
+        if (!is_int($lastActivity)) {
+            return false;
+        }
+
+        $configured = (int) Config::get('SESSION_IDLE_TIMEOUT', self::DEFAULT_IDLE_TIMEOUT);
+        $timeout = $configured > 0 ? $configured : self::DEFAULT_IDLE_TIMEOUT;
+
+        return (time() - $lastActivity) <= $timeout;
     }
 
     /**
