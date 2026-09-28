@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Moves\Core\Auth;
 use Moves\Core\Session;
 use PHPUnit\Framework\TestCase;
 
@@ -31,7 +32,8 @@ final class SessionSecurityTest extends TestCase
             $_ENV['APP_URL'],
             $_ENV['SESSION_SECURE'],
             $_ENV['SESSION_HTTP_ONLY'],
-            $_ENV['SESSION_SAME_SITE']
+            $_ENV['SESSION_SAME_SITE'],
+            $_ENV['SESSION_IDLE_TIMEOUT']
         );
     }
 
@@ -81,4 +83,39 @@ final class SessionSecurityTest extends TestCase
 
         self::assertSame('Lax', session_get_cookie_params()['samesite']);
     }
+    public function testAuthenticatedSessionExpiresAfterIdleTimeout(): void
+    {
+        $_ENV['SESSION_IDLE_TIMEOUT'] = '60';
+        Session::set('auth_user', 7);
+        Session::set('auth_last_activity', 1000);
+
+        self::assertTrue(Auth::sessionIsFresh(1060));
+        self::assertFalse(Auth::sessionIsFresh(1061));
+    }
+
+    public function testAuthenticatedSessionWithoutActivityTimestampFailsClosed(): void
+    {
+        Session::set('auth_user', 7);
+
+        self::assertFalse(Auth::sessionIsFresh(1000));
+    }
+
+    public function testFutureActivityTimestampFailsClosed(): void
+    {
+        Session::set('auth_user', 7);
+        Session::set('auth_last_activity', 1001);
+
+        self::assertFalse(Auth::sessionIsFresh(1000));
+    }
+
+    public function testInvalidIdleTimeoutFallsBackToThirtyMinutes(): void
+    {
+        $_ENV['SESSION_IDLE_TIMEOUT'] = '0';
+        Session::set('auth_user', 7);
+        Session::set('auth_last_activity', 1000);
+
+        self::assertTrue(Auth::sessionIsFresh(2800));
+        self::assertFalse(Auth::sessionIsFresh(2801));
+    }
+
 }
