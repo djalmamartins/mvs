@@ -25,6 +25,7 @@ final class Theme
 
         if (
             $path === '/login'
+            || str_starts_with($path, '/login/')
             || $path === '/logout'
             || $path === '/forgot-password'
             || str_starts_with($path, '/password-recovery/')
