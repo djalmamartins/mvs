@@ -16,20 +16,29 @@ final class DayService
     {
         $tasks=$this->tasks($userId);
         $talk=$this->talk($userId);
+        $events=$this->events($userId);
         $timeline=[];
         foreach($tasks as $task){if($task['status']==='done')continue;$timeline[]=['type'=>'task','at'=>$task['due_at']??$task['created_at'],'title'=>$task['title'],'meta'=>$task['priority'],'url'=>$task['source_url']?:'/day'];}
+        foreach($events as $event){$timeline[]=['type'=>'event','at'=>$event['starts_at'],'title'=>$event['title'],'meta'=>$event['source_type'],'url'=>$event['source_url']?:'/day'];}
         foreach($talk as $ticket){$timeline[]=['type'=>'talk','at'=>$ticket['updated_at'],'title'=>'Talk · '.$ticket['protocol'],'meta'=>$ticket['contact_name']?:'Contato','url'=>'/talk/view/inbox?ticket='.(int)$ticket['id']];}
         usort($timeline,static fn(array $a,array $b):int=>strcmp((string)$a['at'],(string)$b['at']));$timeline=array_slice($timeline,0,30);
         $today=date('Y-m-d');
         $dueToday=array_values(array_filter($tasks,static fn(array $t):bool=>!empty($t['due_at'])&&str_starts_with((string)$t['due_at'],$today)&&$t['status']!=='done'));
         $overdue=array_values(array_filter($tasks,static fn(array $t):bool=>!empty($t['due_at'])&&(string)$t['due_at']<date('Y-m-d H:i:s')&&$t['status']!=='done'));
-        return ['tasks'=>$tasks,'talk'=>$talk,'timeline'=>$timeline,'summary'=>['pending'=>count(array_filter($tasks,static fn(array $t):bool=>$t['status']!=='done')),'today'=>count($dueToday),'overdue'=>count($overdue),'talk'=>count($talk)]];
+        return ['tasks'=>$tasks,'talk'=>$talk,'events'=>$events,'timeline'=>$timeline,'summary'=>['pending'=>count(array_filter($tasks,static fn(array $t):bool=>$t['status']!=='done')),'today'=>count($dueToday),'overdue'=>count($overdue),'talk'=>count($talk)]];
     }
 
     /** @return array<int,array<string,mixed>> */
     public function tasks(int $userId): array
     {
         $s=Connection::getInstance()->prepare("SELECT id,title,description,status,priority,due_at,source_type,source_id,source_url,created_at,updated_at FROM day_tasks WHERE tenant_id=:tenant AND assigned_user_id=:user ORDER BY CASE status WHEN 'done' THEN 1 ELSE 0 END,CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,due_at IS NULL,due_at,id");
+        $s->execute(['tenant'=>$this->tenantId,'user'=>$userId]);return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function events(int $userId): array
+    {
+        $s=Connection::getInstance()->prepare("SELECT id,title,description,starts_at,ends_at,status,source_type,source_id,source_url FROM day_events WHERE tenant_id=:tenant AND assigned_user_id=:user AND status='scheduled' AND starts_at>=CURDATE() AND starts_at<DATE_ADD(CURDATE(),INTERVAL 1 DAY) ORDER BY starts_at,id");
         $s->execute(['tenant'=>$this->tenantId,'user'=>$userId]);return $s->fetchAll(PDO::FETCH_ASSOC);
     }
 
