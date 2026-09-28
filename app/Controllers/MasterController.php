@@ -25,7 +25,7 @@ final class MasterController extends Controller
     public function administrators(): void
     {
         $q=mb_substr(trim((string)($_GET['q']??'')),0,120);$status=(string)($_GET['status']??'');
-        $data=(new MasterAdministratorService())->search($q,$status);
+        $page=max(1,(int)($_GET['page']??1));$data=(new MasterAdministratorService())->search($q,$status,$page);
         echo $this->view->render('pages/master-administrators',['title'=>'Administradoras','productName'=>'Master','activeProduct'=>'master','currentPage'=>'administrators','data'=>$data,'q'=>$q,'status'=>$status]);
     }
 
