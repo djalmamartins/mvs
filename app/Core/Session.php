@@ -102,6 +102,18 @@ final class Session
     }
 
     /**
+     * Regenera o identificador da sessão e invalida o identificador anterior.
+     */
+    public static function regenerate(): void
+    {
+        self::start();
+
+        if (!session_regenerate_id(true)) {
+            throw new \\RuntimeException('Não foi possível regenerar a sessão.');
+        }
+    }
+
+    /**
      * Encerra completamente a sessão atual.
      */
     public static function destroy(): void
