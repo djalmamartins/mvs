@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Modules\Erp\People;
 
 use Moves\Modules\Erp\Security\ScopedAccess;
+use Moves\Modules\Erp\Security\SecurityAuditRepository;
 
 final readonly class PeopleService
 {
@@ -12,6 +13,7 @@ final readonly class PeopleService
         private PersonRepository $people,
         private PersonLinkRepository $links,
         private ScopedAccess $access,
+        private ?SecurityAuditRepository $audit = null,
     ) {}
 
     public function createLink(int $userId, int $personId, int $condominiumId, ?int $unitId, string $role, string $startsAt, ?string $endsAt = null): ?int
@@ -22,7 +24,15 @@ final readonly class PeopleService
         if ($this->people->find($personId) === null) {
             throw new \InvalidArgumentException('Person not found.');
         }
-        return $this->links->create($personId, $condominiumId, $unitId, $role, $startsAt, $endsAt);
+
+        $linkId = $this->links->create($personId, $condominiumId, $unitId, $role, $startsAt, $endsAt);
+        $this->audit?->append('erp.people.link.created', $userId, null, [
+            'person_id' => $personId,
+            'condominium_id' => $condominiumId,
+            'link_id' => $linkId,
+            'role' => strtolower(trim($role)),
+        ]);
+        return $linkId;
     }
 
     /** @return list<array<string, mixed>> */
