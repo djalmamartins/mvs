@@ -26,7 +26,14 @@ final class PersonLinkRepository
         }
 
         $stmt = $this->pdo->prepare('INSERT INTO erp_person_links (person_id, condominium_id, unit_id, role, starts_at, ends_at) VALUES (:person_id, :condominium_id, :unit_id, :role, :starts_at, :ends_at)');
-        $stmt->execute(compact('personId', 'condominiumId', 'unitId', 'role', 'startsAt', 'endsAt'));
+        $stmt->execute([
+            'person_id' => $personId,
+            'condominium_id' => $condominiumId,
+            'unit_id' => $unitId,
+            'role' => $role,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+        ]);
         return (int) $this->pdo->lastInsertId();
     }
 
