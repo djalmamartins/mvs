@@ -42,7 +42,7 @@ final class MasterController extends Controller
             $service->updateBranding($id,['trade_name'=>(string)Request::post('trade_name',''),'logo_path'=>'','primary_color'=>(string)Request::post('primary_color','#6E00B3'),'secondary_color'=>(string)Request::post('secondary_color','')],$actor);
             Flash::set('success','Administradora criada com sucesso.');
             Response::to('/master/administrators/'.$id);
-        } catch (Throwable $e) { Flash::set('error',$e->getMessage());Response::to('/master/administrators/create'); }
+        } catch (RuntimeException $e) { Flash::set('error',$e->getMessage());Response::to('/master/administrators/create'); } catch (Throwable $e) { Flash::set('error','Não foi possível criar a administradora. Tente novamente.');Response::to('/master/administrators/create'); }
     }
 
     public function show(array $params=[]): void
@@ -108,7 +108,8 @@ final class MasterController extends Controller
     {
         $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id.'/edit');
         try{(new MasterAdministratorService())->update($id,$this->input(),(int)Auth::user()?->id);Flash::set('success','Administradora atualizada com sucesso.');Response::to('/master/administrators/'.$id);}
-        catch(Throwable $e){Flash::set('error',$e->getMessage());Response::to('/master/administrators/'.$id.'/edit');}
+        catch(RuntimeException $e){Flash::set('error',$e->getMessage());Response::to('/master/administrators/'.$id.'/edit');}
+        catch(Throwable $e){Flash::set('error','Não foi possível atualizar a administradora. Tente novamente.');Response::to('/master/administrators/'.$id.'/edit');}
     }
 
     private function guardCsrf(string $redirect): void
