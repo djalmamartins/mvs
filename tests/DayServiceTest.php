@@ -52,7 +52,8 @@ final class DayServiceTest extends TestCase
         self::assertSame('/day',DayService::safeSourceUrl('javascript:alert(1)'));
         self::assertSame('/day',DayService::safeSourceUrl('https://example.com'));
         self::assertSame('/day',DayService::safeSourceUrl('//example.com'));
-        self::assertSame('/day',DayService::safeSourceUrl("/talk\r\nLocation:https://example.com"));\n        self::assertSame('/day',DayService::safeSourceUrl('/talk\\\\evil'));
+        self::assertSame('/day',DayService::safeSourceUrl("/talk\r\nLocation:https://example.com"));
+        self::assertSame('/day',DayService::safeSourceUrl('/talk\\evil'));
     }
 
     public function testDayRoutesAndNavigationAreReal(): void
