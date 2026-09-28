@@ -60,18 +60,82 @@ final readonly class MfaEnrollmentRepository
         );
     }
 
+    public function stageTotp(int $userId, string $secret): void
+    {
+        if ($userId <= 0) {
+            throw new \InvalidArgumentException('Invalid MFA user.');
+        }
+
+        $encrypted = $this->cipher->encrypt($secret);
+        $driver = (string) $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $upsert = $driver === 'sqlite'
+            ? "INSERT INTO erp_mfa_enrollments
+                (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
+               VALUES (:user_id, 'totp', :ciphertext, :key_id, NULL, NULL)
+               ON CONFLICT(user_id, method) DO UPDATE SET
+                  secret_ciphertext = excluded.secret_ciphertext,
+                  secret_key_id = excluded.secret_key_id,
+                  enabled_at = NULL,
+                  disabled_at = NULL"
+            : "INSERT INTO erp_mfa_enrollments
+                (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
+               VALUES (:user_id, 'totp', :ciphertext, :key_id, NULL, NULL)
+               ON DUPLICATE KEY UPDATE
+                  secret_ciphertext = VALUES(secret_ciphertext),
+                  secret_key_id = VALUES(secret_key_id),
+                  enabled_at = NULL,
+                  disabled_at = NULL";
+        $statement = $this->pdo->prepare($upsert);
+        $statement->execute([
+            'user_id' => $userId,
+            'ciphertext' => $encrypted['ciphertext'],
+            'key_id' => $encrypted['key_id'],
+        ]);
+    }
+
+    public function pendingTotpSecret(int $userId): ?string
+    {
+        return $this->secretForState($userId, false);
+    }
+
+    public function enablePendingTotp(int $userId, ?int $actorUserId = null): bool
+    {
+        $statement = $this->pdo->prepare(
+            "UPDATE erp_mfa_enrollments SET enabled_at=CURRENT_TIMESTAMP,disabled_at=NULL
+             WHERE user_id=:user_id AND method='totp' AND enabled_at IS NULL AND disabled_at IS NULL"
+        );
+        $statement->execute(['user_id' => $userId]);
+        $enabled = $statement->rowCount() === 1;
+        if ($enabled) {
+            $this->audit?->append('mfa.totp.enrolled', $actorUserId ?? $userId, $userId, ['method' => 'totp']);
+        }
+
+        return $enabled;
+    }
+
     public function activeTotpSecret(int $userId): ?string
+    {
+        return $this->secretForState($userId, true);
+    }
+
+    public function hasActiveTotp(int $userId): bool
+    {
+        return $this->activeTotpSecret($userId) !== null;
+    }
+
+    private function secretForState(int $userId, bool $enabled): ?string
     {
         if ($userId <= 0) {
             return null;
         }
 
+        $enabledCondition = $enabled ? 'enabled_at IS NOT NULL' : 'enabled_at IS NULL';
         $statement = $this->pdo->prepare(
             "SELECT secret_ciphertext, secret_key_id
              FROM erp_mfa_enrollments
              WHERE user_id = :user_id
                AND method = 'totp'
-               AND enabled_at IS NOT NULL
+               AND {$enabledCondition}
                AND disabled_at IS NULL
              LIMIT 1"
         );

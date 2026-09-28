@@ -9,7 +9,9 @@ final class ErpMfaRuntimeConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
-        unset($_ENV['ERP_MFA_KEY_ID'], $_ENV['ERP_MFA_KEY']);
+        unset($_ENV['MFA_KEY_ID'], $_ENV['MFA_KEY'], $_ENV['ERP_MFA_KEY_ID'], $_ENV['ERP_MFA_KEY']);
+        putenv('MFA_KEY_ID');
+        putenv('MFA_KEY');
         putenv('ERP_MFA_KEY_ID');
         putenv('ERP_MFA_KEY');
     }
@@ -27,6 +29,19 @@ final class ErpMfaRuntimeConfigTest extends TestCase
         $encrypted = $config->cipher()->encrypt('totp-secret');
         self::assertSame('mfa-key-v1', $encrypted['key_id']);
         self::assertSame('totp-secret', $config->cipher()->decrypt($encrypted['ciphertext'], $encrypted['key_id']));
+    }
+
+    public function testPrefersTransversalConfigurationAndKeepsLegacyFallback(): void
+    {
+        $_ENV['MFA_KEY_ID'] = 'moves-key-v2';
+        $_ENV['MFA_KEY'] = base64_encode(str_repeat('m', 32));
+        $_ENV['ERP_MFA_KEY_ID'] = 'erp-key-v1';
+        $_ENV['ERP_MFA_KEY'] = base64_encode(str_repeat('e', 32));
+
+        $config = MfaRuntimeConfig::fromEnvironment();
+
+        self::assertSame('moves-key-v2', $config->keyId);
+        self::assertSame(str_repeat('m', 32), $config->key);
     }
 
     public function testMissingConfigurationFailsClosed(): void

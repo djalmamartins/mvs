@@ -110,4 +110,15 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         self::assertSame(7, (int) $audit['subject_user_id']);
         self::assertStringNotContainsString('JBSWY3DPEHPK3PXP', (string) $audit['metadata_json']);
     }
+
+    public function testPendingEnrollmentIsInactiveUntilExplicitConfirmation(): void
+    {
+        $this->repository->stageTotp(7, 'GEZDGNBVGY3TQOJQ');
+
+        self::assertNull($this->repository->activeTotpSecret(7));
+        self::assertSame('GEZDGNBVGY3TQOJQ', $this->repository->pendingTotpSecret(7));
+        self::assertTrue($this->repository->enablePendingTotp(7));
+        self::assertSame('GEZDGNBVGY3TQOJQ', $this->repository->activeTotpSecret(7));
+        self::assertNull($this->repository->pendingTotpSecret(7));
+    }
 }
