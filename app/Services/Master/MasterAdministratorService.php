@@ -45,6 +45,7 @@ final class MasterAdministratorService
         $products=Connection::getInstance()->prepare('SELECT product_key,status,updated_at FROM mst_tenant_products WHERE tenant_id=:id ORDER BY product_key');$products->execute(['id'=>$tenantId]);$row['products']=$products->fetchAll(PDO::FETCH_ASSOC);
         $users=Connection::getInstance()->prepare('SELECT u.id,u.name,u.email,u.status global_status,tu.role,tu.status membership_status,tu.is_default,tu.updated_at FROM talk_tenant_users tu INNER JOIN users u ON u.id=tu.user_id WHERE tu.tenant_id=:id ORDER BY u.name');$users->execute(['id'=>$tenantId]);$row['memberships']=$users->fetchAll(PDO::FETCH_ASSOC);
         $channels=Connection::getInstance()->prepare('SELECT id,type,name,driver,status,connection_status,phone_number FROM talk_channels WHERE tenant_id=:id ORDER BY type,name');$channels->execute(['id'=>$tenantId]);$row['integrations']=$channels->fetchAll(PDO::FETCH_ASSOC);
+        $security=Connection::getInstance()->prepare('SELECT require_mfa,session_timeout_minutes,allowed_email_domains,updated_at FROM mst_security_settings WHERE tenant_id=:id');$security->execute(['id'=>$tenantId]);$row['security']=$security->fetch(PDO::FETCH_ASSOC)?:['require_mfa'=>0,'session_timeout_minutes'=>480,'allowed_email_domains'=>''];
         return $row;
     }
 
@@ -148,6 +149,16 @@ final class MasterAdministratorService
             $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,'active',0) ON DUPLICATE KEY UPDATE role=VALUES(role),status='active',updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role]);
             $this->audit($tenantId,$actorUserId,'mst.membership.invited',['user_id'=>$userId,'email'=>$email,'role'=>$role,'account_created'=>!is_array($existing)]);$pdo->commit();return $userId;
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+
+    /** @param array<string,mixed> $data */
+    public function updateSecurity(int $tenantId,array $data,int $actorUserId): void
+    {
+        if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
+        $mfa=!empty($data['require_mfa'])?1:0;$timeout=max(15,min(1440,(int)($data['session_timeout_minutes']??480)));
+        $domains=mb_strtolower(trim((string)($data['allowed_email_domains']??'')));$domains=mb_substr(preg_replace('/[^a-z0-9.,\-\s]/','',$domains)??'',0,1000);
+        Connection::getInstance()->prepare('INSERT INTO mst_security_settings(tenant_id,require_mfa,session_timeout_minutes,allowed_email_domains) VALUES(:tenant,:mfa,:timeout,:domains) ON DUPLICATE KEY UPDATE require_mfa=VALUES(require_mfa),session_timeout_minutes=VALUES(session_timeout_minutes),allowed_email_domains=VALUES(allowed_email_domains),updated_at=NOW()')->execute(['tenant'=>$tenantId,'mfa'=>$mfa,'timeout'=>$timeout,'domains'=>$domains?:null]);
+        $this->audit($tenantId,$actorUserId,'mst.security.updated',['require_mfa'=>$mfa,'session_timeout_minutes'=>$timeout,'allowed_email_domains'=>$domains]);
     }
 
     /** @return list<array<string,mixed>> */
