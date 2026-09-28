@@ -81,6 +81,13 @@ final class MasterAdministratorServiceTest extends TestCase
         $service=new MasterAdministratorService();$result=$service->search('', '', 1, 10);self::assertArrayHasKey('pages',$result);self::assertArrayHasKey('filtered',$result);self::assertLessThanOrEqual(10,count($result['items']));if($result['items']!==[])self::assertArrayHasKey('products',$result['items'][0]);
     }
 
+    public function testProductEntitlementPersistsActiveAndInactiveStates(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Entitlement '.$token,'trade_name'=>'Entitlement '.$token,'tax_id'=>'ENT-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        $service->setProduct($id,'talk','active',$this->actor);$row=$service->find($id);$products=array_column($row['products'],'status','product_key');self::assertSame('active',$products['talk']);
+        $service->setProduct($id,'talk','inactive',$this->actor);$row=$service->find($id);$products=array_column($row['products'],'status','product_key');self::assertSame('inactive',$products['talk']);self::assertGreaterThanOrEqual(2,count(array_filter($row['audit'],static fn(array $event): bool=>$event['event_type']==='mst.product.updated')));
+    }
+
     public function testInvalidBrandingAndProductAreRejected(): void
     {
         $service=new MasterAdministratorService();$this->expectException(RuntimeException::class);$service->setProduct(1,'unknown','active',$this->actor);
