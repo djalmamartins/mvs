@@ -43,6 +43,15 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString("selectedTicket'=>\$selected",$controller);
     }
 
+    public function testSourceUrlsOnlyAllowInternalPaths(): void
+    {
+        self::assertSame('/talk/view/inbox?ticket=10',DayService::safeSourceUrl('/talk/view/inbox?ticket=10'));
+        self::assertSame('/day',DayService::safeSourceUrl('javascript:alert(1)'));
+        self::assertSame('/day',DayService::safeSourceUrl('https://example.com'));
+        self::assertSame('/day',DayService::safeSourceUrl('//example.com'));
+        self::assertSame('/day',DayService::safeSourceUrl("/talk\\r\\nLocation:https://example.com"));
+    }
+
     public function testDayRoutesAndNavigationAreReal(): void
     {
         $routes=file_get_contents(dirname(__DIR__).'/app/Boot/Routes.php');
@@ -51,6 +60,6 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString("DayController:index",$routes);
         self::assertStringContainsString("DayController:task",$routes);
         self::assertStringContainsString("\$activeProduct==='day'",$sidebar);
-        self::assertStringNotContainsString("{\\\\n",$sidebar);
+        self::assertStringNotContainsString('\\\\n',$sidebar);
     }
 }
