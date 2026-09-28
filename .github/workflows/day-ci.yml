@@ -1,0 +1,60 @@
+name: Day CI
+
+on:
+  pull_request:
+    branches:
+      - feat/mvs-base
+    paths:
+      - 'app/Controllers/DayController.php'
+      - 'app/Services/Day/**'
+      - 'database/migrations/**day**'
+      - 'resources/themes/admin/pages/day.php'
+      - 'resources/themes/admin/components/product-sidebar.php'
+      - 'public/themes/admin/css/day.css'
+      - 'tests/Day*'
+      - '.github/workflows/day-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  day:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: moves
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_URL: http://localhost
+      APP_TIMEZONE: America/Sao_Paulo
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: moves
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+          coverage: none
+      - name: Validate Composer
+        run: composer validate --strict
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Run migrations
+        run: php scripts/migrate.php
+      - name: Run Day tests
+        run: vendor/bin/phpunit tests/DayServiceTest.php tests/DayTenantIsolationTest.php
+      - name: PHPStan Day
+        run: vendor/bin/phpstan analyse --no-progress app/Controllers/DayController.php app/Services/Day tests/DayServiceTest.php tests/DayTenantIsolationTest.php
