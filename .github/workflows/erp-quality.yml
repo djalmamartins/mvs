@@ -2,11 +2,9 @@ name: ERP Quality Gate
 
 on:
   push:
-    branches:
-      - feat/mvs-erp
+    branches: [feat/mvs-erp]
   pull_request:
-    branches:
-      - feat/mvs-base
+    branches: [feat/mvs-base]
 
 permissions:
   contents: read
@@ -14,16 +12,40 @@ permissions:
 jobs:
   php-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: moves_test
+          MYSQL_USER: moves
+          MYSQL_PASSWORD: moves
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: moves_test
+      DB_USERNAME: moves
+      DB_PASSWORD: moves
+      APP_ENV: testing
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           coverage: none
+          extensions: pdo_mysql, pdo_sqlite
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Apply database migrations
+        run: |
+          for migration in database/migrations/*.sql; do
+            mysql -h127.0.0.1 -umoves -pmoves moves_test < "$migration"
+          done
       - name: PHPUnit
         run: composer test
       - name: PHPStan
