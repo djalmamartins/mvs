@@ -39,6 +39,6 @@ final class MfaRecoveryCodeServiceTest extends TestCase
         self::assertFalse($service->consume(8, 'ABCD-2345-EFGH'));
         self::assertFalse($service->consume(7, 'invalid'));
         self::assertFalse($service->consume(7, 'ZZZZ-9999-ZZZZ'));
-        self::assertFalse($this->pdo->query('SELECT used_at FROM platform_mfa_recovery_codes')->fetchColumn());
+        self::assertNull($this->pdo->query('SELECT used_at FROM platform_mfa_recovery_codes')->fetchColumn());
     }
 }
