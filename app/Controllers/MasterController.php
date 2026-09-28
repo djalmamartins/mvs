@@ -89,6 +89,13 @@ final class MasterController extends Controller
         Response::to('/master/administrators/'.$id);
     }
 
+    public function statusSave(array $params=[]): void
+    {
+        $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id);
+        try{(new MasterAdministratorService())->updateStatus($id,(string)Request::post('status',''),(string)Request::post('confirmation',''),(string)Request::post('reason',''),(int)Auth::user()?->id);Flash::set('success','Status da administradora atualizado.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
+        Response::to('/master/administrators/'.$id);
+    }
+
     public function edit(array $params=[]): void
     {
         $id=(int)($params['id']??0);$administrator=(new MasterAdministratorService())->find($id);
