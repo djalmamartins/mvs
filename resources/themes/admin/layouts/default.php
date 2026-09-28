@@ -43,7 +43,7 @@ foreach (preg_split('/\s+/', trim($userName)) ?: [] as $namePart) {
 
 $userInitials = $userInitials !== '' ? $userInitials : 'M';
 
-$apps = [
+$apps = [['key'=>'master','label'=>'Master','icon'=>'icon-key-outline','href'=>'/master'],
     [
         'key'   => 'day',
         'label' => 'Meu Dia',
