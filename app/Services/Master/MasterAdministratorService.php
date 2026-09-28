@@ -47,7 +47,6 @@ final class MasterAdministratorService
         $channels=Connection::getInstance()->prepare('SELECT id,type,name,driver,status,connection_status,phone_number FROM talk_channels WHERE tenant_id=:id ORDER BY type,name');$channels->execute(['id'=>$tenantId]);$row['integrations']=$channels->fetchAll(PDO::FETCH_ASSOC);
         $security=Connection::getInstance()->prepare('SELECT require_mfa,session_timeout_minutes,allowed_email_domains,updated_at FROM mst_security_settings WHERE tenant_id=:id');$security->execute(['id'=>$tenantId]);$row['security']=$security->fetch(PDO::FETCH_ASSOC)?:['require_mfa'=>0,'session_timeout_minutes'=>480,'allowed_email_domains'=>''];
         $onboarding=Connection::getInstance()->prepare('SELECT step,completed_at,updated_at FROM mst_onboarding WHERE tenant_id=:id');$onboarding->execute(['id'=>$tenantId]);$row['onboarding']=$onboarding->fetch(PDO::FETCH_ASSOC)?:['step'=>'created','completed_at'=>null];
-        $onboarding=Connection::getInstance()->prepare('SELECT step,completed_at,updated_at FROM mst_onboarding WHERE tenant_id=:id');$onboarding->execute(['id'=>$tenantId]);$row['onboarding']=$onboarding->fetch(PDO::FETCH_ASSOC)?:['step'=>'created','completed_at'=>null];
         return $row;
     }
 
@@ -164,8 +163,8 @@ final class MasterAdministratorService
         try{
             $find=$pdo->prepare('SELECT id,status FROM users WHERE email=:email LIMIT 1');$find->execute(['email'=>$email]);$existing=$find->fetch(PDO::FETCH_ASSOC);
             if(is_array($existing)){$userId=(int)$existing['id'];}
-            else{$temporary=bin2hex(random_bytes(24));$insert=$pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(:name,:email,:password,'user','active')");$insert->execute(['name'=>$name,'email'=>$email,'password'=>password_hash($temporary,PASSWORD_DEFAULT)]);$userId=(int)$pdo->lastInsertId();}
-            $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,'active',0) ON DUPLICATE KEY UPDATE role=VALUES(role),status='active',updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role]);
+            else{$temporary=bin2hex(random_bytes(32));$insert=$pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(:name,:email,:password,'user','inactive')");$insert->execute(['name'=>$name,'email'=>$email,'password'=>password_hash($temporary,PASSWORD_DEFAULT)]);$userId=(int)$pdo->lastInsertId();}
+            $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,:membership_status,0) ON DUPLICATE KEY UPDATE role=VALUES(role),status=VALUES(status),updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role,'membership_status'=>is_array($existing)?'active':'inactive']);
             $this->audit($tenantId,$actorUserId,'mst.membership.invited',['user_id'=>$userId,'email'=>$email,'role'=>$role,'account_created'=>!is_array($existing)]);$pdo->commit();return $userId;
         }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     }
