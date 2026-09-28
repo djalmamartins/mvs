@@ -12,6 +12,7 @@ final class MasterAdministratorServiceTest extends TestCase
     private PDO $pdo;
     private int $actor;
     private array $tenants=[];
+    private array $users=[];
 
     protected function setUp(): void
     {
@@ -30,6 +31,7 @@ final class MasterAdministratorServiceTest extends TestCase
             $this->pdo->prepare('DELETE FROM talk_tenant_users WHERE tenant_id=:id')->execute(['id'=>$tenant]);
             $this->pdo->prepare('DELETE FROM talk_tenants WHERE id=:id')->execute(['id'=>$tenant]);
         }
+        foreach($this->users as $user){$this->pdo->prepare('DELETE FROM users WHERE id=:id')->execute(['id'=>$user]);}
     }
 
     public function testCreateUpdateBrandingProductsMembershipAndAudit(): void
@@ -44,6 +46,13 @@ final class MasterAdministratorServiceTest extends TestCase
         $row=$service->find($id);self::assertSame('Marca '.$token,$row['trade_name']);self::assertSame('#6E00B3',$row['primary_color']);self::assertContains('erp',array_column(array_filter($row['products'],fn($p)=>$p['status']==='active'),'product_key'));self::assertSame($this->actor,(int)$row['memberships'][0]['id']);self::assertGreaterThanOrEqual(4,count($row['audit']));
         $service->update($id,['legal_name'=>'Administradora '.$token,'trade_name'=>'Marca '.$token,'tax_id'=>'TEST-'.$token,'contact_name'=>'Contato','contact_email'=>'qa@example.test','contact_phone'=>'3100000000','status'=>'suspended','notes'=>'QA'],$this->actor);
         self::assertSame('inactive',(string)$this->pdo->query('SELECT status FROM talk_tenants WHERE id='.$id)->fetchColumn());
+    }
+
+    public function testInvitationCreatesMembershipAndAudit(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Invite '.$token,'trade_name'=>'Invite '.$token,'tax_id'=>'INV-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        $email='mst-'.$token.'@example.test';$user=$service->inviteUser($id,['name'=>'Usuário MST','email'=>$email,'role'=>'supervisor'],$this->actor);$this->users[]=$user;$row=$service->find($id);
+        self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
     }
 
     public function testInvalidBrandingAndProductAreRejected(): void
