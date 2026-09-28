@@ -22,4 +22,14 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString('/talk/view/inbox?ticket=',$page);
         self::assertStringNotContainsString('João da Silva',$page);
     }
+    public function testDayRoutesAndNavigationAreReal(): void
+    {
+        $routes=file_get_contents(dirname(__DIR__).'/app/Boot/Routes.php');
+        $sidebar=file_get_contents(dirname(__DIR__).'/resources/themes/admin/components/product-sidebar.php');
+        self::assertIsString($routes);self::assertIsString($sidebar);
+        self::assertStringContainsString("DayController:index",$routes);
+        self::assertStringContainsString("DayController:task",$routes);
+        self::assertStringContainsString("$activeProduct==='day'",$sidebar);
+        self::assertStringNotContainsString("{\\\\n",$sidebar);
+    }
 }
