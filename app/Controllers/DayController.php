@@ -8,6 +8,7 @@ use Moves\Core\Request;
 use Moves\Core\Response;
 use MovesCode\Router\Router;
 use Moves\Services\Day\DayService;
+use Throwable;
 
 final class DayController extends Controller
 {
@@ -16,7 +17,15 @@ final class DayController extends Controller
     public function index(): void
     {
         $user=Auth::user();if($user===null){Response::to('/login');}
-        echo $this->view->render('pages/day',['title'=>'Hoje','productName'=>'Meu Dia','activeProduct'=>'day','currentPage'=>'today','day'=>$this->day->dashboard((int)$user->id)]);
+        try {
+            $day=$this->day->dashboard((int)$user->id);
+            $error=null;
+        } catch (Throwable $exception) {
+            error_log('[day] '.$exception->getMessage());
+            $day=['tasks'=>[],'talk'=>[],'events'=>[],'timeline'=>[],'summary'=>[]];
+            $error='Não foi possível carregar o Meu Dia agora. Tente novamente em instantes.';
+        }
+        echo $this->view->render('pages/day',['title'=>'Hoje','productName'=>'Meu Dia','activeProduct'=>'day','currentPage'=>'today','day'=>$day,'dayError'=>$error]);
     }
     /** @param array<string,string> $route */
     public function task(array $route=[]): void
