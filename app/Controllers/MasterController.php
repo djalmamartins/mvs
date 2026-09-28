@@ -75,6 +75,13 @@ final class MasterController extends Controller
         Response::to('/master/administrators/'.$id);
     }
 
+    public function securitySave(array $params=[]): void
+    {
+        $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id);
+        try{(new MasterAdministratorService())->updateSecurity($id,['require_mfa'=>Request::post('require_mfa',0),'session_timeout_minutes'=>Request::post('session_timeout_minutes',480),'allowed_email_domains'=>(string)Request::post('allowed_email_domains','')],(int)Auth::user()?->id);Flash::set('success','Política de segurança atualizada.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
+        Response::to('/master/administrators/'.$id);
+    }
+
     public function inviteUser(array $params=[]): void
     {
         $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id);
