@@ -38,8 +38,7 @@ final class MasterController extends Controller
     {
         $this->guardCsrf('/master/administrators/create');
         try {
-            $service=new MasterAdministratorService();$actor=(int)Auth::user()?->id;$id=$service->create($this->input(),$actor);
-            $service->updateBranding($id,['trade_name'=>(string)Request::post('trade_name',''),'logo_path'=>'','primary_color'=>(string)Request::post('primary_color','#6E00B3'),'secondary_color'=>(string)Request::post('secondary_color','')],$actor);
+            $service=new MasterAdministratorService();$actor=(int)Auth::user()?->id;$id=$service->create($this->input(),$actor,['primary_color'=>(string)Request::post('primary_color','#6E00B3'),'secondary_color'=>(string)Request::post('secondary_color','')]);
             Flash::set('success','Administradora criada com sucesso.');
             Response::to('/master/administrators/'.$id);
         } catch (RuntimeException $e) { Flash::set('error',$e->getMessage());Response::to('/master/administrators/create'); } catch (Throwable $e) { Flash::set('error','Não foi possível criar a administradora. Tente novamente.');Response::to('/master/administrators/create'); }
