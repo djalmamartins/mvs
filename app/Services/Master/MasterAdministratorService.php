@@ -52,9 +52,10 @@ final class MasterAdministratorService
     }
 
     /** @param array<string,string> $data */
-    public function create(array $data, int $actorUserId): int
+    public function create(array $data, int $actorUserId, array $branding = []): int
     {
         $data = $this->validate($data);
+        $primary=strtoupper(trim((string)($branding['primary_color']??'#6E00B3')));$secondary=strtoupper(trim((string)($branding['secondary_color']??'')));if(!preg_match('/^#[0-9A-F]{6}$/',$primary))throw new RuntimeException('Cor primária inválida.');if($secondary!==''&&!preg_match('/^#[0-9A-F]{6}$/',$secondary))throw new RuntimeException('Cor secundária inválida.');
         $pdo = Connection::getInstance();
         $duplicate=$pdo->prepare('SELECT tenant_id FROM mst_administrators WHERE tax_id=:tax LIMIT 1');$duplicate->execute(['tax'=>$data['tax_id']]);if($duplicate->fetchColumn()!==false)throw new RuntimeException('Já existe uma administradora com este CNPJ/identificador fiscal.');
         $pdo->beginTransaction();
@@ -64,7 +65,7 @@ final class MasterAdministratorService
             $tenant->execute(['name'=>$data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name'],'slug'=>$slug,'status'=>$data['status']==='active'?'active':'inactive']);
             $id = (int)$pdo->lastInsertId();
             $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes,primary_color,secondary_color) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes,:primary_color,:secondary_color)');
-            $insert->execute(['tenant_id'=>$id]+$data+['primary_color'=>'#6E00B3','secondary_color'=>null]);
+            $insert->execute(['tenant_id'=>$id]+$data+['primary_color'=>$primary,'secondary_color'=>$secondary?:null]);
             $pdo->prepare("INSERT INTO mst_onboarding(tenant_id,step) VALUES(:tenant,'created')")->execute(['tenant'=>$id]);
             foreach(['day','talk','support','erp','cms'] as $product){$pdo->prepare("INSERT INTO mst_tenant_products(tenant_id,product_key,status) VALUES(:tenant,:product,'inactive')")->execute(['tenant'=>$id,'product'=>$product]);}
             $pdo->prepare("INSERT INTO mst_security_settings(tenant_id) VALUES(:tenant)")->execute(['tenant'=>$id]);
