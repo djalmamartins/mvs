@@ -25,7 +25,7 @@ final class DayService
         $today=date('Y-m-d');
         $dueToday=array_values(array_filter($tasks,static fn(array $t):bool=>!empty($t['due_at'])&&str_starts_with((string)$t['due_at'],$today)&&$t['status']!=='done'));
         $overdue=array_values(array_filter($tasks,static fn(array $t):bool=>!empty($t['due_at'])&&(string)$t['due_at']<date('Y-m-d H:i:s')&&$t['status']!=='done'));
-        return ['tasks'=>$tasks,'talk'=>$talk,'events'=>$events,'timeline'=>$timeline,'summary'=>['pending'=>count(array_filter($tasks,static fn(array $t):bool=>$t['status']!=='done')),'today'=>count($dueToday),'overdue'=>count($overdue),'talk'=>count($talk)]];
+        return ['tasks'=>$tasks,'talk'=>$talk,'events'=>$events,'timeline'=>$timeline,'summary'=>['pending'=>count(array_filter($tasks,static fn(array $t):bool=>$t['status']!=='done')),'today'=>count($dueToday)+count($events),'overdue'=>count($overdue),'talk'=>count($talk)]];
     }
 
     /** @return array<int,array<string,mixed>> */
