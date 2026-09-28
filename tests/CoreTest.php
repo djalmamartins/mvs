@@ -106,6 +106,29 @@ final class CoreTest extends TestCase
         self::assertStringNotContainsString('ana@example.com', $output);
     }
 
+    public function testNewPasswordViewUsesConfirmationAndBrowserPasswordSemantics(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/password-recovery/new-password';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/new-password', [
+            'title' => 'Crie uma nova senha',
+            'version' => '0.0.1',
+            'maskedEmail' => 'an•••@example.com',
+            'minLength' => 10,
+            'maxLength' => 128,
+        ]);
+
+        self::assertSame(2, substr_count($output, 'autocomplete="new-password"'));
+        self::assertStringContainsString('name="password_confirmation"', $output);
+        self::assertStringContainsString('action="/password-recovery/new-password"', $output);
+        self::assertStringContainsString('data-password-rule="symbol"', $output);
+        self::assertStringNotContainsString('ana@example.com', $output);
+    }
+
     public function testValidatorCollectsErrors(): void
     {
         $validator = (new Validator())

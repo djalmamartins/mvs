@@ -167,9 +167,101 @@ final class PasswordRecoveryServiceTest extends TestCase
         self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM password_recovery_requests')->fetchColumn());
     }
 
+    public function testVerifiedRecoveryResetsPasswordAndConsumesEveryOpenRequest(): void
+    {
+        $this->createUser();
+        $service = $this->service();
+        $request = $service->request('ana@example.com', '127.0.0.1');
+        $service->verify(
+            $request['request_id'],
+            'ana@example.com',
+            (string) $this->messages[0]['code']
+        );
+
+        $status = $service->resetPassword(
+            $request['request_id'],
+            'ana@example.com',
+            'SenhaNova#2026'
+        );
+
+        self::assertSame('reset', $status);
+        $password = (string) $this->pdo->query('SELECT password FROM users WHERE id=1')->fetchColumn();
+        self::assertTrue(password_verify('SenhaNova#2026', $password));
+        self::assertNotSame('SenhaNova#2026', $password);
+        self::assertSame(1, (int) $this->pdo->query('SELECT COUNT(*) FROM password_recovery_requests WHERE used_at IS NOT NULL')->fetchColumn());
+        self::assertSame(
+            'invalid',
+            $service->resetPassword($request['request_id'], 'ana@example.com', 'OutraSenha#2026')
+        );
+    }
+
+    public function testResetRequiresVerifiedUnexpiredRequestForTheSameEmail(): void
+    {
+        $this->createUser();
+        $service = $this->service();
+        $request = $service->request('ana@example.com', '127.0.0.1');
+
+        self::assertSame(
+            'invalid',
+            $service->resetPassword($request['request_id'], 'other@example.com', 'SenhaNova#2026')
+        );
+        self::assertSame(
+            'invalid',
+            $service->resetPassword($request['request_id'], 'ana@example.com', 'SenhaNova#2026')
+        );
+
+        $service->verify(
+            $request['request_id'],
+            'ana@example.com',
+            (string) $this->messages[0]['code']
+        );
+        $this->now = $this->now->modify('+16 minutes');
+
+        self::assertSame(
+            'expired',
+            $service->resetPassword($request['request_id'], 'ana@example.com', 'SenhaNova#2026')
+        );
+        self::assertTrue(password_verify(
+            'SenhaAtual#2026',
+            (string) $this->pdo->query('SELECT password FROM users WHERE id=1')->fetchColumn()
+        ));
+    }
+
+    public function testResetServiceAlsoEnforcesPasswordPolicy(): void
+    {
+        $this->createUser();
+        $service = $this->service();
+
+        self::assertSame(
+            'weak',
+            $service->resetPassword(1, 'ana@example.com', 'curta')
+        );
+    }
+
+    public function testResetRejectsCurrentPasswordWithoutConsumingRecovery(): void
+    {
+        $this->createUser();
+        $service = $this->service();
+        $request = $service->request('ana@example.com', '127.0.0.1');
+        $service->verify(
+            $request['request_id'],
+            'ana@example.com',
+            (string) $this->messages[0]['code']
+        );
+
+        self::assertSame(
+            'reused',
+            $service->resetPassword($request['request_id'], 'ana@example.com', 'SenhaAtual#2026')
+        );
+        self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM password_recovery_requests WHERE used_at IS NOT NULL')->fetchColumn());
+    }
+
     private function createUser(): void
     {
-        $this->pdo->exec("INSERT INTO users(id,name,email,password,status) VALUES(1,'Ana','ana@example.com','hash','active')");
+        $statement = $this->pdo->prepare(
+            "INSERT INTO users(id,name,email,password,status) VALUES(1,'Ana','ana@example.com',?,'active')"
+        );
+        $statement->execute([password_hash('SenhaAtual#2026', PASSWORD_DEFAULT)]);
     }
 
     private function service(): PasswordRecoveryService

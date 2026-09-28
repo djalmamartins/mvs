@@ -181,11 +181,14 @@ final class PasswordRecoveryService
             if ($matches && $request['user_id'] !== null) {
                 $verify = $this->pdo->prepare(
                     'UPDATE password_recovery_requests '
-                    . 'SET attempts=:attempts,verified_at=:verified_at WHERE id=:id'
+                    . 'SET attempts=:attempts,verified_at=:verified_at,expires_at=:reset_expires_at WHERE id=:id'
                 );
                 $verify->execute([
                     'attempts' => $attempts,
                     'verified_at' => $this->now()->format('Y-m-d H:i:s'),
+                    'reset_expires_at' => $this->now()
+                        ->modify('+' . self::EXPIRY_MINUTES . ' minutes')
+                        ->format('Y-m-d H:i:s'),
                     'id' => $requestId,
                 ]);
                 $this->pdo->commit();
@@ -213,6 +216,91 @@ final class PasswordRecoveryService
                 'status' => $attempts >= self::MAX_ATTEMPTS ? 'locked' : 'invalid',
                 'remaining_attempts' => max(0, self::MAX_ATTEMPTS - $attempts),
             ];
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function resetPassword(int $requestId, string $email, string $newPassword): string
+    {
+        if (!PasswordPolicy::accepts($newPassword)) {
+            return 'weak';
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $suffix = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql' ? ' FOR UPDATE' : '';
+            $statement = $this->pdo->prepare(
+                'SELECT r.id,r.user_id,r.expires_at,r.verified_at,r.used_at,'
+                . 'u.password AS current_password,u.status AS user_status '
+                . 'FROM password_recovery_requests r LEFT JOIN users u ON u.id=r.user_id '
+                . 'WHERE r.id=:id AND r.email_hash=:email_hash LIMIT 1'
+                . $suffix
+            );
+            $statement->execute([
+                'id' => $requestId,
+                'email_hash' => hash('sha256', strtolower(trim($email))),
+            ]);
+            $request = $statement->fetch(PDO::FETCH_ASSOC);
+
+            if (
+                !is_array($request)
+                || $request['user_id'] === null
+                || $request['verified_at'] === null
+                || $request['used_at'] !== null
+                || $request['user_status'] !== 'active'
+            ) {
+                $this->pdo->commit();
+
+                return 'invalid';
+            }
+
+            if (new DateTimeImmutable((string) $request['expires_at']) <= $this->now()) {
+                $expire = $this->pdo->prepare(
+                    'UPDATE password_recovery_requests SET used_at=:used_at WHERE id=:id AND used_at IS NULL'
+                );
+                $expire->execute(['used_at' => $this->now()->format('Y-m-d H:i:s'), 'id' => $requestId]);
+                $this->pdo->commit();
+
+                return 'expired';
+            }
+
+            if (password_verify($newPassword, (string) $request['current_password'])) {
+                $this->pdo->commit();
+
+                return 'reused';
+            }
+
+            $userId = (int) $request['user_id'];
+            $update = $this->pdo->prepare(
+                'UPDATE users SET password=:password WHERE id=:id AND status=:status'
+            );
+            $update->execute([
+                'password' => password_hash($newPassword, PASSWORD_DEFAULT),
+                'id' => $userId,
+                'status' => 'active',
+            ]);
+            if ($update->rowCount() !== 1) {
+                $this->pdo->rollBack();
+
+                return 'invalid';
+            }
+
+            $consume = $this->pdo->prepare(
+                'UPDATE password_recovery_requests SET used_at=:used_at '
+                . 'WHERE user_id=:user_id AND used_at IS NULL'
+            );
+            $consume->execute([
+                'used_at' => $this->now()->format('Y-m-d H:i:s'),
+                'user_id' => $userId,
+            ]);
+            $this->pdo->commit();
+
+            return 'reset';
         } catch (Throwable $exception) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();

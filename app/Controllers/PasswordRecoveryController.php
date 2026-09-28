@@ -13,6 +13,7 @@ use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Core\Session;
 use Moves\Core\Validator;
+use Moves\Services\Auth\PasswordPolicy;
 use Moves\Services\Auth\PasswordRecoveryService;
 use Moves\Services\Mail\SmtpRecoveryMailer;
 use Throwable;
@@ -105,7 +106,7 @@ final class PasswordRecoveryController extends Controller
             Session::set(self::CONTEXT_KEY, $context);
             Csrf::regenerate();
             Flash::set('success', 'Código confirmado com segurança.');
-            Response::to('/password-recovery/code?verified=1');
+            Response::to('/password-recovery/new-password');
         }
 
         if ($result['status'] === 'expired') {
@@ -117,6 +118,78 @@ final class PasswordRecoveryController extends Controller
             Flash::set('error', "Código inválido. Você ainda tem {$remaining} tentativa(s).");
         }
         Response::to('/password-recovery/code');
+    }
+
+    public function newPasswordForm(): void
+    {
+        $context = $this->verifiedContext();
+        if ($context === null) {
+            Flash::set('error', 'Valide um novo código para definir sua senha.');
+            Response::to('/forgot-password');
+        }
+
+        echo $this->view->render('pages/new-password', [
+            'title' => 'Crie uma nova senha',
+            'version' => '0.0.1',
+            'maskedEmail' => (string) $context['masked_email'],
+            'minLength' => PasswordPolicy::MIN_LENGTH,
+            'maxLength' => PasswordPolicy::MAX_LENGTH,
+        ]);
+    }
+
+    public function saveNewPassword(): void
+    {
+        $this->requireCsrf('/password-recovery/new-password');
+        $context = $this->verifiedContext();
+        if ($context === null) {
+            Flash::set('error', 'Valide um novo código para definir sua senha.');
+            Response::to('/forgot-password');
+        }
+
+        $password = (string) Request::post('password', '');
+        $confirmation = (string) Request::post('password_confirmation', '');
+        $errors = PasswordPolicy::errors($password);
+        if (!hash_equals($password, $confirmation)) {
+            $errors[] = 'A confirmação deve ser igual à nova senha.';
+        }
+        if ($errors !== []) {
+            foreach ($errors as $error) {
+                Flash::set('error', $error);
+            }
+            Response::to('/password-recovery/new-password');
+        }
+
+        try {
+            $status = $this->service()->resetPassword(
+                (int) $context['request_id'],
+                (string) $context['email'],
+                $password
+            );
+        } catch (Throwable $exception) {
+            Logger::error('Falha ao redefinir senha.', ['exception' => $exception::class]);
+            Flash::set('error', 'Não foi possível salvar a nova senha agora. Tente novamente.');
+            Response::to('/password-recovery/new-password');
+        }
+
+        if ($status !== 'reset') {
+            if ($status === 'reused') {
+                Flash::set('error', 'A nova senha deve ser diferente da senha atual.');
+                Response::to('/password-recovery/new-password');
+            }
+            Session::remove(self::CONTEXT_KEY);
+            Flash::set(
+                'error',
+                $status === 'expired'
+                    ? 'A autorização expirou. Solicite um novo código.'
+                    : 'Esta recuperação não está mais disponível. Solicite um novo código.'
+            );
+            Response::to('/forgot-password');
+        }
+
+        Session::remove(self::CONTEXT_KEY);
+        Csrf::regenerate();
+        Flash::set('success', 'Senha alterada com segurança. Entre com a nova senha.');
+        Response::to('/login');
     }
 
     public function resendCode(): void
@@ -178,5 +251,13 @@ final class PasswordRecoveryController extends Controller
             && isset($context['request_id'], $context['email'], $context['masked_email'])
             ? $context
             : null;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function verifiedContext(): ?array
+    {
+        $context = $this->context();
+
+        return $context !== null && !empty($context['verified']) ? $context : null;
     }
 }

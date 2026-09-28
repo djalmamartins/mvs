@@ -80,3 +80,50 @@
     font-size: 12px;
     line-height: 1.5;
 }
+
+.auth-primary-link {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--moves);
+    border-radius: var(--radius);
+    background: var(--moves);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-primary-link:hover {
+    background: #5e0098;
+}
+
+.password-rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    margin: 10px 0 20px;
+    padding: 0;
+    color: var(--muted);
+    font-size: 11px;
+    list-style: none;
+}
+
+.password-rules li::before {
+    content: "○";
+    margin-right: 6px;
+}
+
+.password-rules li.is-valid {
+    color: #216e39;
+}
+
+.password-rules li.is-valid::before {
+    content: "✓";
+}
+
+@media(max-width: 420px) {
+    .password-rules {
+        grid-template-columns: 1fr;
+    }
+}
