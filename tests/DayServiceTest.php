@@ -60,6 +60,6 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString("DayController:index",$routes);
         self::assertStringContainsString("DayController:task",$routes);
         self::assertStringContainsString("\$activeProduct==='day'",$sidebar);
-        self::assertStringNotContainsString('\\\\n',$sidebar);
+        self::assertStringNotContainsString('\\n',$sidebar);
     }
 }
