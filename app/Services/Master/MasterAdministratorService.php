@@ -56,6 +56,7 @@ final class MasterAdministratorService
     {
         $data = $this->validate($data);
         $pdo = Connection::getInstance();
+        $duplicate=$pdo->prepare('SELECT tenant_id FROM mst_administrators WHERE tax_id=:tax LIMIT 1');$duplicate->execute(['tax'=>$data['tax_id']]);if($duplicate->fetchColumn()!==false)throw new RuntimeException('Já existe uma administradora com este CNPJ/identificador fiscal.');
         $pdo->beginTransaction();
         try {
             $slug = $this->uniqueSlug($data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name']);
@@ -92,6 +93,7 @@ final class MasterAdministratorService
         if ($current === null) throw new RuntimeException('Administradora não encontrada.');
         $data = $this->validate($data);
         $data['status']=(string)$current['status'];
+        $duplicate=Connection::getInstance()->prepare('SELECT tenant_id FROM mst_administrators WHERE tax_id=:tax AND tenant_id<>:id LIMIT 1');$duplicate->execute(['tax'=>$data['tax_id'],'id'=>$tenantId]);if($duplicate->fetchColumn()!==false)throw new RuntimeException('Já existe uma administradora com este CNPJ/identificador fiscal.');
         $pdo = Connection::getInstance();
         $pdo->beginTransaction();
         try {
@@ -144,6 +146,7 @@ final class MasterAdministratorService
     {
         if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
         if(!in_array($role,['admin','supervisor','agent'],true)||!in_array($status,['active','inactive'],true))throw new RuntimeException('Papel ou status inválido.');
+        $current=Connection::getInstance()->prepare('SELECT role,status FROM talk_tenant_users WHERE tenant_id=:tenant AND user_id=:user');$current->execute(['tenant'=>$tenantId,'user'=>$userId]);$membership=$current->fetch(PDO::FETCH_ASSOC);if(is_array($membership)&&$membership['role']==='admin'&&$membership['status']==='active'&&($role!=='admin'||$status!=='active')){$admins=Connection::getInstance()->prepare("SELECT COUNT(*) FROM talk_tenant_users WHERE tenant_id=:tenant AND role='admin' AND status='active'");$admins->execute(['tenant'=>$tenantId]);if((int)$admins->fetchColumn()<=1)throw new RuntimeException('A administradora precisa manter ao menos um administrador ativo.');}
         $exists=Connection::getInstance()->prepare('SELECT id FROM users WHERE id=:id');$exists->execute(['id'=>$userId]);if(!(int)$exists->fetchColumn())throw new RuntimeException('Usuário não encontrado.');
         Connection::getInstance()->prepare('INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,:status,0) ON DUPLICATE KEY UPDATE role=VALUES(role),status=VALUES(status),updated_at=NOW()')->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role,'status'=>$status]);
         $this->audit($tenantId,$actorUserId,'mst.membership.updated',['user_id'=>$userId,'role'=>$role,'status'=>$status]);
