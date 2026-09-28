@@ -167,7 +167,7 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
 </head>
 
 <body
-        class="studio-body studio-v2 moves-platform"
+        class="studio-body studio-v2 moves-platform <?= $activeProduct === "master" ? "master-product" : "tenant-product" ?>"
         data-editor-upload="/studio/media"
         data-editor-library="/studio/media/library"
         data-editor-user="<?= (int) ($user?->id ?? 0) ?>"
