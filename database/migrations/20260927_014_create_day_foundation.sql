@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS day_tasks (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT UNSIGNED NOT NULL,
+    assigned_user_id BIGINT UNSIGNED NOT NULL,
+    created_by BIGINT UNSIGNED NULL,
+    title VARCHAR(190) NOT NULL,
+    description TEXT NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'pending',
+    priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+    due_at DATETIME NULL,
+    source_type VARCHAR(40) NOT NULL DEFAULT 'day',
+    source_id BIGINT UNSIGNED NULL,
+    source_url VARCHAR(500) NULL,
+    completed_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY day_tasks_tenant_assignee_status (tenant_id,assigned_user_id,status,due_at),
+    KEY day_tasks_tenant_due (tenant_id,due_at,status),
+    CONSTRAINT day_tasks_tenant FOREIGN KEY (tenant_id) REFERENCES talk_tenants(id) ON DELETE CASCADE,
+    CONSTRAINT day_tasks_assignee FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT day_tasks_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
