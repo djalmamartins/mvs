@@ -77,7 +77,7 @@ $apps = [['key'=>'master','label'=>'Master','icon'=>'icon-key-outline','href'=>'
     ],
 ];
 $apps=array_values(array_filter($apps,static function(array $app) use ($entitlements): bool {
-    if($app['key']==='master'){return \Moves\Core\Access::can('settings.manage');}
+    if($app['key']==='master'){return \Moves\Core\Access::can('master.manage');}
     return $entitlements[$app['key']]??false;
 }));
 
