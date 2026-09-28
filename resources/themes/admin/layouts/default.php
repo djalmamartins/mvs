@@ -43,6 +43,7 @@ foreach (preg_split('/\s+/', trim($userName)) ?: [] as $namePart) {
 
 $userInitials = $userInitials !== '' ? $userInitials : 'M';
 
+$entitlements=\Moves\Services\Master\TenantProductAccess::currentEntitlements();
 $apps = [['key'=>'master','label'=>'Master','icon'=>'icon-key-outline','href'=>'/master'],
     [
         'key'   => 'day',
@@ -75,6 +76,10 @@ $apps = [['key'=>'master','label'=>'Master','icon'=>'icon-key-outline','href'=>'
         'href'  => '/studio',
     ],
 ];
+$apps=array_values(array_filter($apps,static function(array $app) use ($entitlements): bool {
+    if($app['key']==='master'){return \Moves\Core\Access::can('settings.manage');}
+    return $entitlements[$app['key']]??false;
+}));
 
 ?>
 <!doctype html>
