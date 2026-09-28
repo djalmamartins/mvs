@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Moves\Controllers;
 use Moves\Core\Auth;
 use Moves\Core\Controller;
+use Moves\Core\Csrf;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use MovesCode\Router\Router;
@@ -22,7 +23,7 @@ final class DayController extends Controller
     {
         $user=Auth::user();if($user===null){Response::to('/login');}
         if(!Request::isMethod('POST')){Response::to('/day');}
-        $this->requireCsrf('/day');
+        if(!Csrf::validate((string)Request::post('_token',''))){Response::to('/day?error=csrf');}
         $this->day->setTaskStatus(max(0,(int)($route['id']??0)),(int)$user->id,(string)Request::post('status','pending'));
         Response::to('/day');
     }
