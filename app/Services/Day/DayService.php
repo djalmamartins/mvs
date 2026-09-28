@@ -53,8 +53,10 @@ final class DayService
     /** @return array<int,array<string,mixed>> */
     public function events(int $userId): array
     {
-        $s=Connection::getInstance()->prepare("SELECT id,title,description,starts_at,ends_at,status,source_type,source_id,source_url FROM day_events WHERE tenant_id=:tenant AND assigned_user_id=:user AND status='scheduled' AND starts_at>=CURDATE() AND starts_at<DATE_ADD(CURDATE(),INTERVAL 1 DAY) ORDER BY starts_at,id");
-        $s->execute(['tenant'=>$this->tenantId,'user'=>$userId]);return $s->fetchAll(PDO::FETCH_ASSOC);
+        $start=(new \DateTimeImmutable('today'))->format('Y-m-d H:i:s');
+        $end=(new \DateTimeImmutable('tomorrow'))->format('Y-m-d H:i:s');
+        $s=Connection::getInstance()->prepare("SELECT id,title,description,starts_at,ends_at,status,source_type,source_id,source_url FROM day_events WHERE tenant_id=:tenant AND assigned_user_id=:user AND status='scheduled' AND starts_at>=:start AND starts_at<:end ORDER BY starts_at,id");
+        $s->execute(['tenant'=>$this->tenantId,'user'=>$userId,'start'=>$start,'end'=>$end]);return $s->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /** @return array<int,array<string,mixed>> */
