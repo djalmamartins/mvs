@@ -21,6 +21,9 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString('Nenhuma tarefa pendente',$page);
         self::assertStringContainsString('/talk/view/inbox?ticket=',$page);
         self::assertStringContainsString('Agenda de hoje',$page);
+        self::assertStringContainsString('href="#day-tasks"',$page);
+        self::assertStringContainsString('href="#day-agenda"',$page);
+        self::assertStringContainsString('href="#day-talk"',$page);
         self::assertStringNotContainsString('João da Silva',$page);
     }
     public function testDayFoundationEnforcesTenantAndAssigneeInSql(): void
