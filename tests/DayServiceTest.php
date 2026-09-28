@@ -22,6 +22,24 @@ final class DayServiceTest extends TestCase
         self::assertStringContainsString('/talk/view/inbox?ticket=',$page);
         self::assertStringNotContainsString('João da Silva',$page);
     }
+    public function testDayFoundationEnforcesTenantAndAssigneeInSql(): void
+    {
+        $service=file_get_contents(dirname(__DIR__).'/app/Services/Day/DayService.php');
+        $migration=file_get_contents(dirname(__DIR__).'/database/migrations/20260927_014_create_day_foundation.sql');
+        self::assertIsString($service);self::assertIsString($migration);
+        self::assertStringContainsString('tenant_id=:tenant AND assigned_user_id=:user',$service);
+        self::assertStringContainsString('WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user',$service);
+        self::assertStringContainsString('FOREIGN KEY (tenant_id) REFERENCES talk_tenants(id)',$migration);
+    }
+
+    public function testTalkDeepLinkIsPermissionCheckedByTalkController(): void
+    {
+        $controller=file_get_contents(dirname(__DIR__).'/app/Controllers/TalkController.php');
+        self::assertIsString($controller);
+        self::assertStringContainsString("canViewTicket(\$selectedId, (int) \$user->id)",$controller);
+        self::assertStringContainsString("selectedTicket'=>\$selected",$controller);
+    }
+
     public function testDayRoutesAndNavigationAreReal(): void
     {
         $routes=file_get_contents(dirname(__DIR__).'/app/Boot/Routes.php');
