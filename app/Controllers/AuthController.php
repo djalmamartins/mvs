@@ -22,6 +22,7 @@ use Moves\Modules\Erp\Security\MfaRequirementPolicy;
 use Moves\Modules\Erp\Security\MfaRuntimeConfig;
 use Moves\Modules\Erp\Security\TotpVerifier;
 use Moves\Services\Auth\MfaRecoveryCodeService;
+use Moves\Services\Auth\MfaSetupService;
 use Moves\Services\Platform\PlatformAudit;
 use Moves\Services\Platform\TenantContext;
 
@@ -133,9 +134,28 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
+        $setup = null;
+        try {
+            $pdo = Connection::getInstance();
+            $repository = new MfaEnrollmentRepository($pdo, MfaRuntimeConfig::fromEnvironment()->cipher());
+            if (!$repository->hasActiveTotp((int) $pending['user_id'])) {
+                $service = new MfaSetupService($pdo, $repository, new TotpVerifier());
+                $setup = $service->pending((int) $pending['user_id'], (string) $pending['email'])
+                    ?? $service->begin((int) $pending['user_id'], (string) $pending['email']);
+            }
+        } catch (\Throwable $exception) {
+            Logger::error('Falha ao preparar enrollment MFA no login.', [
+                'user_id' => (int) $pending['user_id'],
+                'exception' => $exception::class,
+            ]);
+            Flash::set('error', 'Não foi possível preparar a verificação em duas etapas.');
+            Response::to('/login');
+        }
+
         echo $this->view->render('pages/mfa-challenge', [
             'title' => 'Verificação em duas etapas',
             'version' => '0.0.1',
+            'setup' => $setup,
         ]);
     }
 
@@ -168,8 +188,17 @@ final class AuthController extends Controller
             if (preg_match('/^\\d{6}$/D', $code) === 1) {
                 $config = MfaRuntimeConfig::fromEnvironment();
                 $repository = new MfaEnrollmentRepository($pdo, $config->cipher());
-                $valid = (new MfaChallengeService($repository, new TotpVerifier()))
-                    ->verifyTotp((int) $user->id, $code);
+                if ($repository->hasActiveTotp((int) $user->id)) {
+                    $valid = (new MfaChallengeService($repository, new TotpVerifier()))
+                        ->verifyTotp((int) $user->id, $code);
+                } else {
+                    $recoveryCodes = (new MfaSetupService($pdo, $repository, new TotpVerifier()))
+                        ->confirm((int) $user->id, $code);
+                    $valid = $recoveryCodes !== null;
+                    if ($valid) {
+                        Session::set('mfa_recovery_codes_once', $recoveryCodes);
+                    }
+                }
             } else {
                 $valid = (new MfaRecoveryCodeService($pdo))->consume((int) $user->id, $code);
             }
@@ -197,6 +226,11 @@ final class AuthController extends Controller
         Csrf::regenerate();
         $this->recordLoginAudit($user, (string) $pending['ip']);
         Flash::set('success', 'Login realizado com sucesso.');
+        if (isset($recoveryCodes) && is_array($recoveryCodes)) {
+            Flash::set('success', '2FA ativado e login realizado. Guarde seus códigos de recuperação.');
+            Response::to('/app/security/2fa');
+        }
+
         Response::to('/app');
     }
 
