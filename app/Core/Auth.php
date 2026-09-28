@@ -19,7 +19,9 @@ final class Auth
 {
     private const SESSION_KEY = 'auth_user';
     private const LAST_ACTIVITY_KEY = 'auth_last_activity';
+    private const AUTHENTICATED_AT_KEY = 'auth_authenticated_at';
     private const DEFAULT_IDLE_TIMEOUT = 1800;
+    private const DEFAULT_ABSOLUTE_TIMEOUT = 43200;
 
     /**
      * Valida credenciais sem conceder uma sessão autenticada.
@@ -62,8 +64,10 @@ final class Auth
         }
 
         Session::set(self::SESSION_KEY, (int) $user->id);
-        Session::set(self::LAST_ACTIVITY_KEY, time());
-        session_regenerate_id(true);
+        $now = time();
+        Session::set(self::LAST_ACTIVITY_KEY, $now);
+        Session::set(self::AUTHENTICATED_AT_KEY, $now);
+        Session::regenerate();
 
         return true;
     }
@@ -133,14 +137,19 @@ final class Auth
         }
 
         $lastActivity = Session::get(self::LAST_ACTIVITY_KEY);
-        if (!is_int($lastActivity)) {
+        $authenticatedAt = Session::get(self::AUTHENTICATED_AT_KEY);
+        if (!is_int($lastActivity) || !is_int($authenticatedAt)) {
             return false;
         }
 
-        $configured = (int) Config::get('SESSION_IDLE_TIMEOUT', self::DEFAULT_IDLE_TIMEOUT);
-        $timeout = $configured > 0 ? $configured : self::DEFAULT_IDLE_TIMEOUT;
+        $idleConfigured = (int) Config::get('SESSION_IDLE_TIMEOUT', self::DEFAULT_IDLE_TIMEOUT);
+        $idleTimeout = $idleConfigured > 0 ? $idleConfigured : self::DEFAULT_IDLE_TIMEOUT;
+        $absoluteConfigured = (int) Config::get('SESSION_ABSOLUTE_TIMEOUT', self::DEFAULT_ABSOLUTE_TIMEOUT);
+        $absoluteTimeout = $absoluteConfigured > 0 ? $absoluteConfigured : self::DEFAULT_ABSOLUTE_TIMEOUT;
+        $now = time();
 
-        return (time() - $lastActivity) <= $timeout;
+        return ($now - $lastActivity) <= $idleTimeout
+            && ($now - $authenticatedAt) <= $absoluteTimeout;
     }
 
     /**
