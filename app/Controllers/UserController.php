@@ -7,12 +7,16 @@ namespace Moves\Controllers;
 use Moves\Core\Auth;
 use Moves\Boot\Connection;
 use Moves\Core\Controller;
+use Moves\Core\Config;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
 use Moves\Core\Logger;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Models\User;
+use Moves\Services\Auth\UserInvitationService;
+use Moves\Services\Mail\SmtpInvitationMailer;
+use Moves\Services\Platform\TenantContext;
 use MovesCode\Pager\Pager;
 use PDO;
 use Throwable;
@@ -120,7 +124,16 @@ final class UserController extends Controller
             $user = $statement->fetch(PDO::FETCH_ASSOC) ?: null;
             if ($user === null) { Response::to('/studio/users'); }
         }
-        echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Novo usuário', 'user' => $user]);
+        $roles = [];
+        if ($id === 0) {
+            $actor = Auth::user();
+            if ($actor === null) { Response::to('/login'); }
+            $tenantId = (new TenantContext(Connection::getInstance()))->currentId((int) $actor->id);
+            $statement = Connection::getInstance()->prepare('SELECT id,slug,name FROM platform_roles WHERE tenant_id=? ORDER BY id');
+            $statement->execute([$tenantId]);
+            $roles = $statement->fetchAll(PDO::FETCH_ASSOC);
+        }
+        echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Convidar usuário', 'user' => $user, 'roles' => $roles]);
     }
 
     public function save(): never
@@ -129,31 +142,90 @@ final class UserController extends Controller
         $id = max(0, (int) Request::post('id', 0));
         $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
         $email = mb_strtolower(mb_substr(trim((string) Request::post('email', '')), 0, 190));
+
+        if ($id === 0) {
+            $this->inviteUser($name, $email, max(0, (int) Request::post('role_id', 0)));
+        }
+
         $role = in_array(Request::post('role'), ['admin', 'user'], true) ? (string) Request::post('role') : 'user';
         $status = in_array(Request::post('status'), ['active', 'inactive'], true) ? (string) Request::post('status') : 'inactive';
         $password = (string) Request::post('password', '');
-        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($id === 0 && strlen($password) < 8) || ($password !== '' && strlen($password) < 8)) {
-            Flash::set('error', 'Revise nome, e-mail e senha. A senha deve ter ao menos 8 caracteres.');
-            Response::to($id ? '/studio/users/edit/' . $id : '/studio/users/create');
+        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($password !== '' && strlen($password) < 8)) {
+            Flash::set('error', 'Revise nome, e-mail e senha.');
+            Response::to('/studio/users/edit/' . $id);
         }
         if ($id === 1) { $role = 'admin'; $status = 'active'; }
         try {
             $pdo = Connection::getInstance();
-            if ($id > 0) {
-                $sql = 'UPDATE users SET name=?,email=?,role=?,status=?' . ($password !== '' ? ',password=?' : '') . ' WHERE id=?';
-                $values = [$name, $email, $role, $status];
-                if ($password !== '') { $values[] = password_hash($password, PASSWORD_DEFAULT); }
-                $values[] = $id;
-                $pdo->prepare($sql)->execute($values);
-            } else {
-                $pdo->prepare('INSERT INTO users(name,email,password,role,status) VALUES(?,?,?,?,?)')->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), $role, $status]);
-                $id = (int) $pdo->lastInsertId();
-            }
+            $sql = 'UPDATE users SET name=?,email=?,role=?,status=?' . ($password !== '' ? ',password=?' : '') . ' WHERE id=?';
+            $values = [$name, $email, $role, $status];
+            if ($password !== '') { $values[] = password_hash($password, PASSWORD_DEFAULT); }
+            $values[] = $id;
+            $pdo->prepare($sql)->execute($values);
             Logger::info('Usuário administrativo salvo.', ['record_id' => $id, 'actor_id' => Auth::user()?->id]);
             Flash::set('success', 'Usuário salvo com sucesso.');
         } catch (Throwable $exception) {
             Logger::exception($exception);
             Flash::set('error', 'Não foi possível salvar. Verifique se o e-mail já está em uso.');
+        }
+        Response::to('/studio/users');
+    }
+
+    private function inviteUser(string $name, string $email, int $roleId): never
+    {
+        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || $roleId < 1) {
+            Flash::set('error', 'Informe nome, e-mail e perfil do convite.');
+            Response::to('/studio/users/create');
+        }
+
+        $actor = Auth::user();
+        if ($actor === null) { Response::to('/login'); }
+        $pdo = Connection::getInstance();
+        $tenantId = (new TenantContext($pdo))->currentId((int) $actor->id);
+        $role = $pdo->prepare('SELECT slug FROM platform_roles WHERE id=? AND tenant_id=?');
+        $role->execute([$roleId, $tenantId]);
+        $roleSlug = $role->fetchColumn();
+        if (!is_string($roleSlug)) {
+            Flash::set('error', 'O perfil selecionado não pertence à administradora ativa.');
+            Response::to('/studio/users/create');
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $lookup = $pdo->prepare('SELECT id FROM users WHERE LOWER(email)=? LIMIT 1');
+            $lookup->execute([$email]);
+            $userId = (int) $lookup->fetchColumn();
+            if ($userId < 1) {
+                $placeholder = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+                $pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(?,?,?,'user','inactive')")
+                    ->execute([$name, $email, $placeholder]);
+                $userId = (int) $pdo->lastInsertId();
+            }
+            $pdo->prepare(
+                "INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) VALUES(?,?,?,?, 'inactive',0) "
+                . "ON DUPLICATE KEY UPDATE role=VALUES(role),role_id=VALUES(role_id),status='inactive'"
+            )->execute([$tenantId, $userId, $roleSlug, $roleId]);
+            $pdo->commit();
+
+            $invite = (new UserInvitationService($pdo))->create($tenantId, $userId, $roleId, (int) $actor->id);
+            $tenant = $pdo->prepare('SELECT name FROM talk_tenants WHERE id=?');
+            $tenant->execute([$tenantId]);
+            $tenantName = (string) $tenant->fetchColumn();
+            $baseUrl = rtrim((string) Config::get('APP_URL', ''), '/');
+            if ($baseUrl === '') { throw new \RuntimeException('APP_URL não configurada.'); }
+            (new SmtpInvitationMailer())->sendInvitation(
+                $email,
+                $name,
+                $tenantName,
+                $baseUrl . '/first-access?token=' . rawurlencode($invite['token']),
+                UserInvitationService::DEFAULT_TTL_HOURS
+            );
+            Logger::info('Convite de usuário enviado.', ['record_id' => $userId, 'tenant_id' => $tenantId, 'actor_id' => $actor->id]);
+            Flash::set('success', 'Convite enviado. O usuário definirá a própria senha no primeiro acesso.');
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            Logger::exception($exception);
+            Flash::set('error', 'Não foi possível criar e enviar o convite.');
         }
         Response::to('/studio/users');
     }
