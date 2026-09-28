@@ -1,0 +1,130 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Moves\Services\Master;
+
+use Moves\Boot\Connection;
+use PDO;
+use RuntimeException;
+use Throwable;
+
+final class MasterAdministratorService
+{
+    /** @return array{items:list<array<string,mixed>>,total:int,active:int,inactive:int} */
+    public function search(string $query = '', string $status = ''): array
+    {
+        $pdo = Connection::getInstance();
+        $where = ['1=1'];
+        $params = [];
+        $query = mb_substr(trim($query), 0, 120);
+        if ($query !== '') {
+            $where[] = '(a.legal_name LIKE :q1 OR a.trade_name LIKE :q2 OR a.tax_id LIKE :q3 OR t.name LIKE :q4)';
+            $like = '%' . $query . '%';
+            $params += ['q1'=>$like,'q2'=>$like,'q3'=>$like,'q4'=>$like];
+        }
+        if (in_array($status, ['active','inactive','suspended'], true)) {
+            $where[] = 'a.status=:status';
+            $params['status'] = $status;
+        }
+        $sql = 'SELECT a.tenant_id,a.legal_name,a.trade_name,a.tax_id,a.contact_name,a.contact_email,a.contact_phone,a.status,a.updated_at,t.slug,
+                (SELECT COUNT(*) FROM talk_tenant_users tu WHERE tu.tenant_id=a.tenant_id AND tu.status=\'active\') users_count,
+                (SELECT COUNT(*) FROM talk_channels c WHERE c.tenant_id=a.tenant_id AND c.status=\'active\') channels_count
+                FROM mst_administrators a INNER JOIN talk_tenants t ON t.id=a.tenant_id
+                WHERE '.implode(' AND ',$where).' ORDER BY a.legal_name,a.tenant_id LIMIT 200';
+        $statement = $pdo->prepare($sql);
+        $statement->execute($params);
+        $items = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $stats = $pdo->query("SELECT COUNT(*) total,SUM(status='active') active,SUM(status<>'active') inactive FROM mst_administrators")->fetch(PDO::FETCH_ASSOC) ?: [];
+        return ['items'=>array_values($items),'total'=>(int)($stats['total']??0),'active'=>(int)($stats['active']??0),'inactive'=>(int)($stats['inactive']??0)];
+    }
+
+    /** @return array<string,mixed>|null */
+    public function find(int $tenantId): ?array
+    {
+        $statement = Connection::getInstance()->prepare('SELECT a.*,t.name tenant_name,t.slug FROM mst_administrators a INNER JOIN talk_tenants t ON t.id=a.tenant_id WHERE a.tenant_id=:id LIMIT 1');
+        $statement->execute(['id'=>$tenantId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($row)) return null;
+        $row['users'] = $this->count('talk_tenant_users','tenant_id=:id AND status=\'active\'',$tenantId);
+        $row['channels'] = $this->count('talk_channels','tenant_id=:id AND status=\'active\'',$tenantId);
+        $row['tickets'] = $this->count('talk_tickets','tenant_id=:id',$tenantId);
+        $audit = Connection::getInstance()->prepare('SELECT event_type,created_at FROM mst_audit WHERE tenant_id=:id ORDER BY id DESC LIMIT 12');
+        $audit->execute(['id'=>$tenantId]);
+        $row['audit'] = $audit->fetchAll(PDO::FETCH_ASSOC);
+        return $row;
+    }
+
+    /** @param array<string,string> $data */
+    public function create(array $data, int $actorUserId): int
+    {
+        $data = $this->validate($data);
+        $pdo = Connection::getInstance();
+        $pdo->beginTransaction();
+        try {
+            $slug = $this->uniqueSlug($data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name']);
+            $tenant = $pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");
+            $tenant->execute(['name'=>$data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name'],'slug'=>$slug]);
+            $id = (int)$pdo->lastInsertId();
+            $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes)');
+            $insert->execute(['tenant_id'=>$id]+$data);
+            $this->audit($id,$actorUserId,'mst.administrator.created',['status'=>$data['status']]);
+            $pdo->commit();
+            return $id;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /** @param array<string,string> $data */
+    public function update(int $tenantId, array $data, int $actorUserId): void
+    {
+        $current = $this->find($tenantId);
+        if ($current === null) throw new RuntimeException('Administradora não encontrada.');
+        $data = $this->validate($data);
+        $pdo = Connection::getInstance();
+        $pdo->beginTransaction();
+        try {
+            $statement=$pdo->prepare('UPDATE mst_administrators SET legal_name=:legal_name,trade_name=:trade_name,tax_id=:tax_id,contact_name=:contact_name,contact_email=:contact_email,contact_phone=:contact_phone,status=:status,notes=:notes WHERE tenant_id=:tenant_id');
+            $statement->execute($data+['tenant_id'=>$tenantId]);
+            $pdo->prepare('UPDATE talk_tenants SET name=:name,status=:status WHERE id=:id')->execute(['name'=>$data['trade_name']!==''?$data['trade_name']:$data['legal_name'],'status'=>$data['status']==='active'?'active':'inactive','id'=>$tenantId]);
+            $this->audit($tenantId,$actorUserId,'mst.administrator.updated',['previous_status'=>(string)$current['status'],'status'=>$data['status']]);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /** @param array<string,string> $data @return array<string,string> */
+    private function validate(array $data): array
+    {
+        $clean = [];
+        foreach (['legal_name','trade_name','tax_id','contact_name','contact_email','contact_phone','status','notes'] as $key) $clean[$key]=trim(strip_tags((string)($data[$key]??'')));
+        if (mb_strlen($clean['legal_name']) < 2) throw new RuntimeException('Informe a razão social.');
+        if ($clean['tax_id']==='') throw new RuntimeException('Informe o CNPJ/identificador fiscal.');
+        if ($clean['contact_email']!=='' && filter_var($clean['contact_email'],FILTER_VALIDATE_EMAIL)===false) throw new RuntimeException('Informe um e-mail válido.');
+        if (!in_array($clean['status'],['active','inactive','suspended'],true)) $clean['status']='active';
+        $clean['legal_name']=mb_substr($clean['legal_name'],0,180);$clean['trade_name']=mb_substr($clean['trade_name'],0,160);$clean['tax_id']=mb_substr($clean['tax_id'],0,20);
+        $clean['contact_name']=mb_substr($clean['contact_name'],0,120);$clean['contact_email']=mb_substr($clean['contact_email'],0,190);$clean['contact_phone']=mb_substr($clean['contact_phone'],0,40);$clean['notes']=mb_substr($clean['notes'],0,1000);
+        return $clean;
+    }
+
+    private function uniqueSlug(string $value): string
+    {
+        $slug=iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$value)?:$value;$slug=strtolower(trim((string)preg_replace('/[^a-zA-Z0-9]+/','-',$slug),'-'));$slug=$slug!==''?$slug:'administradora';
+        $base=$slug;$i=2;$pdo=Connection::getInstance();$check=$pdo->prepare('SELECT COUNT(*) FROM talk_tenants WHERE slug=:slug');
+        while(true){$check->execute(['slug'=>$slug]);if((int)$check->fetchColumn()===0)return $slug;$slug=$base.'-'.$i++;}
+    }
+
+    private function audit(int $tenantId,int $actorUserId,string $event,array $payload): void
+    {
+        Connection::getInstance()->prepare('INSERT INTO mst_audit(tenant_id,actor_user_id,event_type,payload) VALUES(:tenant_id,:actor,:event,:payload)')->execute(['tenant_id'=>$tenantId,'actor'=>$actorUserId,'event'=>$event,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]);
+    }
+
+    private function count(string $table,string $where,int $id): int
+    {
+        $s=Connection::getInstance()->prepare("SELECT COUNT(*) FROM {$table} WHERE {$where}");$s->execute(['id'=>$id]);return (int)$s->fetchColumn();
+    }
+}
