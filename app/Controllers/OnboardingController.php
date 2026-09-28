@@ -94,7 +94,7 @@ final class OnboardingController extends Controller
             (new TenantContext($pdo))->switch($userId, $tenantId);
             Session::remove(self::KEY);
             Flash::set('success', 'Sua administradora está pronta.');
-            Response::to('/app');
+            Response::to('/day');
         } catch (Throwable $exception) {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }
             Flash::set('error', $exception instanceof \InvalidArgumentException ? $exception->getMessage() : 'Não foi possível concluir o cadastro.');
