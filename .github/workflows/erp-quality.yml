@@ -41,6 +41,8 @@ jobs:
           tools: composer:v2
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Configure test database
+        run: mysql -h127.0.0.1 -uroot -proot -e "SET GLOBAL log_bin_trust_function_creators = 1;"
       - name: Apply database migrations
         run: |
           for migration in database/migrations/*.sql; do
