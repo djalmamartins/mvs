@@ -86,7 +86,7 @@ final class CoreTest extends TestCase
         self::assertStringNotContainsString('Moobys', $output);
     }
 
-    public function testMfaChallengeUsesAuthThemeAndSupportsFirstEnrollment(): void
+    public function testMfaChallengeUsesAuthThemeForAlreadyEnabledAccounts(): void
     {
         $_SERVER['REQUEST_URI'] = '/login/2fa';
         $view = new Engine(Theme::path());
@@ -97,18 +97,34 @@ final class CoreTest extends TestCase
         $output = $view->render('pages/mfa-challenge', [
             'title' => 'Verificação em duas etapas',
             'version' => '0.0.1',
-            'setup' => [
-                'secret' => 'JBSWY3DPEHPK3PXP',
-                'uri' => 'otpauth://totp/Moves:test@example.com',
-                'qr' => 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
-            ],
+            'setup' => null,
         ]);
 
         self::assertSame('auth', Theme::active());
-        self::assertStringContainsString('Configure o autenticador antes de entrar.', $output);
-        self::assertStringContainsString('JBSWY3DPEHPK3PXP', $output);
+        self::assertStringContainsString('Confirme sua identidade com o código do autenticador', $output);
+        self::assertStringNotContainsString('Configure o autenticador antes de entrar.', $output);
         self::assertStringContainsString('action="/login/2fa"', $output);
         self::assertStringContainsString('autocomplete="one-time-code"', $output);
+    }
+
+    public function testStaffAuthenticationUsesMeuDiaAndDoesNotForceMfaEnrollment(): void
+    {
+        $auth = file_get_contents(dirname(__DIR__) . '/app/Controllers/AuthController.php');
+        $guest = file_get_contents(dirname(__DIR__) . '/app/Middleware/GuestMiddleware.php');
+        $permission = file_get_contents(dirname(__DIR__) . '/app/Middleware/PermissionMiddleware.php');
+        $onboarding = file_get_contents(dirname(__DIR__) . '/app/Controllers/OnboardingController.php');
+
+        self::assertIsString($auth);
+        self::assertIsString($guest);
+        self::assertIsString($permission);
+        self::assertIsString($onboarding);
+        self::assertStringContainsString("hasActiveTotp", $auth);
+        self::assertStringNotContainsString("MfaRequirementPolicy", $auth);
+        self::assertStringNotContainsString("MfaSetupService", $auth);
+        self::assertStringContainsString("Auth::check() ? '/day' : '/login'", $auth);
+        self::assertStringContainsString("Response::to('/day')", $guest);
+        self::assertStringContainsString("Response::to('/day')", $permission);
+        self::assertStringContainsString("Response::to('/day')", $onboarding);
     }
 
     public function testRecoveryCodeViewUsesOneTimeCodeSemanticsAndSafeActions(): void
