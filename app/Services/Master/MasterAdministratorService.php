@@ -133,6 +133,23 @@ final class MasterAdministratorService
         $this->audit($tenantId,$actorUserId,'mst.membership.updated',['user_id'=>$userId,'role'=>$role,'status'=>$status]);
     }
 
+    /** @param array<string,string> $data */
+    public function inviteUser(int $tenantId,array $data,int $actorUserId): int
+    {
+        if($this->find($tenantId)===null)throw new RuntimeException('Administradora não encontrada.');
+        $name=mb_substr(trim(strip_tags((string)($data['name']??''))),0,120);$email=mb_strtolower(mb_substr(trim((string)($data['email']??'')),0,190));$role=(string)($data['role']??'agent');
+        if(mb_strlen($name)<2||filter_var($email,FILTER_VALIDATE_EMAIL)===false)throw new RuntimeException('Informe nome e e-mail válidos.');
+        if(!in_array($role,['admin','supervisor','agent'],true))throw new RuntimeException('Papel inválido.');
+        $pdo=Connection::getInstance();$pdo->beginTransaction();
+        try{
+            $find=$pdo->prepare('SELECT id,status FROM users WHERE email=:email LIMIT 1');$find->execute(['email'=>$email]);$existing=$find->fetch(PDO::FETCH_ASSOC);
+            if(is_array($existing)){$userId=(int)$existing['id'];}
+            else{$temporary=bin2hex(random_bytes(24));$insert=$pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(:name,:email,:password,'user','active')");$insert->execute(['name'=>$name,'email'=>$email,'password'=>password_hash($temporary,PASSWORD_DEFAULT)]);$userId=(int)$pdo->lastInsertId();}
+            $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,:role,'active',0) ON DUPLICATE KEY UPDATE role=VALUES(role),status='active',updated_at=NOW()")->execute(['tenant'=>$tenantId,'user'=>$userId,'role'=>$role]);
+            $this->audit($tenantId,$actorUserId,'mst.membership.invited',['user_id'=>$userId,'email'=>$email,'role'=>$role,'account_created'=>!is_array($existing)]);$pdo->commit();return $userId;
+        }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+
     /** @return list<array<string,mixed>> */
     public function availableUsers(int $tenantId): array
     {
