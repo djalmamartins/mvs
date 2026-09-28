@@ -46,7 +46,8 @@ final class MasterAdministratorServiceTest extends TestCase
         $service->saveMembership($id,$this->actor,'admin','active',$this->actor);
         $row=$service->find($id);self::assertSame('Marca '.$token,$row['trade_name']);self::assertSame('#6E00B3',$row['primary_color']);self::assertSame(1,(int)$row['security']['require_mfa']);self::assertSame(60,(int)$row['security']['session_timeout_minutes']);self::assertContains('erp',array_column(array_filter($row['products'],fn($p)=>$p['status']==='active'),'product_key'));self::assertSame($this->actor,(int)$row['memberships'][0]['id']);self::assertGreaterThanOrEqual(5,count($row['audit']));
         $service->update($id,['legal_name'=>'Administradora '.$token,'trade_name'=>'Marca '.$token,'tax_id'=>'TEST-'.$token,'contact_name'=>'Contato','contact_email'=>'qa@example.test','contact_phone'=>'3100000000','status'=>'suspended','notes'=>'QA'],$this->actor);
-        self::assertSame('inactive',(string)$this->pdo->query('SELECT status FROM talk_tenants WHERE id='.$id)->fetchColumn());
+        self::assertSame('active',(string)$this->pdo->query('SELECT status FROM talk_tenants WHERE id='.$id)->fetchColumn());
+        $service->updateStatus($id,'suspended','CONFIRMAR','Suspensão de QA',$this->actor);self::assertSame('inactive',(string)$this->pdo->query('SELECT status FROM talk_tenants WHERE id='.$id)->fetchColumn());
     }
 
     public function testInvitationCreatesMembershipAndAudit(): void
@@ -54,6 +55,13 @@ final class MasterAdministratorServiceTest extends TestCase
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Invite '.$token,'trade_name'=>'Invite '.$token,'tax_id'=>'INV-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
         $email='mst-'.$token.'@example.test';$user=$service->inviteUser($id,['name'=>'Usuário MST','email'=>$email,'role'=>'supervisor'],$this->actor);$this->users[]=$user;$row=$service->find($id);
         self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
+    }
+
+    public function testLifecycleRequiresExplicitConfirmation(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Lifecycle '.$token,'trade_name'=>'Lifecycle '.$token,'tax_id'=>'LIFE-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        try{$service->updateStatus($id,'suspended','','Motivo válido',$this->actor);self::fail('Suspensão deve exigir confirmação.');}catch(RuntimeException $e){self::assertStringContainsString('CONFIRMAR',$e->getMessage());}
+        self::assertSame('active',$service->find($id)['status']);
     }
 
     public function testSearchPaginatesAndReturnsProducts(): void
