@@ -49,7 +49,7 @@ final class MasterAdministratorService
         $row['users'] = $this->count('talk_tenant_users','tenant_id=:id AND status=\'active\'',$tenantId);
         $row['channels'] = $this->count('talk_channels','tenant_id=:id AND status=\'active\'',$tenantId);
         $row['tickets'] = $this->count('talk_tickets','tenant_id=:id',$tenantId);
-        $audit = Connection::getInstance()->prepare('SELECT event_type,created_at FROM mst_audit WHERE tenant_id=:id ORDER BY id DESC LIMIT 12');
+        $audit = Connection::getInstance()->prepare('SELECT a.event_type,a.payload,a.created_at,u.name actor_name FROM mst_audit a LEFT JOIN users u ON u.id=a.actor_user_id WHERE a.tenant_id=:id ORDER BY a.id DESC LIMIT 50');
         $audit->execute(['id'=>$tenantId]);
         $row['audit'] = $audit->fetchAll(PDO::FETCH_ASSOC);
         $products=Connection::getInstance()->prepare('SELECT product_key,status,updated_at FROM mst_tenant_products WHERE tenant_id=:id ORDER BY product_key');$products->execute(['id'=>$tenantId]);$row['products']=$products->fetchAll(PDO::FETCH_ASSOC);
