@@ -29,7 +29,7 @@ final class DayServiceTest extends TestCase
     public function testDayFoundationEnforcesTenantAndAssigneeInSql(): void
     {
         $service=file_get_contents(dirname(__DIR__).'/app/Services/Day/DayService.php');
-        $migration=file_get_contents(dirname(__DIR__).'/database/migrations/20260927_014_create_day_foundation.sql');
+        $migration=file_get_contents(dirname(__DIR__).'/database/migrations/20260927_015_create_day_events.sql');
         self::assertIsString($service);self::assertIsString($migration);
         self::assertStringContainsString('tenant_id=:tenant AND assigned_user_id=:user',$service);
         self::assertStringContainsString('WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user',$service);
