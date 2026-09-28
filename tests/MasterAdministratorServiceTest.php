@@ -25,6 +25,7 @@ final class MasterAdministratorServiceTest extends TestCase
     protected function tearDown(): void
     {
         foreach(array_reverse($this->tenants) as $tenant){
+            $this->pdo->prepare('DELETE FROM mst_user_invitations WHERE tenant_id=:id')->execute(['id'=>$tenant]);
             $this->pdo->prepare('DELETE FROM mst_audit WHERE tenant_id=:id')->execute(['id'=>$tenant]);
             $this->pdo->prepare('DELETE FROM mst_tenant_products WHERE tenant_id=:id')->execute(['id'=>$tenant]);
             $this->pdo->prepare('DELETE FROM mst_administrators WHERE tenant_id=:id')->execute(['id'=>$tenant]);
@@ -53,8 +54,25 @@ final class MasterAdministratorServiceTest extends TestCase
     public function testInvitationCreatesMembershipAndAudit(): void
     {
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Invite '.$token,'trade_name'=>'Invite '.$token,'tax_id'=>'INV-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
-        $email='mst-'.$token.'@example.test';$user=$service->inviteUser($id,['name'=>'Usuário MST','email'=>$email,'role'=>'supervisor'],$this->actor);$this->users[]=$user;$row=$service->find($id);
+        $email='mst-'.$token.'@example.test';$invitation=$service->inviteUser($id,['name'=>'Usuário MST','email'=>$email,'role'=>'supervisor'],$this->actor);$user=$invitation['user_id'];$this->users[]=$user;$row=$service->find($id);
         self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertSame('inactive',$row['memberships'][0]['global_status']);self::assertSame('inactive',$row['memberships'][0]['membership_status']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
+    }
+
+    public function testInvitationActivationIsAtomicAndSingleUse(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Activation '.$token,'trade_name'=>'Activation '.$token,'tax_id'=>'ACT-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        $invitation=$service->inviteUser($id,['name'=>'Convite MST','email'=>'activate-'.$token.'@example.test','role'=>'agent'],$this->actor);$userId=$invitation['user_id'];$this->users[]=$userId;self::assertNotNull($invitation['invitation_token']);
+        $service->acceptInvitation((string)$invitation['invitation_token'],'SenhaSegura!123');
+        $user=$this->pdo->query('SELECT status FROM users WHERE id='.$userId)->fetchColumn();self::assertSame('active',$user);
+        $membership=$this->pdo->query('SELECT status FROM talk_tenant_users WHERE tenant_id='.$id.' AND user_id='.$userId)->fetchColumn();self::assertSame('active',$membership);
+        $this->expectException(RuntimeException::class);$this->expectExceptionMessage('inválido ou expirado');$service->acceptInvitation((string)$invitation['invitation_token'],'OutraSenha!123');
+    }
+
+    public function testExpiredInvitationCannotBeAccepted(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Expired '.$token,'trade_name'=>'Expired '.$token,'tax_id'=>'EXP-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        $invitation=$service->inviteUser($id,['name'=>'Convite Expirado','email'=>'expired-'.$token.'@example.test','role'=>'agent'],$this->actor);$userId=$invitation['user_id'];$this->users[]=$userId;$this->pdo->prepare('UPDATE mst_user_invitations SET expires_at=DATE_SUB(NOW(),INTERVAL 1 MINUTE) WHERE tenant_id=:tenant AND user_id=:user')->execute(['tenant'=>$id,'user'=>$userId]);
+        $this->expectException(RuntimeException::class);$this->expectExceptionMessage('inválido ou expirado');$service->acceptInvitation((string)$invitation['invitation_token'],'SenhaSegura!123');
     }
 
     public function testLastActiveAdminCannotBeRemoved(): void
