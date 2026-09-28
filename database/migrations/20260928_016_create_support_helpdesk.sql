@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY support_tickets_tenant_protocol (tenant_id,protocol),
+    UNIQUE KEY support_tickets_tenant_id (tenant_id,id),
     KEY support_tickets_tenant_status (tenant_id,status,updated_at),
     KEY support_tickets_tenant_assignee (tenant_id,assigned_user_id,status),
     KEY support_tickets_tenant_due (tenant_id,due_at,status),
@@ -40,5 +41,3 @@ CREATE TABLE IF NOT EXISTS support_ticket_events (
     CONSTRAINT support_ticket_events_ticket_tenant_fk FOREIGN KEY (tenant_id,ticket_id) REFERENCES support_tickets(tenant_id,id) ON DELETE CASCADE,
     CONSTRAINT support_ticket_events_user_tenant_fk FOREIGN KEY (tenant_id,user_id) REFERENCES talk_tenant_users(tenant_id,user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-ALTER TABLE support_tickets ADD UNIQUE KEY support_tickets_tenant_id (tenant_id,id);
