@@ -1,0 +1,63 @@
+name: Support CI
+
+on:
+  pull_request:
+    branches:
+      - feat/mvs-base
+    paths:
+      - 'app/Controllers/SupportTicketController.php'
+      - 'app/Services/Support/**'
+      - 'database/migrations/**support**'
+      - 'resources/themes/admin/pages/support-ticket-*.php'
+      - 'tests/Support*'
+      - 'app/Boot/Routes.php'
+      - '.github/workflows/support-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  support:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: moves
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+          coverage: none
+      - name: Validate Composer
+        run: composer validate --strict
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Create CI environment
+        run: |
+          cat > .env <<'EOF'
+          APP_NAME=Moves
+          APP_ENV=testing
+          APP_DEBUG=false
+          APP_URL=http://localhost
+          APP_TIMEZONE=America/Sao_Paulo
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=moves
+          DB_USERNAME=root
+          DB_PASSWORD=
+          EOF
+      - name: Run migrations
+        run: php scripts/migrate.php
+      - name: Run Support tests
+        run: vendor/bin/phpunit tests/SupportTicketServiceTest.php
+      - name: PHPStan Support
+        run: vendor/bin/phpstan analyse --no-progress app/Controllers/SupportTicketController.php app/Services/Support/TicketService.php tests/SupportTicketServiceTest.php
