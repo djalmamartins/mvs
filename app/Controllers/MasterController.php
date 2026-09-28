@@ -87,7 +87,7 @@ final class MasterController extends Controller
     public function inviteUser(array $params=[]): void
     {
         $id=(int)($params['id']??0);$this->guardCsrf('/master/administrators/'.$id);
-        try{(new MasterAdministratorService())->inviteUser($id,['name'=>(string)Request::post('name',''),'email'=>(string)Request::post('email',''),'role'=>(string)Request::post('role','agent')],(int)Auth::user()?->id);Flash::set('success','Usuário vinculado à administradora.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
+        try{$result=(new MasterAdministratorService())->inviteUser($id,['name'=>(string)Request::post('name',''),'email'=>(string)Request::post('email',''),'role'=>(string)Request::post('role','agent')],(int)Auth::user()?->id);$token=$result['invitation_token'];Flash::set('success',$token!==null?'Convite criado. Link de ativação: /invite/accept/'.$token:'Usuário existente vinculado à administradora.');}catch(Throwable $e){Flash::set('error',$e->getMessage());}
         Response::to('/master/administrators/'.$id);
     }
 
@@ -111,6 +111,25 @@ final class MasterController extends Controller
         try{(new MasterAdministratorService())->update($id,$this->input(),(int)Auth::user()?->id);Flash::set('success','Administradora atualizada com sucesso.');Response::to('/master/administrators/'.$id);}
         catch(RuntimeException $e){Flash::set('error',$e->getMessage());Response::to('/master/administrators/'.$id.'/edit');}
         catch(Throwable $e){Flash::set('error','Não foi possível atualizar a administradora. Tente novamente.');Response::to('/master/administrators/'.$id.'/edit');}
+    }
+
+
+    public function invitation(array $params=[]): void
+    {
+        $token=(string)($params['token']??'');
+        if(!preg_match('/^[a-f0-9]{64}$/',$token)){Flash::set('error','Convite inválido ou expirado.');Response::to('/login');}
+        echo $this->view->render('pages/master-invitation',['title'=>'Ativar acesso','token'=>$token]);
+    }
+
+    public function invitationAccept(array $params=[]): void
+    {
+        $token=(string)($params['token']??'');$posted=Request::post('_token');
+        if(!is_string($posted)||!Csrf::validate($posted)){Flash::set('error','Token de segurança inválido.');Response::to('/invite/accept/'.$token);}
+        $password=(string)Request::post('password','');$confirmation=(string)Request::post('password_confirmation','');
+        if($password!==$confirmation){Flash::set('error','A confirmação da senha não confere.');Response::to('/invite/accept/'.$token);}
+        try{(new MasterAdministratorService())->acceptInvitation($token,$password);Flash::set('success','Acesso ativado. Você já pode entrar.');Response::to('/login');}
+        catch(RuntimeException $e){Flash::set('error',$e->getMessage());Response::to('/invite/accept/'.$token);}
+        catch(Throwable){Flash::set('error','Não foi possível ativar o acesso. Tente novamente.');Response::to('/invite/accept/'.$token);}
     }
 
     private function guardCsrf(string $redirect): void
