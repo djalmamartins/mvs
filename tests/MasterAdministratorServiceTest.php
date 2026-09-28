@@ -57,6 +57,18 @@ final class MasterAdministratorServiceTest extends TestCase
         self::assertSame($email,$row['memberships'][0]['email']);self::assertSame('supervisor',$row['memberships'][0]['role']);self::assertContains('mst.membership.invited',array_column($row['audit'],'event_type'));
     }
 
+    public function testLastActiveAdminCannotBeRemoved(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Admin Guard '.$token,'trade_name'=>'Admin Guard '.$token,'tax_id'=>'ADM-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;$service->saveMembership($id,$this->actor,'admin','active',$this->actor);
+        $this->expectException(RuntimeException::class);$this->expectExceptionMessage('ao menos um administrador ativo');$service->saveMembership($id,$this->actor,'agent','active',$this->actor);
+    }
+
+    public function testDuplicateTaxIdIsRejected(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$data=['legal_name'=>'Duplicada '.$token,'trade_name'=>'Duplicada '.$token,'tax_id'=>'DUP-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''];$id=$service->create($data,$this->actor);$this->tenants[]=$id;
+        $this->expectException(RuntimeException::class);$this->expectExceptionMessage('Já existe uma administradora');$service->create($data,$this->actor);
+    }
+
     public function testLifecycleRequiresExplicitConfirmation(): void
     {
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Lifecycle '.$token,'trade_name'=>'Lifecycle '.$token,'tax_id'=>'LIFE-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
