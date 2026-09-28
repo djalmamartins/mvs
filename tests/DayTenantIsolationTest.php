@@ -68,10 +68,10 @@ final class DayTenantIsolationTest extends TestCase
         $s=$this->pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");
         $s->execute(['name'=>'Day tenant '.strtoupper($suffix),'slug'=>$slug]);$tenant=(int)$this->pdo->lastInsertId();
         $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status,is_default) VALUES(:tenant,:user,'admin','active',1)")->execute(['tenant'=>$tenant,'user'=>$user]);
-        $s=$this->pdo->prepare("INSERT INTO day_tasks(tenant_id,assigned_user_id,created_by,title,status,priority,due_at) VALUES(:tenant,:user,:user,:title,'pending','normal',NOW())");
-        $s->execute(['tenant'=>$tenant,'user'=>$user,'title'=>'Task '.$suffix]);$task=(int)$this->pdo->lastInsertId();
-        $s=$this->pdo->prepare("INSERT INTO day_events(tenant_id,assigned_user_id,created_by,title,starts_at,status) VALUES(:tenant,:user,:user,:title,NOW(),'scheduled')");
-        $s->execute(['tenant'=>$tenant,'user'=>$user,'title'=>'Event '.$suffix]);$event=(int)$this->pdo->lastInsertId();
+        $s=$this->pdo->prepare("INSERT INTO day_tasks(tenant_id,assigned_user_id,created_by,title,status,priority,due_at) VALUES(:tenant,:user,:creator,:title,'pending','normal',NOW())");
+        $s->execute(['tenant'=>$tenant,'user'=>$user,'creator'=>$user,'title'=>'Task '.$suffix]);$task=(int)$this->pdo->lastInsertId();
+        $s=$this->pdo->prepare("INSERT INTO day_events(tenant_id,assigned_user_id,created_by,title,starts_at,status) VALUES(:tenant,:user,:creator,:title,NOW(),'scheduled')");
+        $s->execute(['tenant'=>$tenant,'user'=>$user,'creator'=>$user,'title'=>'Event '.$suffix]);$event=(int)$this->pdo->lastInsertId();
         return compact('tenant','user','task','event');
     }
 }
