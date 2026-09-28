@@ -48,6 +48,22 @@ jobs:
         run: composer validate --strict
       - name: Security audit
         run: composer audit
+      - name: Configure test environment
+        run: |
+          cat > .env <<'EOF'
+          APP_NAME=Moves
+          APP_ENV=testing
+          APP_DEBUG=false
+          APP_URL=http://127.0.0.1
+          APP_TIMEZONE=America/Sao_Paulo
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=moves
+          DB_USERNAME=root
+          DB_PASSWORD=root
+          EOF
+      - name: Verify database
+        run: mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -proot --silent
       - name: Apply migrations
         run: php scripts/migrate.php
       - name: PHPUnit
