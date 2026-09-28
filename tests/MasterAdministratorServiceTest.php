@@ -81,6 +81,13 @@ final class MasterAdministratorServiceTest extends TestCase
         $service=new MasterAdministratorService();$result=$service->search('', '', 1, 10);self::assertArrayHasKey('pages',$result);self::assertArrayHasKey('filtered',$result);self::assertLessThanOrEqual(10,count($result['items']));if($result['items']!==[])self::assertArrayHasKey('products',$result['items'][0]);
     }
 
+    public function testBrandingRejectsUnsafeLogoSource(): void
+    {
+        $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Brand '.$token,'trade_name'=>'Brand '.$token,'tax_id'=>'BR-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
+        $this->expectException(RuntimeException::class);
+        $service->updateBranding($id,['trade_name'=>'Brand','logo_path'=>'javascript:alert(1)','primary_color'=>'#6E00B3','secondary_color'=>''],$this->actor);
+    }
+
     public function testProductEntitlementPersistsActiveAndInactiveStates(): void
     {
         $service=new MasterAdministratorService();$token=bin2hex(random_bytes(5));$id=$service->create(['legal_name'=>'Entitlement '.$token,'trade_name'=>'Entitlement '.$token,'tax_id'=>'ENT-'.$token,'contact_name'=>'','contact_email'=>'','contact_phone'=>'','status'=>'active','notes'=>''],$this->actor);$this->tenants[]=$id;
