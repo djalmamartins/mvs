@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Moves\Services\Support;
 
 use InvalidArgumentException;
-use Moves\Core\Connection;
+use Moves\Boot\Connection;
 use Moves\Services\Talk\TalkTenantContext;
 use PDO;
 use RuntimeException;
