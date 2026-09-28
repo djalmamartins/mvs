@@ -75,6 +75,15 @@ final class MasterAdministratorService
         }
     }
 
+    public function updateStatus(int $tenantId,string $status,string $confirmation,string $reason,int $actorUserId): void
+    {
+        $current=$this->find($tenantId);if($current===null)throw new RuntimeException('Administradora não encontrada.');
+        if(!in_array($status,['active','inactive','suspended'],true))throw new RuntimeException('Status inválido.');
+        if($status!=='active'&&$confirmation!=='CONFIRMAR')throw new RuntimeException('Digite CONFIRMAR para bloquear o acesso da administradora.');
+        $reason=mb_substr(trim(strip_tags($reason)),0,500);if($status!=='active'&&mb_strlen($reason)<5)throw new RuntimeException('Informe o motivo da alteração de status.');
+        $pdo=Connection::getInstance();$pdo->beginTransaction();try{$pdo->prepare('UPDATE mst_administrators SET status=:status WHERE tenant_id=:id')->execute(['status'=>$status,'id'=>$tenantId]);$pdo->prepare('UPDATE talk_tenants SET status=:status WHERE id=:id')->execute(['status'=>$status==='active'?'active':'inactive','id'=>$tenantId]);$this->audit($tenantId,$actorUserId,'mst.administrator.status_changed',['previous_status'=>$current['status'],'status'=>$status,'reason'=>$reason]);$pdo->commit();}catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
+    }
+
     /** @param array<string,string> $data */
     public function update(int $tenantId, array $data, int $actorUserId): void
     {
