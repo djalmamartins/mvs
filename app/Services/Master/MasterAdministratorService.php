@@ -66,8 +66,8 @@ final class MasterAdministratorService
         $pdo->beginTransaction();
         try {
             $slug = $this->uniqueSlug($data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name']);
-            $tenant = $pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");
-            $tenant->execute(['name'=>$data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name'],'slug'=>$slug]);
+            $tenant = $pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,:status)");
+            $tenant->execute(['name'=>$data['trade_name'] !== '' ? $data['trade_name'] : $data['legal_name'],'slug'=>$slug,'status'=>$data['status']==='active'?'active':'inactive']);
             $id = (int)$pdo->lastInsertId();
             $insert = $pdo->prepare('INSERT INTO mst_administrators(tenant_id,legal_name,trade_name,tax_id,contact_name,contact_email,contact_phone,status,notes) VALUES(:tenant_id,:legal_name,:trade_name,:tax_id,:contact_name,:contact_email,:contact_phone,:status,:notes)');
             $insert->execute(['tenant_id'=>$id]+$data);
