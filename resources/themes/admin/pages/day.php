@@ -1,12 +1,13 @@
 <?php declare(strict_types=1);
 use Moves\Services\Day\DayService;
 $this->layout('layouts/default',['title'=>$title??'Hoje','productName'=>'Meu Dia','activeProduct'=>'day','currentPage'=>'today']);
-$d=$day??[];$summary=$d['summary']??[];$tasks=$d['tasks']??[];$talk=$d['talk']??[];$events=$d['events']??[];$timeline=$d['timeline']??[];
+$d=$day??[];$error=$dayError??null;$summary=$d['summary']??[];$tasks=$d['tasks']??[];$talk=$d['talk']??[];$events=$d['events']??[];$timeline=$d['timeline']??[];
 $fmt=static fn(?string $v):string=>$v?date('d/m H:i',strtotime($v)):'Sem prazo';
 ?>
 <link rel="stylesheet" href="<?= $this->e($this->asset('css/day.css')) ?>">
 <section class="day-page">
 <header class="day-header"><div><span class="day-kicker"><?= $this->e(ucfirst((new DateTimeImmutable())->format('l'))) ?></span><h1>Meu Dia</h1><p>O que precisa da sua atenção hoje, em um só lugar.</p></div><time><?= date('d/m/Y') ?></time></header>
+<?php if($error): ?><div class="day-error" role="alert"><i class="icon-alert-circle-outline"></i><div><strong>Meu Dia indisponível</strong><span><?= $this->e((string)$error) ?></span></div><a href="/day">Tentar novamente</a></div><?php endif; ?>
 <div class="day-summary" aria-label="Resumo de hoje">
 <a href="#day-tasks"><strong><?= (int)($summary['pending']??0) ?></strong><span>Pendências</span></a>
 <a href="#day-agenda"><strong><?= (int)($summary['today']??0) ?></strong><span>Para hoje</span></a>
