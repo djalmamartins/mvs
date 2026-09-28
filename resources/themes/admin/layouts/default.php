@@ -21,6 +21,10 @@ if ($user !== null && ($activeProduct ?? '') === 'talk') {
 
 $activeProduct = $activeProduct ?? 'cms';
 $productName   = $productName ?? 'CMS';
+$tenantBranding = $activeProduct !== 'master' ? \Moves\Services\Master\TenantBranding::current() : null;
+$tenantName = $tenantBranding['name'] ?? 'Moves';
+$tenantLogo = $tenantBranding['logo_path'] ?? '';
+$tenantPrimary = $tenantBranding['primary_color'] ?? '#6E00B3';
 
 $userName = $user !== null
     ? (string) $user->name
@@ -90,7 +94,8 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#ffffff">
 
-    <title><?= $this->e($title ?? 'Dashboard') ?> — Moves</title>
+    <title><?= $this->e($title ?? 'Dashboard') ?> — <?= $this->e($tenantName) ?></title>
+    <style>:root{--tenant-primary:<?= $this->e($tenantPrimary) ?>;}</style>
 
     <!-- Moves Application Shell — CSS oficial -->
     <link
@@ -183,10 +188,7 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
                 aria-label="Abrir aplicativos Moves"
                 title="Aplicativos"
         >
-            <img
-                    src="<?= $this->e($this->asset('images/moves-favicon.svg')) ?>"
-                    alt="Moves"
-            >
+            <?php if($tenantLogo!==''):?><img src="<?= $this->e($tenantLogo) ?>" alt="<?= $this->e($tenantName) ?>"><?php else:?><img src="<?= $this->e($this->asset('images/moves-favicon.svg')) ?>" alt="<?= $this->e($tenantName) ?>"><?php endif;?>
         </button>
 
         <nav class="rail-apps" aria-label="Aplicativos Moves">
@@ -240,7 +242,7 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
         <header class="product-head">
 
             <div>
-                <span class="product-eyebrow">MOVES</span>
+                <span class="product-eyebrow"><?= $this->e(mb_strtoupper($tenantName)) ?></span>
                 <strong id="productName">
                     <?= $this->e($productName) ?>
                 </strong>
@@ -346,7 +348,7 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
         </section>
 
         <footer class="workspace-footer">
-            <span>Copyright © <?= date('Y') ?> Moves. Todos os direitos reservados.</span>
+            <span><?= $tenantBranding ? $this->e($tenantName).' · produto Moves' : 'Copyright © '.date('Y').' Moves. Todos os direitos reservados.' ?></span>
             <span>Versão 1.0.0</span>
         </footer>
 
@@ -362,7 +364,7 @@ $apps=array_values(array_filter($apps,static function(array $app) use ($entitlem
     <div class="launcher-head">
 
         <div>
-            <span class="product-eyebrow">MOVES</span>
+            <span class="product-eyebrow"><?= $this->e(mb_strtoupper($tenantName)) ?></span>
             <h2>Aplicativos</h2>
         </div>
 
