@@ -226,7 +226,7 @@ final class AuthController extends Controller
         Csrf::regenerate();
         $this->recordLoginAudit($user, (string) $pending['ip']);
         Flash::set('success', 'Login realizado com sucesso.');
-        if (isset($recoveryCodes) && is_array($recoveryCodes)) {
+        if (isset($recoveryCodes)) {
             Flash::set('success', '2FA ativado e login realizado. Guarde seus códigos de recuperação.');
             Response::to('/app/security/2fa');
         }
