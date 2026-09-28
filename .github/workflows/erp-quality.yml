@@ -1,0 +1,30 @@
+name: ERP Quality Gate
+
+on:
+  push:
+    branches:
+      - feat/mvs-erp
+  pull_request:
+    branches:
+      - feat/mvs-base
+
+permissions:
+  contents: read
+
+jobs:
+  php-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHPUnit
+        run: composer test
+      - name: PHPStan
+        run: composer analyse
