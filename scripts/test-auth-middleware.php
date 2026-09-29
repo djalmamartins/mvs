@@ -149,7 +149,7 @@ try {
 
     $before = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/login', ['email' => $email, 'password' => $password, '_token' => $token]);
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'login válido redireciona para /app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'login válido redireciona para /day');
     $check($before !== curl_getinfo($client, CURLINFO_COOKIELIST), 'login regenera identificador da sessão');
     $response = $request('/app');
     $check($response['status'] === 200 && str_contains($response['body'], 'Área do Cliente'), 'usuário autenticado acessa /app');
@@ -166,7 +166,7 @@ try {
     $check($token !== '', 'sessão autenticada fornece novo token CSRF');
     $check($token !== $guestToken, 'token CSRF é rotacionado após login');
     $response = $request('/login');
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'GET /login autenticado redireciona para /day');
 
     $response = $request('/studio/users');
     $check($response['status'] === 403, 'usuário sem tenant não acessa gestão do Studio');
@@ -186,7 +186,7 @@ try {
     $check($response['status'] === 200 && $token !== '', 'conta reativada inicia nova sessão protegida');
 
     $response = $request('/logout', ['_token' => 'invalid-token']);
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'logout rejeita CSRF inválido');
     $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');
     $beforeLogout = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/logout', ['_token' => $token]);
