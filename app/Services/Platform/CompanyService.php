@@ -55,6 +55,14 @@ final readonly class CompanyService
                 'INSERT INTO erp_administrators(tenant_id,legal_name,trade_name,tax_id,status) VALUES(?,?,?,?,\'active\')'
             );
             $administrator->execute([$tenantId, $legalName, $name, $taxId ?? 'TENANT-' . $tenantId]);
+            $administratorId = (int) $this->pdo->lastInsertId();
+            $grant = $this->pdo->prepare(
+                "INSERT INTO erp_scope_grants(user_id,capability,scope_type,scope_id)
+                 VALUES(?,?,'administrator',?)"
+            );
+            foreach (['erp.cadastros.read', 'erp.cadastros.write'] as $capability) {
+                $grant->execute([$ownerUserId, $capability, $administratorId]);
+            }
             (new PlatformAudit($this->pdo))->record($tenantId, $ownerUserId, 'tenant.created', 'tenant', $tenantId);
             if ($started) {
                 $this->pdo->commit();

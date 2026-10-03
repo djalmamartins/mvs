@@ -1,24 +1,5 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * Moves | Profile Page
- *
- * Exibe os dados básicos do usuário autenticado.
- *
- * @author Djalma Martins
- */
-?>
-
-<?php
-$this->layout(
-    'layouts/default',
-    [
-        'title' => $title,
-        'currentPage' => 'profile',
-    ]
-);
-?>
-
-<section class="customer-page-heading"><div><p class="customer-eyebrow">CONTA</p><h2>Meu perfil</h2><p>Dados básicos da sua conta de acesso.</p></div></section><section class="customer-profile-card"><div class="customer-avatar" aria-hidden="true"><?= $this->e(strtoupper(substr((string)$user->name,0,1))) ?></div><dl><div><dt>Nome</dt><dd><?= $this->e($user->name) ?></dd></div><div><dt>E-mail</dt><dd><?= $this->e($user->email) ?></dd></div><div><dt>Status</dt><dd><span class="customer-status"><?= $this->e($user->status) ?></span></dd></div></dl></section>
+<?php declare(strict_types=1); $this->layout('layouts/default', ['title' => $title, 'currentPage' => 'profile']); ?>
+<section class="customer-page-heading"><div><p class="customer-eyebrow">CONTA</p><h2>Meu perfil</h2><p>Dados pessoais, preferências e segurança da sua conta.</p></div></section>
+<section class="customer-profile-card"><div class="customer-avatar" aria-hidden="true"><?= $this->e(strtoupper(substr((string) $user->name, 0, 1))) ?></div><dl><div><dt>E-mail</dt><dd><?= $this->e($user->email) ?></dd></div><div><dt>Status</dt><dd><span class="customer-status"><?= $this->e($user->status) ?></span></dd></div><div><dt>Segurança</dt><dd><a href="/app/security/2fa">Configurar autenticação em dois fatores</a></dd></div></dl></section>
+<section class="customer-profile-card"><form method="post" action="/app/profile" class="studio-form-card"><?= $this->csrf() ?><h3>Perfil e preferências</h3><div class="studio-field"><label for="profile-name">Nome</label><input id="profile-name" name="name" value="<?= $this->e((string) $user->name) ?>" minlength="2" maxlength="120" required></div><div class="studio-field"><label for="profile-locale">Idioma</label><select id="profile-locale" name="locale"><option value="pt-BR"<?= $preferences['locale'] === 'pt-BR' ? ' selected' : '' ?>>Português (Brasil)</option><option value="en-US"<?= $preferences['locale'] === 'en-US' ? ' selected' : '' ?>>English (US)</option></select></div><div class="studio-field"><label for="profile-theme">Aparência</label><select id="profile-theme" name="theme"><option value="system"<?= $preferences['theme'] === 'system' ? ' selected' : '' ?>>Automática</option><option value="light"<?= $preferences['theme'] === 'light' ? ' selected' : '' ?>>Clara</option><option value="dark"<?= $preferences['theme'] === 'dark' ? ' selected' : '' ?>>Escura</option></select></div><label><input type="checkbox" name="email_notifications" value="1"<?= $preferences['email_notifications'] === 1 ? ' checked' : '' ?>> Receber notificações por e-mail</label><button type="submit">Salvar perfil</button></form></section>
+<section class="customer-profile-card"><form method="post" action="/app/profile/password" class="studio-form-card"><?= $this->csrf() ?><h3>Alterar senha</h3><div class="studio-field"><label for="current-password">Senha atual</label><input id="current-password" type="password" name="current_password" autocomplete="current-password" required></div><div class="studio-field"><label for="new-password">Nova senha</label><input id="new-password" type="password" name="password" autocomplete="new-password" minlength="10" maxlength="128" required></div><div class="studio-field"><label for="password-confirmation">Confirmar nova senha</label><input id="password-confirmation" type="password" name="password_confirmation" autocomplete="new-password" minlength="10" maxlength="128" required></div><button type="submit">Alterar senha</button><small>Após alterar a senha, sua sessão será encerrada e será necessário entrar novamente.</small></form></section>

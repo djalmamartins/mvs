@@ -7,12 +7,17 @@ namespace Moves\Controllers;
 use Moves\Core\Auth;
 use Moves\Boot\Connection;
 use Moves\Core\Controller;
+use Moves\Core\Config;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
 use Moves\Core\Logger;
 use Moves\Core\Request;
 use Moves\Core\Response;
 use Moves\Models\User;
+use Moves\Services\Auth\UserInvitationService;
+use Moves\Services\Auth\PasswordPolicy;
+use Moves\Services\Mail\SmtpInvitationMailer;
+use Moves\Services\Platform\TenantContext;
 use MovesCode\Pager\Pager;
 use PDO;
 use Throwable;
@@ -31,9 +36,14 @@ final class UserController extends Controller
     /**
      * Preserva a URL antiga do perfil.
      */
-    public function legacyProfile(): void
+    public function appProfileRedirect(): void
     {
-        Response::to('/app/profile', 301);
+        Response::to('/profile', 301);
+    }
+
+    public function appSecurityRedirect(): void
+    {
+        Response::to('/profile/security/2fa', 301);
     }
 
     /**
@@ -48,8 +58,90 @@ final class UserController extends Controller
             [
                 'title' => 'Meu perfil',
                 'user' => $user,
+                'preferences' => $this->profilePreferences((int) $user->id),
             ]
         );
+    }
+
+    public function updateProfile(): never
+    {
+        $this->validateCsrf();
+        $user = Auth::user();
+        if ($user === null) { Response::to('/login'); }
+
+        $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
+        $theme = (string) Request::post('theme', 'system');
+        $locale = (string) Request::post('locale', 'pt-BR');
+        $notifications = Request::post('email_notifications') === '1' ? 1 : 0;
+        if (mb_strlen($name) < 2 || !in_array($theme, ['light', 'dark', 'system'], true) || !in_array($locale, ['pt-BR', 'en-US'], true)) {
+            Flash::set('error', 'Revise os dados e preferências do perfil.');
+            Response::to('/profile');
+        }
+
+        $pdo = Connection::getInstance();
+        try {
+            $pdo->beginTransaction();
+            $pdo->prepare('UPDATE users SET name=? WHERE id=?')->execute([$name, (int) $user->id]);
+            $pdo->prepare(
+                'INSERT INTO user_preferences(user_id,locale,theme,email_notifications) VALUES(?,?,?,?) '
+                . 'ON DUPLICATE KEY UPDATE locale=VALUES(locale),theme=VALUES(theme),email_notifications=VALUES(email_notifications)'
+            )->execute([(int) $user->id, $locale, $theme, $notifications]);
+            $pdo->commit();
+            Logger::info('Perfil atualizado.', ['actor_id' => $user->id]);
+            Flash::set('success', 'Perfil atualizado com sucesso.');
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            Logger::exception($exception);
+            Flash::set('error', 'Não foi possível atualizar o perfil.');
+        }
+        Response::to('/profile');
+    }
+
+    public function updatePassword(): never
+    {
+        $this->validateCsrf();
+        $user = Auth::user();
+        if ($user === null) { Response::to('/login'); }
+
+        $current = (string) Request::post('current_password', '');
+        $password = (string) Request::post('password', '');
+        $confirmation = (string) Request::post('password_confirmation', '');
+        $errors = PasswordPolicy::errors($password);
+        if (!password_verify($current, (string) $user->password)) {
+            $errors[] = 'A senha atual está incorreta.';
+        }
+        if (!hash_equals($password, $confirmation)) {
+            $errors[] = 'A confirmação deve ser igual à nova senha.';
+        }
+        if ($current !== '' && password_verify($password, (string) $user->password)) {
+            $errors[] = 'A nova senha deve ser diferente da senha atual.';
+        }
+        if ($errors !== []) {
+            foreach ($errors as $error) { Flash::set('error', $error); }
+            Response::to('/profile');
+        }
+
+        Connection::getInstance()->prepare('UPDATE users SET password=? WHERE id=?')
+            ->execute([password_hash($password, PASSWORD_DEFAULT), (int) $user->id]);
+        Logger::info('Senha alterada pelo perfil.', ['actor_id' => $user->id]);
+        Auth::logout();
+        Flash::set('success', 'Senha alterada. Entre novamente com a nova senha.');
+        Response::to('/login');
+    }
+
+    /** @return array{locale:string,theme:string,email_notifications:int} */
+    private function profilePreferences(int $userId): array
+    {
+        $statement = Connection::getInstance()->prepare(
+            'SELECT locale,theme,email_notifications FROM user_preferences WHERE user_id=?'
+        );
+        $statement->execute([$userId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+        return is_array($row) ? [
+            'locale' => (string) $row['locale'],
+            'theme' => (string) $row['theme'],
+            'email_notifications' => (int) $row['email_notifications'],
+        ] : ['locale' => 'pt-BR', 'theme' => 'system', 'email_notifications' => 1];
     }
 
     /**
@@ -120,7 +212,16 @@ final class UserController extends Controller
             $user = $statement->fetch(PDO::FETCH_ASSOC) ?: null;
             if ($user === null) { Response::to('/studio/users'); }
         }
-        echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Novo usuário', 'user' => $user]);
+        $roles = [];
+        if ($id === 0) {
+            $actor = Auth::user();
+            if ($actor === null) { Response::to('/login'); }
+            $tenantId = (new TenantContext(Connection::getInstance()))->currentId((int) $actor->id);
+            $statement = Connection::getInstance()->prepare('SELECT id,slug,name FROM platform_roles WHERE tenant_id=? ORDER BY id');
+            $statement->execute([$tenantId]);
+            $roles = $statement->fetchAll(PDO::FETCH_ASSOC);
+        }
+        echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Convidar usuário', 'user' => $user, 'roles' => $roles]);
     }
 
     public function save(): never
@@ -129,31 +230,90 @@ final class UserController extends Controller
         $id = max(0, (int) Request::post('id', 0));
         $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
         $email = mb_strtolower(mb_substr(trim((string) Request::post('email', '')), 0, 190));
+
+        if ($id === 0) {
+            $this->inviteUser($name, $email, max(0, (int) Request::post('role_id', 0)));
+        }
+
         $role = in_array(Request::post('role'), ['admin', 'user'], true) ? (string) Request::post('role') : 'user';
         $status = in_array(Request::post('status'), ['active', 'inactive'], true) ? (string) Request::post('status') : 'inactive';
         $password = (string) Request::post('password', '');
-        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($id === 0 && strlen($password) < 8) || ($password !== '' && strlen($password) < 8)) {
-            Flash::set('error', 'Revise nome, e-mail e senha. A senha deve ter ao menos 8 caracteres.');
-            Response::to($id ? '/studio/users/edit/' . $id : '/studio/users/create');
+        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($password !== '' && strlen($password) < 8)) {
+            Flash::set('error', 'Revise nome, e-mail e senha.');
+            Response::to('/studio/users/edit/' . $id);
         }
         if ($id === 1) { $role = 'admin'; $status = 'active'; }
         try {
             $pdo = Connection::getInstance();
-            if ($id > 0) {
-                $sql = 'UPDATE users SET name=?,email=?,role=?,status=?' . ($password !== '' ? ',password=?' : '') . ' WHERE id=?';
-                $values = [$name, $email, $role, $status];
-                if ($password !== '') { $values[] = password_hash($password, PASSWORD_DEFAULT); }
-                $values[] = $id;
-                $pdo->prepare($sql)->execute($values);
-            } else {
-                $pdo->prepare('INSERT INTO users(name,email,password,role,status) VALUES(?,?,?,?,?)')->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), $role, $status]);
-                $id = (int) $pdo->lastInsertId();
-            }
+            $sql = 'UPDATE users SET name=?,email=?,role=?,status=?' . ($password !== '' ? ',password=?' : '') . ' WHERE id=?';
+            $values = [$name, $email, $role, $status];
+            if ($password !== '') { $values[] = password_hash($password, PASSWORD_DEFAULT); }
+            $values[] = $id;
+            $pdo->prepare($sql)->execute($values);
             Logger::info('Usuário administrativo salvo.', ['record_id' => $id, 'actor_id' => Auth::user()?->id]);
             Flash::set('success', 'Usuário salvo com sucesso.');
         } catch (Throwable $exception) {
             Logger::exception($exception);
             Flash::set('error', 'Não foi possível salvar. Verifique se o e-mail já está em uso.');
+        }
+        Response::to('/studio/users');
+    }
+
+    private function inviteUser(string $name, string $email, int $roleId): never
+    {
+        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || $roleId < 1) {
+            Flash::set('error', 'Informe nome, e-mail e perfil do convite.');
+            Response::to('/studio/users/create');
+        }
+
+        $actor = Auth::user();
+        if ($actor === null) { Response::to('/login'); }
+        $pdo = Connection::getInstance();
+        $tenantId = (new TenantContext($pdo))->currentId((int) $actor->id);
+        $role = $pdo->prepare('SELECT slug FROM platform_roles WHERE id=? AND tenant_id=?');
+        $role->execute([$roleId, $tenantId]);
+        $roleSlug = $role->fetchColumn();
+        if (!is_string($roleSlug)) {
+            Flash::set('error', 'O perfil selecionado não pertence à administradora ativa.');
+            Response::to('/studio/users/create');
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $lookup = $pdo->prepare('SELECT id FROM users WHERE LOWER(email)=? LIMIT 1');
+            $lookup->execute([$email]);
+            $userId = (int) $lookup->fetchColumn();
+            if ($userId < 1) {
+                $placeholder = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+                $pdo->prepare("INSERT INTO users(name,email,password,role,status) VALUES(?,?,?,'user','inactive')")
+                    ->execute([$name, $email, $placeholder]);
+                $userId = (int) $pdo->lastInsertId();
+            }
+            $pdo->prepare(
+                "INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) VALUES(?,?,?,?, 'inactive',0) "
+                . "ON DUPLICATE KEY UPDATE role=VALUES(role),role_id=VALUES(role_id),status='inactive'"
+            )->execute([$tenantId, $userId, $roleSlug, $roleId]);
+            $pdo->commit();
+
+            $invite = (new UserInvitationService($pdo))->create($tenantId, $userId, $roleId, (int) $actor->id);
+            $tenant = $pdo->prepare('SELECT name FROM talk_tenants WHERE id=?');
+            $tenant->execute([$tenantId]);
+            $tenantName = (string) $tenant->fetchColumn();
+            $baseUrl = rtrim((string) Config::get('APP_URL', ''), '/');
+            if ($baseUrl === '') { throw new \RuntimeException('APP_URL não configurada.'); }
+            (new SmtpInvitationMailer())->sendInvitation(
+                $email,
+                $name,
+                $tenantName,
+                $baseUrl . '/first-access?token=' . rawurlencode($invite['token']),
+                UserInvitationService::DEFAULT_TTL_HOURS
+            );
+            Logger::info('Convite de usuário enviado.', ['record_id' => $userId, 'tenant_id' => $tenantId, 'actor_id' => $actor->id]);
+            Flash::set('success', 'Convite enviado. O usuário definirá a própria senha no primeiro acesso.');
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            Logger::exception($exception);
+            Flash::set('error', 'Não foi possível criar e enviar o convite.');
         }
         Response::to('/studio/users');
     }

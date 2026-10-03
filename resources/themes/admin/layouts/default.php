@@ -22,8 +22,8 @@ if ($user !== null && ($activeProduct ?? '') === 'talk') {
     $talkUnreadNotifications = (new \Moves\Services\Talk\TalkNotificationService())->unreadCount((int) $user->id);
 }
 
-$activeProduct = $activeProduct ?? 'cms';
-$productName   = $productName ?? 'CMS';
+$activeProduct = $activeProduct ?? 'studio';
+$productName   = $productName ?? 'Studio';
 $availableTenants = [];
 $currentTenantId = null;
 $enabledProducts = array_fill_keys(ProductEntitlement::PRODUCTS, true);
@@ -75,7 +75,7 @@ $apps = [
     ],
     [
         'key'   => 'support',
-        'label' => 'Suporte',
+        'label' => 'Support',
         'icon'  => 'icon-helpdesk',
         'href'  => '/support',
     ],
@@ -86,8 +86,8 @@ $apps = [
         'href'  => '/erp',
     ],
     [
-        'key'   => 'cms',
-        'label' => 'CMS',
+        'key'   => 'studio',
+        'label' => 'Studio',
         'icon'  => 'icon-flask-outline',
         'href'  => '/studio',
     ],
@@ -130,6 +130,7 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
             rel="stylesheet"
             href="<?= $this->e($this->asset('css/moves-form.css')) ?>"
     >
+    <link rel="stylesheet" href="<?= $this->e($this->asset('css/platform.css')) ?>">
     <?php if (($activeProduct ?? '') === 'talk'): ?>
         <link rel="stylesheet" href="<?= $this->e($this->asset('css/talk.css')) ?>">
     <?php endif; ?>
@@ -234,7 +235,7 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
 
             <a
                     class="rail-avatar"
-                    href="/studio/users"
+                    href="/profile"
                     title="<?= $this->e($userName) ?>"
                     aria-label="Perfil de <?= $this->e($userName) ?>"
             >
@@ -354,7 +355,7 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
                         <i class="icon-chevron-down"></i>
                     </button><div class="platform-user-dropdown" data-user-menu hidden>
                         <strong><?= $this->e($userName) ?></strong><small><?= $this->e((string)$user->email) ?></small>
-                        <a href="/app/profile">Meu perfil</a><a href="/settings">Administradora e produtos</a><a href="/studio/settings">Preferências do site</a>
+                        <a href="/profile">Meu perfil</a><a href="/settings">Administradora e produtos</a><a href="/studio/settings">Preferências do site</a>
                         <form method="post" action="/logout"><?= $this->csrf() ?><button type="submit">Sair</button></form>
                     </div></div>
                 <?php endif; ?>
@@ -375,7 +376,7 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
 
         <footer class="workspace-footer">
             <span>Copyright © <?= date('Y') ?> Moves. Todos os direitos reservados.</span>
-            <span>Versão 1.0.0</span>
+            <span>Moves 0.0.1</span>
         </footer>
 
     </main>

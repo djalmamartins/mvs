@@ -105,6 +105,8 @@ try {
     $check($response['runtime'] === '' || (isset($runtimeMatch[1]) && version_compare($runtimeMatch[1], '8.2.0', '>=')), 'header do servidor omite runtime ou informa PHP 8.2+');
     $response = $request('/login');
     $check($response['status'] === 200 && str_contains($response['body'], 'name="email"'), 'GET /login permanece público');
+    $authCss = $request('/themes/auth/css/auth.css');
+    $check($authCss['status'] === 200 && str_contains($authCss['body'], '.auth-shell'), 'servidor local entrega assets públicos reais');
     $check(stripos($response['headers'], 'X-Powered-By:') === false, 'versão do PHP não é exposta');
     $check(stripos($sessionHeaders, 'HttpOnly') !== false, 'cookie de sessão é HttpOnly');
     $check(stripos($sessionHeaders, 'SameSite=Lax') !== false, 'cookie de sessão usa SameSite Lax');
@@ -149,12 +151,14 @@ try {
 
     $before = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/login', ['email' => $email, 'password' => $password, '_token' => $token]);
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'login válido redireciona para /app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'login válido redireciona para /day');
     $check($before !== curl_getinfo($client, CURLINFO_COOKIELIST), 'login regenera identificador da sessão');
     $response = $request('/app');
     $check($response['status'] === 200 && str_contains($response['body'], 'Área do Cliente'), 'usuário autenticado acessa /app');
     $check(stripos($response['headers'], 'Cache-Control: private, no-store') !== false, 'área autenticada não permite cache público');
-    $profile = $request('/app/profile');
+    $legacyProfile = $request('/app/profile');
+    $check($legacyProfile['status'] === 301 && $legacyProfile['location'] === $base . '/profile', '/app/profile não é mais a home de perfil administrativo');
+    $profile = $request('/profile');
     $check($profile['status'] === 200 && str_contains($profile['body'], $email), 'perfil pertence ao usuário autenticado');
     $status = $request('/app/status');
     $statusPayload = json_decode($status['body'], true);
@@ -166,7 +170,7 @@ try {
     $check($token !== '', 'sessão autenticada fornece novo token CSRF');
     $check($token !== $guestToken, 'token CSRF é rotacionado após login');
     $response = $request('/login');
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'GET /login autenticado redireciona para /app');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'GET /login autenticado redireciona para /day');
 
     $response = $request('/studio/users');
     $check($response['status'] === 403, 'usuário sem tenant não acessa gestão do Studio');
@@ -186,7 +190,7 @@ try {
     $check($response['status'] === 200 && $token !== '', 'conta reativada inicia nova sessão protegida');
 
     $response = $request('/logout', ['_token' => 'invalid-token']);
-    $check($response['status'] === 302 && $response['location'] === $base . '/app', 'logout rejeita CSRF inválido');
+    $check($response['status'] === 302 && $response['location'] === $base . '/day', 'logout rejeita CSRF inválido');
     $check($request('/app')['status'] === 200, 'CSRF inválido não encerra sessão');
     $beforeLogout = curl_getinfo($client, CURLINFO_COOKIELIST);
     $response = $request('/logout', ['_token' => $token]);

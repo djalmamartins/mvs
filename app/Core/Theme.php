@@ -23,6 +23,16 @@ final class Theme
 
         $path = is_string($path) ? $path : '/';
 
+        if (
+            $path === '/login'
+            || str_starts_with($path, '/login/')
+            || $path === '/logout'
+            || $path === '/forgot-password'
+            || str_starts_with($path, '/password-recovery/')
+        ) {
+            return 'auth';
+        }
+
         if ($path === '/layout' || str_starts_with($path, '/layout/') || $path === '/onboarding') {
             return 'layout';
         }
@@ -39,6 +49,7 @@ final class Theme
             '/erp',
             '/settings',
             '/tenant',
+            '/profile',
         ];
 
         foreach ($adminPrefixes as $prefix) {

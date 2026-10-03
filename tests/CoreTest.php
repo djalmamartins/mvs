@@ -38,14 +38,163 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/studio/settings';
         self::assertSame('admin', Theme::active());
 
-        $_SERVER['REQUEST_URI'] = '/app/profile';
+        $_SERVER['REQUEST_URI'] = '/profile/security/2fa';
+        self::assertSame('admin', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/app';
         self::assertSame('app', Theme::active());
 
         $_SERVER['REQUEST_URI'] = '/help/articles/primeiros-passos';
         self::assertSame('help', Theme::active());
 
         $_SERVER['REQUEST_URI'] = '/login';
+        self::assertSame('auth', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/login/2fa';
+        self::assertSame('auth', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/forgot-password';
+        self::assertSame('auth', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/password-recovery/code';
+        self::assertSame('auth', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/site';
         self::assertSame('site', Theme::active());
+    }
+
+    public function testMovesEntryUsesAuthenticationFlowAndPreservesInstitutionalSite(): void
+    {
+        $routes = file_get_contents(dirname(__DIR__) . '/app/Boot/Routes.php');
+
+        self::assertIsString($routes);
+        self::assertStringContainsString("get('/','AuthController:entry','home')", $routes);
+        self::assertStringContainsString("get('/site','Home:index','site.home')", $routes);
+    }
+
+    public function testOfficialLoginUsesMovesIdentityAndDevelopmentVersion(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/login';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/login', ['title' => 'Entrar na Moves', 'version' => '0.0.1']);
+
+        self::assertStringContainsString('Entrar na Moves', $output);
+        self::assertStringContainsString('Moves 0.0.1', $output);
+        self::assertStringContainsString('action="/login"', $output);
+        self::assertStringContainsString('autocomplete="current-password"', $output);
+        self::assertStringNotContainsString('Moobys', $output);
+    }
+
+    public function testMfaChallengeUsesAuthThemeForAlreadyEnabledAccounts(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/login/2fa';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/mfa-challenge', [
+            'title' => 'Verificação em duas etapas',
+            'version' => '0.0.1',
+            'setup' => null,
+        ]);
+
+        self::assertSame('auth', Theme::active());
+        self::assertStringContainsString('Confirme sua identidade com o código do autenticador', $output);
+        self::assertStringNotContainsString('Configure o autenticador antes de entrar.', $output);
+        self::assertStringContainsString('action="/login/2fa"', $output);
+        self::assertStringContainsString('autocomplete="one-time-code"', $output);
+    }
+
+    public function testStaffAuthenticationUsesMeuDiaAndDoesNotForceMfaEnrollment(): void
+    {
+        $auth = file_get_contents(dirname(__DIR__) . '/app/Controllers/AuthController.php');
+        $guest = file_get_contents(dirname(__DIR__) . '/app/Middleware/GuestMiddleware.php');
+        $permission = file_get_contents(dirname(__DIR__) . '/app/Middleware/PermissionMiddleware.php');
+        $onboarding = file_get_contents(dirname(__DIR__) . '/app/Controllers/OnboardingController.php');
+        $tenant = file_get_contents(dirname(__DIR__) . '/app/Controllers/TenantController.php');
+
+        self::assertIsString($auth);
+        self::assertIsString($guest);
+        self::assertIsString($permission);
+        self::assertIsString($onboarding);
+        self::assertIsString($tenant);
+        self::assertStringContainsString("hasActiveTotp", $auth);
+        self::assertStringNotContainsString("MfaRequirementPolicy", $auth);
+        self::assertStringNotContainsString("MfaSetupService", $auth);
+        self::assertStringContainsString("Auth::check() ? '/day' : '/login'", $auth);
+        self::assertStringContainsString("Response::to('/day')", $guest);
+        self::assertStringContainsString("Response::to('/day')", $permission);
+        self::assertStringContainsString("Response::to('/day')", $onboarding);
+        self::assertStringContainsString("Response::to('/day')", $tenant);
+        self::assertStringNotContainsString("Response::to('/app')", $tenant);
+    }
+
+    public function testPlatformProfileAndOptionalMfaUseAdministrativeRoutes(): void
+    {
+        $routes = (string) file_get_contents(dirname(__DIR__) . '/app/Boot/Routes.php');
+        $profile = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/profile.php');
+        $mfa = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/two-factor.php');
+        $day = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/platform-day.php');
+
+        self::assertStringContainsString("get('/profile','UserController:profile'", $routes);
+        self::assertStringContainsString("get('/profile/security/2fa','MfaController:index'", $routes);
+        self::assertStringContainsString('action="/profile/password"', $profile);
+        self::assertStringContainsString('Status: Desativado', $mfa);
+        self::assertStringContainsString('Ativar verificação em duas etapas', $mfa);
+        self::assertStringContainsString('O QR Code só será gerado depois', $mfa);
+        self::assertStringContainsString('Ativar agora', $day);
+        self::assertStringContainsString('Agora não', $day);
+    }
+
+    public function testRecoveryCodeViewUsesOneTimeCodeSemanticsAndSafeActions(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/password-recovery/code';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/recovery-code', [
+            'title' => 'Digite o código',
+            'version' => '0.0.1',
+            'maskedEmail' => 'an•••@example.com',
+            'verified' => false,
+            'maxAttempts' => 5,
+        ]);
+
+        self::assertStringContainsString('autocomplete="one-time-code"', $output);
+        self::assertStringContainsString('action="/password-recovery/code"', $output);
+        self::assertStringContainsString('action="/password-recovery/resend"', $output);
+        self::assertStringContainsString('an•••@example.com', $output);
+        self::assertStringNotContainsString('ana@example.com', $output);
+    }
+
+    public function testNewPasswordViewUsesConfirmationAndBrowserPasswordSemantics(): void
+    {
+        $_SERVER['REQUEST_URI'] = '/password-recovery/new-password';
+        $view = new Engine(Theme::path());
+        $view->share('theme', Theme::active());
+        $view->registerFunction('asset', static fn (string $path): string => Theme::asset($path));
+        $view->registerFunction('csrf', static fn (): string => '<input type="hidden" name="_token" value="test">');
+
+        $output = $view->render('pages/new-password', [
+            'title' => 'Crie uma nova senha',
+            'version' => '0.0.1',
+            'maskedEmail' => 'an•••@example.com',
+            'minLength' => 10,
+            'maxLength' => 128,
+        ]);
+
+        self::assertSame(2, substr_count($output, 'autocomplete="new-password"'));
+        self::assertStringContainsString('name="password_confirmation"', $output);
+        self::assertStringContainsString('action="/password-recovery/new-password"', $output);
+        self::assertStringContainsString('data-password-rule="symbol"', $output);
+        self::assertStringNotContainsString('ana@example.com', $output);
     }
 
     public function testValidatorCollectsErrors(): void

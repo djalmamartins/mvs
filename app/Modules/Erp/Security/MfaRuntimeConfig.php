@@ -23,8 +23,14 @@ final readonly class MfaRuntimeConfig
 
     public static function fromEnvironment(): self
     {
-        $keyId = trim((string) Config::get('ERP_MFA_KEY_ID', ''));
-        $encodedKey = trim((string) Config::get('ERP_MFA_KEY', ''));
+        $keyId = trim((string) Config::get('MFA_KEY_ID', ''));
+        $encodedKey = trim((string) Config::get('MFA_KEY', ''));
+        if ($keyId === '') {
+            $keyId = trim((string) Config::get('ERP_MFA_KEY_ID', ''));
+        }
+        if ($encodedKey === '') {
+            $encodedKey = trim((string) Config::get('ERP_MFA_KEY', ''));
+        }
         $key = base64_decode($encodedKey, true);
 
         if ($key === false) {

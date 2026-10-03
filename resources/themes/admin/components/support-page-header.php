@@ -1,6 +1,6 @@
 <header class="support-workspace-head">
     <div>
-        <span class="support-kicker"><?= $this->e($kicker ?? 'Moves Studio · Suporte') ?></span>
+        <span class="support-kicker"><?= $this->e($kicker ?? 'Moves · Support') ?></span>
         <h1><?= $this->e($heading) ?></h1>
         <p><?= $this->e($description ?? '') ?></p>
     </div>

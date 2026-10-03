@@ -18,6 +18,10 @@ use Moves\Models\User;
 final class Auth
 {
     private const SESSION_KEY = 'auth_user';
+    private const LAST_ACTIVITY_KEY = 'auth_last_activity';
+    private const AUTHENTICATED_AT_KEY = 'auth_authenticated_at';
+    private const DEFAULT_IDLE_TIMEOUT = 1800;
+    private const DEFAULT_ABSOLUTE_TIMEOUT = 43200;
 
     /**
      * Valida credenciais sem conceder uma sessão autenticada.
@@ -60,7 +64,10 @@ final class Auth
         }
 
         Session::set(self::SESSION_KEY, (int) $user->id);
-        session_regenerate_id(true);
+        $now = time();
+        Session::set(self::LAST_ACTIVITY_KEY, $now);
+        Session::set(self::AUTHENTICATED_AT_KEY, $now);
+        Session::regenerate();
 
         return true;
     }
@@ -107,7 +114,42 @@ final class Auth
      */
     public static function check(): bool
     {
-        return self::user() !== null;
+        if (!self::sessionIsFresh()) {
+            self::logout();
+            return false;
+        }
+
+        $user = self::user();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        Session::set(self::LAST_ACTIVITY_KEY, time());
+
+        return true;
+    }
+
+    private static function sessionIsFresh(): bool
+    {
+        $userId = Session::get(self::SESSION_KEY);
+        if (!is_int($userId)) {
+            return true;
+        }
+
+        $lastActivity = Session::get(self::LAST_ACTIVITY_KEY);
+        $authenticatedAt = Session::get(self::AUTHENTICATED_AT_KEY);
+        if (!is_int($lastActivity) || !is_int($authenticatedAt)) {
+            return false;
+        }
+
+        $idleConfigured = (int) Config::get('SESSION_IDLE_TIMEOUT', self::DEFAULT_IDLE_TIMEOUT);
+        $idleTimeout = $idleConfigured > 0 ? $idleConfigured : self::DEFAULT_IDLE_TIMEOUT;
+        $absoluteConfigured = (int) Config::get('SESSION_ABSOLUTE_TIMEOUT', self::DEFAULT_ABSOLUTE_TIMEOUT);
+        $absoluteTimeout = $absoluteConfigured > 0 ? $absoluteConfigured : self::DEFAULT_ABSOLUTE_TIMEOUT;
+        $now = time();
+
+        return ($now - $lastActivity) <= $idleTimeout
+            && ($now - $authenticatedAt) <= $absoluteTimeout;
     }
 
     /**

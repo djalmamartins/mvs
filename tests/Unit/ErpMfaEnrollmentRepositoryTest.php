@@ -57,6 +57,7 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         self::assertNotSame($secret, $row['secret_ciphertext']);
         self::assertStringNotContainsString($secret, $row['secret_ciphertext']);
         self::assertSame($secret, $this->repository->activeTotpSecret(7));
+        self::assertTrue(MfaEnrollmentRepository::hasEnabledTotp($this->pdo, 7));
 
         $audit = $this->pdo->query('SELECT * FROM erp_security_audit')->fetch(PDO::FETCH_ASSOC);
         self::assertIsArray($audit);
@@ -73,6 +74,7 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
 
         self::assertTrue($this->repository->disableTotp(7, 9));
         self::assertNull($this->repository->activeTotpSecret(7));
+        self::assertFalse(MfaEnrollmentRepository::hasEnabledTotp($this->pdo, 7));
         self::assertFalse($this->repository->disableTotp(7, 9));
 
         $audit = $this->pdo->query("SELECT * FROM erp_security_audit WHERE event_type = 'mfa.totp.disabled'")->fetch(PDO::FETCH_ASSOC);
@@ -84,12 +86,24 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
 
     public function testInvalidOrMissingUserFailsClosed(): void
     {
+        self::assertFalse(MfaEnrollmentRepository::hasEnabledTotp($this->pdo, 0));
         self::assertNull($this->repository->activeTotpSecret(0));
         self::assertNull($this->repository->activeTotpSecret(404));
         self::assertFalse($this->repository->disableTotp(-1));
 
         $this->expectException(InvalidArgumentException::class);
         $this->repository->enrollTotp(0, 'GEZDGNBVGY3TQOJQ');
+    }
+
+    public function testEnabledStateCanBeCheckedWithoutDecryptingTheSecret(): void
+    {
+        $this->pdo->exec(
+            "INSERT INTO erp_mfa_enrollments
+                (user_id, method, secret_ciphertext, secret_key_id, enabled_at, disabled_at)
+             VALUES (7, 'totp', 'unreadable-without-a-cipher', 'missing-key', CURRENT_TIMESTAMP, NULL)"
+        );
+
+        self::assertTrue(MfaEnrollmentRepository::hasEnabledTotp($this->pdo, 7));
     }
 
     public function testReenrollmentReactivatesEnrollmentAndReplacesSecret(): void
@@ -109,5 +123,16 @@ final class ErpMfaEnrollmentRepositoryTest extends TestCase
         self::assertSame(9, (int) $audit['actor_user_id']);
         self::assertSame(7, (int) $audit['subject_user_id']);
         self::assertStringNotContainsString('JBSWY3DPEHPK3PXP', (string) $audit['metadata_json']);
+    }
+
+    public function testPendingEnrollmentIsInactiveUntilExplicitConfirmation(): void
+    {
+        $this->repository->stageTotp(7, 'GEZDGNBVGY3TQOJQ');
+
+        self::assertNull($this->repository->activeTotpSecret(7));
+        self::assertSame('GEZDGNBVGY3TQOJQ', $this->repository->pendingTotpSecret(7));
+        self::assertTrue($this->repository->enablePendingTotp(7));
+        self::assertSame('GEZDGNBVGY3TQOJQ', $this->repository->activeTotpSecret(7));
+        self::assertNull($this->repository->pendingTotpSecret(7));
     }
 }
