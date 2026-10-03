@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+$this->layout('layouts/default', ['title' => $title, 'productName' => 'Meu Dia', 'activeProduct' => 'day', 'currentPage' => 'profile']);
+?>
+<section class="platform-page platform-profile-page">
+    <header class="studio-page-head"><div><p class="studio-eyebrow">CONTA</p><h1 class="studio-page-title">Meu perfil</h1><p class="studio-page-description">Dados pessoais, preferências e segurança da sua conta Moves.</p></div></header>
+    <section class="platform-panel"><header><div><h2><?= $this->e((string) $user->name) ?></h2><p><?= $this->e((string) $user->email) ?></p></div><span class="platform-status"><?= $this->e((string) $user->status) ?></span></header><div class="platform-panel-body"><a class="studio-btn" href="/profile/security/2fa">Verificação em duas etapas</a></div></section>
+    <div class="platform-two-columns">
+        <section class="platform-panel"><header><div><h2>Perfil e preferências</h2><p>Atualize como sua conta aparece na plataforma.</p></div></header><form method="post" action="/profile" class="platform-form"><?= $this->csrf() ?><label>Nome<input name="name" value="<?= $this->e((string) $user->name) ?>" minlength="2" maxlength="120" required></label><label>Idioma<select name="locale"><option value="pt-BR"<?= $preferences['locale'] === 'pt-BR' ? ' selected' : '' ?>>Português (Brasil)</option><option value="en-US"<?= $preferences['locale'] === 'en-US' ? ' selected' : '' ?>>English (US)</option></select></label><label>Aparência<select name="theme"><option value="system"<?= $preferences['theme'] === 'system' ? ' selected' : '' ?>>Automática</option><option value="light"<?= $preferences['theme'] === 'light' ? ' selected' : '' ?>>Clara</option><option value="dark"<?= $preferences['theme'] === 'dark' ? ' selected' : '' ?>>Escura</option></select></label><label class="platform-check"><input type="checkbox" name="email_notifications" value="1"<?= $preferences['email_notifications'] === 1 ? ' checked' : '' ?>> Receber notificações por e-mail</label><button class="studio-btn primary" type="submit">Salvar perfil</button></form></section>
+        <section class="platform-panel"><header><div><h2>Alterar senha</h2><p>A nova senha encerra a sessão atual.</p></div></header><form method="post" action="/profile/password" class="platform-form"><?= $this->csrf() ?><label>Senha atual<input type="password" name="current_password" autocomplete="current-password" required></label><label>Nova senha<input type="password" name="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><label>Confirmar nova senha<input type="password" name="password_confirmation" autocomplete="new-password" minlength="10" maxlength="128" required></label><button class="studio-btn primary" type="submit">Alterar senha</button></form></section>
+    </div>
+</section>

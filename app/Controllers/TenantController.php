@@ -20,10 +20,10 @@ final class TenantController extends Controller
         $user = Auth::user();
         if ($user === null || !Csrf::validate((string) Request::post('_token', ''))) {
             Flash::set('error', 'Não foi possível trocar de administradora.');
-            Response::to('/app');
+            Response::to('/day');
         }
         (new TenantContext(Connection::getInstance()))->switch((int) $user->id, (int) Request::post('tenant_id', 0));
         Flash::set('success', 'Administradora ativa alterada.');
-        Response::to('/app');
+        Response::to('/day');
     }
 }

@@ -41,6 +41,11 @@ final class PlatformSaasFoundationTest extends TestCase
         self::assertFalse($entitlements->enabled($tenantA, 'erp'));
         self::assertTrue($entitlements->enabled($tenantB, 'erp'));
         self::assertFalse($entitlements->enabled($tenantB, 'talk'));
+        $ownerGrants = $this->pdo->prepare(
+            "SELECT capability FROM erp_scope_grants WHERE user_id=? AND scope_type='administrator' ORDER BY capability"
+        );
+        $ownerGrants->execute([$ownerB]);
+        self::assertSame(['erp.cadastros.read', 'erp.cadastros.write'], $ownerGrants->fetchAll(PDO::FETCH_COLUMN));
         self::assertTrue((new TenantAuthorization($this->pdo))->can($ownerA, $tenantA, 'settings.manage'));
         self::assertFalse((new TenantAuthorization($this->pdo))->can($ownerA, $tenantB, 'settings.manage'));
 

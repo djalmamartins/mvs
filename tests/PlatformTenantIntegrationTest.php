@@ -49,6 +49,8 @@ final class PlatformTenantIntegrationTest extends TestCase
         $access = CadastroServiceFactory::access($this->pdo);
         $tenantAccess = new AdministratorTenantAccess($this->pdo);
         self::assertTrue($tenantAccess->hasAnyAdministrator($userA));
+        self::assertTrue($tenantAccess->hasAdministrator($userA, $tenantA));
+        self::assertFalse($tenantAccess->hasAdministrator($userA, $tenantB));
         self::assertNotNull($access->findAdministrator($userA, $administratorA));
         self::assertNull($access->findAdministrator($userA, $administratorB));
         self::assertNotNull($access->findAdministrator($userB, $administratorB));

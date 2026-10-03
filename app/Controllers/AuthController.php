@@ -126,6 +126,7 @@ final class AuthController extends Controller
             Response::to('/login');
         }
 
+        Session::set(MfaController::RECOMMENDATION_KEY, true);
         LoginThrottle::clear($email, $ip);
         Csrf::regenerate();
         try {
@@ -210,6 +211,7 @@ final class AuthController extends Controller
         }
 
         Session::remove(self::MFA_PENDING_KEY);
+        Session::remove(MfaController::RECOMMENDATION_KEY);
         LoginThrottle::clear((string) $pending['email'], (string) $pending['ip']);
         Csrf::regenerate();
         $this->recordLoginAudit($user, (string) $pending['ip']);

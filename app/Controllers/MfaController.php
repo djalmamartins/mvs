@@ -21,6 +21,7 @@ use Throwable;
 
 final class MfaController extends Controller
 {
+    public const RECOMMENDATION_KEY = 'mfa_recommendation_pending';
     private const RECOVERY_CODES_KEY = 'mfa_recovery_codes_once';
 
     public function index(): void
@@ -69,7 +70,8 @@ final class MfaController extends Controller
             Logger::error('Falha ao iniciar MFA.', ['user_id' => (int) $user->id, 'exception' => $exception::class]);
             Flash::set('error', 'Não foi possível iniciar o 2FA. Verifique a configuração segura do ambiente.');
         }
-        Response::to('/app/security/2fa');
+        Session::remove(self::RECOMMENDATION_KEY);
+        Response::to('/profile/security/2fa');
     }
 
     public function confirm(): void
@@ -82,13 +84,13 @@ final class MfaController extends Controller
         $code = preg_replace('/\D+/', '', (string) Request::post('code', '')) ?? '';
         if (!preg_match('/^\d{6}$/', $code)) {
             Flash::set('error', 'Informe o código de 6 dígitos do autenticador.');
-            Response::to('/app/security/2fa');
+            Response::to('/profile/security/2fa');
         }
         try {
             $recoveryCodes = $this->service()->confirm((int) $user->id, $code);
             if ($recoveryCodes === null) {
                 Flash::set('error', 'Código inválido ou expirado. Confira o relógio do dispositivo e tente novamente.');
-                Response::to('/app/security/2fa');
+                Response::to('/profile/security/2fa');
             }
             Session::set(self::RECOVERY_CODES_KEY, $recoveryCodes);
             Csrf::regenerate();
@@ -97,15 +99,23 @@ final class MfaController extends Controller
             Logger::error('Falha ao confirmar MFA.', ['user_id' => (int) $user->id, 'exception' => $exception::class]);
             Flash::set('error', 'Não foi possível ativar o 2FA agora. Tente novamente.');
         }
-        Response::to('/app/security/2fa');
+        Session::remove(self::RECOMMENDATION_KEY);
+        Response::to('/profile/security/2fa');
     }
 
-    private function requireCsrf(): void
+    public function dismissRecommendation(): void
+    {
+        $this->requireCsrf('/day');
+        Session::remove(self::RECOMMENDATION_KEY);
+        Response::to('/day');
+    }
+
+    private function requireCsrf(string $redirect = '/profile/security/2fa'): void
     {
         $token = Request::post('_token');
         if (!is_string($token) || !Csrf::validate($token)) {
             Flash::set('error', 'Sua sessão expirou. Atualize a página e tente novamente.');
-            Response::to('/app/security/2fa');
+            Response::to($redirect);
         }
     }
 

@@ -49,6 +49,7 @@ final class Theme
             '/erp',
             '/settings',
             '/tenant',
+            '/profile',
         ];
 
         foreach ($adminPrefixes as $prefix) {

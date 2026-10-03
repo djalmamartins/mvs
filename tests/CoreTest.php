@@ -38,7 +38,10 @@ final class CoreTest extends TestCase
         $_SERVER['REQUEST_URI'] = '/studio/settings';
         self::assertSame('admin', Theme::active());
 
-        $_SERVER['REQUEST_URI'] = '/app/profile';
+        $_SERVER['REQUEST_URI'] = '/profile/security/2fa';
+        self::assertSame('admin', Theme::active());
+
+        $_SERVER['REQUEST_URI'] = '/app';
         self::assertSame('app', Theme::active());
 
         $_SERVER['REQUEST_URI'] = '/help/articles/primeiros-passos';
@@ -125,6 +128,23 @@ final class CoreTest extends TestCase
         self::assertStringContainsString("Response::to('/day')", $guest);
         self::assertStringContainsString("Response::to('/day')", $permission);
         self::assertStringContainsString("Response::to('/day')", $onboarding);
+    }
+
+    public function testPlatformProfileAndOptionalMfaUseAdministrativeRoutes(): void
+    {
+        $routes = (string) file_get_contents(dirname(__DIR__) . '/app/Boot/Routes.php');
+        $profile = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/profile.php');
+        $mfa = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/two-factor.php');
+        $day = (string) file_get_contents(dirname(__DIR__) . '/resources/themes/admin/pages/platform-day.php');
+
+        self::assertStringContainsString("get('/profile','UserController:profile'", $routes);
+        self::assertStringContainsString("get('/profile/security/2fa','MfaController:index'", $routes);
+        self::assertStringContainsString('action="/profile/password"', $profile);
+        self::assertStringContainsString('Status: Desativado', $mfa);
+        self::assertStringContainsString('Ativar verificação em duas etapas', $mfa);
+        self::assertStringContainsString('O QR Code só será gerado depois', $mfa);
+        self::assertStringContainsString('Ativar agora', $day);
+        self::assertStringContainsString('Agora não', $day);
     }
 
     public function testRecoveryCodeViewUsesOneTimeCodeSemanticsAndSafeActions(): void

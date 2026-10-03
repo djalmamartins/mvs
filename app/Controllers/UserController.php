@@ -36,9 +36,14 @@ final class UserController extends Controller
     /**
      * Preserva a URL antiga do perfil.
      */
-    public function legacyProfile(): void
+    public function appProfileRedirect(): void
     {
-        Response::to('/app/profile', 301);
+        Response::to('/profile', 301);
+    }
+
+    public function appSecurityRedirect(): void
+    {
+        Response::to('/profile/security/2fa', 301);
     }
 
     /**
@@ -70,7 +75,7 @@ final class UserController extends Controller
         $notifications = Request::post('email_notifications') === '1' ? 1 : 0;
         if (mb_strlen($name) < 2 || !in_array($theme, ['light', 'dark', 'system'], true) || !in_array($locale, ['pt-BR', 'en-US'], true)) {
             Flash::set('error', 'Revise os dados e preferências do perfil.');
-            Response::to('/app/profile');
+            Response::to('/profile');
         }
 
         $pdo = Connection::getInstance();
@@ -89,7 +94,7 @@ final class UserController extends Controller
             Logger::exception($exception);
             Flash::set('error', 'Não foi possível atualizar o perfil.');
         }
-        Response::to('/app/profile');
+        Response::to('/profile');
     }
 
     public function updatePassword(): never
@@ -113,7 +118,7 @@ final class UserController extends Controller
         }
         if ($errors !== []) {
             foreach ($errors as $error) { Flash::set('error', $error); }
-            Response::to('/app/profile');
+            Response::to('/profile');
         }
 
         Connection::getInstance()->prepare('UPDATE users SET password=? WHERE id=?')
