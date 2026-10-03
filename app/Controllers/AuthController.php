@@ -94,10 +94,14 @@ final class AuthController extends Controller
 
         try {
             $pdo = Connection::getInstance();
-            $repository = new MfaEnrollmentRepository($pdo, MfaRuntimeConfig::fromEnvironment()->cipher());
-            if ($repository->hasActiveTotp((int) ($user->id ?? 0))) {
+            $userId = (int) ($user->id ?? 0);
+            if (MfaEnrollmentRepository::hasEnabledTotp($pdo, $userId)) {
+                $repository = new MfaEnrollmentRepository($pdo, MfaRuntimeConfig::fromEnvironment()->cipher());
+                if (!$repository->hasActiveTotp($userId)) {
+                    throw new \RuntimeException('Active MFA enrollment is not readable.');
+                }
                 Session::set(self::MFA_PENDING_KEY, [
-                    'user_id' => (int) ($user->id ?? 0),
+                    'user_id' => $userId,
                     'email' => strtolower($email),
                     'ip' => $ip,
                     'issued_at' => time(),

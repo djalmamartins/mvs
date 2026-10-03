@@ -118,6 +118,32 @@ final readonly class MfaEnrollmentRepository
         return $this->secretForState($userId, true);
     }
 
+    /**
+     * Checks the persisted MFA state without loading cryptographic material.
+     *
+     * Accounts without MFA must remain usable when the optional MFA runtime
+     * configuration is absent. An enabled enrollment is still decrypted later,
+     * so an enrolled account continues to fail closed when its key is missing.
+     */
+    public static function hasEnabledTotp(PDO $pdo, int $userId): bool
+    {
+        if ($userId <= 0) {
+            return false;
+        }
+
+        $statement = $pdo->prepare(
+            "SELECT 1 FROM erp_mfa_enrollments
+             WHERE user_id = :user_id
+               AND method = 'totp'
+               AND enabled_at IS NOT NULL
+               AND disabled_at IS NULL
+             LIMIT 1"
+        );
+        $statement->execute(['user_id' => $userId]);
+
+        return $statement->fetchColumn() !== false;
+    }
+
     public function hasActiveTotp(int $userId): bool
     {
         return $this->activeTotpSecret($userId) !== null;
