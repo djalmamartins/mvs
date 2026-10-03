@@ -22,13 +22,29 @@ $this->layout('layouts/default', ['title' => $title]);
 
             <form id="auth-form" class="auth-form" method="post" action="/login/2fa" novalidate>
                 <?= $this->csrf() ?>
-                <label for="code">Código de verificação</label>
-                <input type="text" id="code" name="code" autocomplete="one-time-code" inputmode="text" maxlength="14" required autofocus aria-describedby="mfa-help">
+                <label class="mfa-fallback-label" for="code-fallback">Código de verificação</label>
+                <input class="mfa-fallback" type="text" id="code-fallback" name="code" autocomplete="one-time-code" inputmode="text" maxlength="14" required aria-describedby="mfa-help" autofocus>
+                <fieldset class="mfa-code-group" aria-describedby="mfa-help" hidden>
+                    <legend>Código de verificação</legend>
+                    <div class="mfa-digits" role="group" aria-label="Código de 6 dígitos">
+                        <?php for ($digit = 1; $digit <= 6; $digit++): ?>
+                            <input class="mfa-digit" type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" autocomplete="<?= $digit === 1 ? 'one-time-code' : 'off' ?>" aria-label="Dígito <?= $digit ?> de 6" required>
+                        <?php endfor; ?>
+                    </div>
+                </fieldset>
+                <input type="hidden" id="code" value="" disabled>
+                <div class="mfa-recovery" hidden>
+                    <label for="recovery-code">Código de recuperação</label>
+                    <input type="text" id="recovery-code" autocomplete="off" maxlength="14" pattern="[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}" aria-describedby="mfa-help" disabled>
+                </div>
                 <small id="mfa-help"><?= is_array($setup ?? null)
                     ? 'Digite os 6 números gerados pelo autenticador após ler o QR Code.'
-                    : 'Digite os 6 números do autenticador ou um recovery code no formato XXXX-XXXX-XXXX.' ?></small>
+                    : 'Digite os 6 números do autenticador.' ?></small>
+                <?php if (!is_array($setup ?? null)): ?><noscript><small>Códigos de recuperação também são aceitos no formato XXXX-XXXX-XXXX.</small></noscript><?php endif; ?>
+                <?php if (!is_array($setup ?? null)): ?><button class="mfa-mode-toggle" type="button" aria-expanded="false" hidden>Usar código de recuperação</button><?php endif; ?>
                 <button type="submit">Verificar e entrar</button>
             </form>
+            <script src="/themes/auth/js/mfa-challenge.js" defer></script>
 
             <p class="auth-back"><a href="/login">← Voltar ao login</a></p>
             <p class="auth-meta">O desafio expira em 5 minutos · Moves <?= $this->e((string) $version) ?></p>

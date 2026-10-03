@@ -2,14 +2,21 @@
 declare(strict_types=1);
 namespace Moves\Services\Day;
 use Moves\Boot\Connection;
-use Moves\Services\Talk\TalkTenantContext;
+use Moves\Core\Auth;
+use Moves\Services\Platform\TenantContext;
 use PDO;
 use RuntimeException;
 
 final class DayService
 {
     private int $tenantId;
-    public function __construct(?int $tenantId=null){$this->tenantId=$tenantId??(new TalkTenantContext())->currentTenantId();}
+    public function __construct(?int $tenantId=null)
+    {
+        if($tenantId!==null){$this->tenantId=$tenantId;return;}
+        $user=Auth::user();
+        if($user===null)throw new RuntimeException('Contexto de administradora indisponível.');
+        $this->tenantId=(new TenantContext())->currentId((int)$user->id);
+    }
 
     public static function safeSourceUrl(?string $url): string
     {
