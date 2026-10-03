@@ -7,13 +7,36 @@ use PHPUnit\Framework\TestCase;
 
 final class ErpMfaRuntimeConfigTest extends TestCase
 {
+    /** @var array<string, string|false> */
+    private array $originalProcessEnvironment = [];
+
+    /** @var array<string, string> */
+    private array $originalEnvironment = [];
+
+    protected function setUp(): void
+    {
+        foreach (['MFA_KEY_ID', 'MFA_KEY', 'ERP_MFA_KEY_ID', 'ERP_MFA_KEY'] as $key) {
+            $this->originalProcessEnvironment[$key] = getenv($key);
+            if (isset($_ENV[$key])) {
+                $this->originalEnvironment[$key] = (string) $_ENV[$key];
+            }
+            unset($_ENV[$key]);
+            putenv($key);
+        }
+    }
+
     protected function tearDown(): void
     {
-        unset($_ENV['MFA_KEY_ID'], $_ENV['MFA_KEY'], $_ENV['ERP_MFA_KEY_ID'], $_ENV['ERP_MFA_KEY']);
-        putenv('MFA_KEY_ID');
-        putenv('MFA_KEY');
-        putenv('ERP_MFA_KEY_ID');
-        putenv('ERP_MFA_KEY');
+        foreach (['MFA_KEY_ID', 'MFA_KEY', 'ERP_MFA_KEY_ID', 'ERP_MFA_KEY'] as $key) {
+            if (array_key_exists($key, $this->originalEnvironment)) {
+                $_ENV[$key] = $this->originalEnvironment[$key];
+            } else {
+                unset($_ENV[$key]);
+            }
+
+            $value = $this->originalProcessEnvironment[$key] ?? false;
+            putenv($value === false ? $key : $key . '=' . $value);
+        }
     }
 
     public function testLoadsVersionedKeyFromEnvironment(): void
