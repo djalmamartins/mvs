@@ -116,11 +116,13 @@ final class CoreTest extends TestCase
         $guest = file_get_contents(dirname(__DIR__) . '/app/Middleware/GuestMiddleware.php');
         $permission = file_get_contents(dirname(__DIR__) . '/app/Middleware/PermissionMiddleware.php');
         $onboarding = file_get_contents(dirname(__DIR__) . '/app/Controllers/OnboardingController.php');
+        $tenant = file_get_contents(dirname(__DIR__) . '/app/Controllers/TenantController.php');
 
         self::assertIsString($auth);
         self::assertIsString($guest);
         self::assertIsString($permission);
         self::assertIsString($onboarding);
+        self::assertIsString($tenant);
         self::assertStringContainsString("hasActiveTotp", $auth);
         self::assertStringNotContainsString("MfaRequirementPolicy", $auth);
         self::assertStringNotContainsString("MfaSetupService", $auth);
@@ -128,6 +130,8 @@ final class CoreTest extends TestCase
         self::assertStringContainsString("Response::to('/day')", $guest);
         self::assertStringContainsString("Response::to('/day')", $permission);
         self::assertStringContainsString("Response::to('/day')", $onboarding);
+        self::assertStringContainsString("Response::to('/day')", $tenant);
+        self::assertStringNotContainsString("Response::to('/app')", $tenant);
     }
 
     public function testPlatformProfileAndOptionalMfaUseAdministrativeRoutes(): void
