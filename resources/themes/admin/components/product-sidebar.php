@@ -2,7 +2,7 @@
 /** Moves Platform | Product Navigation */
 $activeProduct=$activeProduct??'studio';$currentPage=$currentPage??'dashboard';
 if($activeProduct==='day'){
-$ariaLabel='Navegação do Meu Dia';$groups=['Principal'=>[['label'=>'Meu Dia','icon'=>'icon-sunny-outline','href'=>'/day','key'=>'dashboard']], 'Conta'=>[['label'=>'Meu perfil','icon'=>'icon-person-outline','href'=>'/profile','key'=>'profile'],['label'=>'Segurança','icon'=>'icon-shield-checkmark-outline','href'=>'/profile/security/2fa','key'=>'security']], 'Administração'=>[['label'=>'Administradora e produtos','icon'=>'icon-settings-outline','href'=>'/settings','key'=>'settings']]];
+$ariaLabel='Navegação do Meu Dia';$groups=['Principal'=>[['label'=>'Meu Dia','icon'=>'icon-sunny-outline','href'=>'/day','key'=>'today']], 'Conta'=>[['label'=>'Meu perfil','icon'=>'icon-person-outline','href'=>'/profile','key'=>'profile'],['label'=>'Segurança','icon'=>'icon-shield-checkmark-outline','href'=>'/profile/security/2fa','key'=>'security']], 'Administração'=>[['label'=>'Administradora e produtos','icon'=>'icon-settings-outline','href'=>'/settings','key'=>'settings']]];
 }elseif($activeProduct==='erp'){
 $ariaLabel='Navegação do ERP';$groups=['Principal'=>[['label'=>'Visão geral','icon'=>'icon-grid-outline','href'=>'/erp','key'=>'dashboard']], 'Cadastros'=>[['label'=>'Administradora e condomínios','icon'=>'icon-business','href'=>'/settings','key'=>'settings']]];
 }elseif($activeProduct==='support'){

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS day_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT UNSIGNED NOT NULL,
+    assigned_user_id BIGINT UNSIGNED NOT NULL,
+    created_by BIGINT UNSIGNED NULL,
+    title VARCHAR(190) NOT NULL,
+    description TEXT NULL,
+    starts_at DATETIME NOT NULL,
+    ends_at DATETIME NULL,
+    status VARCHAR(24) NOT NULL DEFAULT 'scheduled',
+    source_type VARCHAR(40) NOT NULL DEFAULT 'day',
+    source_id BIGINT UNSIGNED NULL,
+    source_url VARCHAR(500) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY day_events_tenant_assignee_start (tenant_id,assigned_user_id,starts_at,status),
+    CONSTRAINT day_events_tenant FOREIGN KEY (tenant_id) REFERENCES talk_tenants(id) ON DELETE CASCADE,
+    CONSTRAINT day_events_assignee FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT day_events_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
