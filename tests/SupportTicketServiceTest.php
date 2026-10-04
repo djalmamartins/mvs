@@ -86,6 +86,7 @@ final class SupportTicketServiceTest extends TestCase
             $in=implode(',',array_map('intval',[$this->ids['tenantA'],$this->ids['tenantB']]));
             foreach(['support_ticket_events','support_tickets'] as $table){$this->pdo->exec("DELETE FROM {$table} WHERE tenant_id IN ({$in})");}
             $this->pdo->exec("DELETE FROM talk_tenant_users WHERE tenant_id IN ({$in})");
+            if(isset($this->ids['roleA'])){$this->pdo->exec("DELETE FROM platform_roles WHERE tenant_id IN ({$in})");}
             $this->pdo->exec("DELETE FROM talk_tenants WHERE id IN ({$in})");
             $users=implode(',',array_map('intval',[$this->ids['userA'],$this->ids['userB'],$this->ids['userC']]));
             $this->pdo->exec("DELETE FROM users WHERE id IN ({$users})");
@@ -98,8 +99,27 @@ final class SupportTicketServiceTest extends TestCase
         $u=$this->pdo->prepare("INSERT INTO users(name,email,password,status) VALUES(:name,:email,:password,'active')");
         foreach(['A','B','C'] as $key){$u->execute(['name'=>'Support '.$key,'email'=>'support-'.strtolower($key).'-'.$suffix.'@test.local','password'=>password_hash('test',PASSWORD_DEFAULT)]);$this->ids['user'.$key]=(int)$this->pdo->lastInsertId();}
         $t=$this->pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(:name,:slug,'active')");
-        foreach(['A','B'] as $key){$t->execute(['name'=>'Tenant '.$key,'slug'=>'support-'.strtolower($key).'-'.$suffix]);$this->ids['tenant'.$key]=(int)$this->pdo->lastInsertId();$m=$this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')");$m->execute(['tenant'=>$this->ids['tenant'.$key],'user'=>$this->ids['user'.$key]]);}
-        $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')")
-            ->execute(['tenant'=>$this->ids['tenantA'],'user'=>$this->ids['userC']]);
+        $hasTenantRoles=$this->pdo->query("SHOW TABLES LIKE 'platform_roles'")->fetchColumn()!==false;
+        foreach(['A','B'] as $key){
+            $t->execute(['name'=>'Tenant '.$key,'slug'=>'support-'.strtolower($key).'-'.$suffix]);
+            $this->ids['tenant'.$key]=(int)$this->pdo->lastInsertId();
+            if($hasTenantRoles){
+                $this->pdo->prepare("INSERT INTO platform_roles(tenant_id,slug,name,is_system) VALUES(:tenant,'agent','Atendente',1)")
+                    ->execute(['tenant'=>$this->ids['tenant'.$key]]);
+                $this->ids['role'.$key]=(int)$this->pdo->lastInsertId();
+            }
+            $this->addMember($key,$key,$hasTenantRoles);
+        }
+        $this->addMember('A','C',$hasTenantRoles);
+    }
+
+    private function addMember(string $tenantKey,string $userKey,bool $hasTenantRoles): void
+    {
+        $sql=$hasTenantRoles
+            ? "INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status) VALUES(:tenant,:user,'agent',:role_id,'active')"
+            : "INSERT INTO talk_tenant_users(tenant_id,user_id,role,status) VALUES(:tenant,:user,'agent','active')";
+        $params=['tenant'=>$this->ids['tenant'.$tenantKey],'user'=>$this->ids['user'.$userKey]];
+        if($hasTenantRoles){$params['role_id']=$this->ids['role'.$tenantKey];}
+        $this->pdo->prepare($sql)->execute($params);
     }
 }
