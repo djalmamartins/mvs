@@ -67,8 +67,10 @@ final class TicketService
             $id=(int)$pdo->lastInsertId();
             $event=$pdo->prepare('INSERT INTO support_ticket_events(tenant_id,ticket_id,user_id,event_type,payload) VALUES(:tenant,:ticket,:user,\'created\',:payload)');
             $event->execute(['tenant'=>$this->tenantId,'ticket'=>$id,'user'=>$actorId,'payload'=>json_encode(['priority'=>$priority], JSON_THROW_ON_ERROR)]);
+            $created=$this->findForUser($id,$actorId)
+                ?? throw new RuntimeException('Chamado criado, mas não foi possível recarregá-lo.');
             $pdo->commit();
-            return $this->findForUser($id,$actorId,true) ?? throw new RuntimeException('Chamado criado, mas não foi possível recarregá-lo.');
+            return $created;
         } catch (Throwable $exception) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
@@ -78,23 +80,22 @@ final class TicketService
     }
 
     /** @return array<string,mixed>|null */
-    public function findForUser(int $ticketId, int $userId, bool $allowTenantMember = false): ?array
+    public function findForUser(int $ticketId, int $userId): ?array
     {
         if ($ticketId <= 0 || $userId <= 0) {
             return null;
         }
         $pdo=Connection::getInstance();
         $this->assertMember($pdo,$userId);
-        $sql='SELECT * FROM support_tickets WHERE id=:id AND tenant_id=:tenant';
-        if (!$allowTenantMember) {
-            $sql.=' AND (requester_user_id=:user OR assigned_user_id=:user OR created_by=:user)';
-        }
-        $stmt=$pdo->prepare($sql.' LIMIT 1');
-        $params=['id'=>$ticketId,'tenant'=>$this->tenantId];
-        if (!$allowTenantMember) {
-            $params['user']=$userId;
-        }
-        $stmt->execute($params);
+        $stmt=$pdo->prepare('SELECT * FROM support_tickets WHERE id=:id AND tenant_id=:tenant'
+            .' AND (requester_user_id=:requester_user OR assigned_user_id=:assigned_user OR created_by=:creator_user) LIMIT 1');
+        $stmt->execute([
+            'id'=>$ticketId,
+            'tenant'=>$this->tenantId,
+            'requester_user'=>$userId,
+            'assigned_user'=>$userId,
+            'creator_user'=>$userId,
+        ]);
         $ticket=$stmt->fetch(PDO::FETCH_ASSOC);
         return is_array($ticket)?$ticket:null;
     }
