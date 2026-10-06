@@ -27,7 +27,7 @@ final class ErpModule
                     new PermissionMiddleware('erp.access'),
                 ];
 
-                foreach (['payables', 'receivables', 'billing', 'condominiums', 'people', 'units', 'bank-accounts', 'reconciliation'] as $page) {
+                foreach (['payables', 'receivables', 'billing', 'condominiums', 'bank-accounts', 'reconciliation'] as $page) {
                     $router->get(
                         '/erp/' . $page,
                         'PlatformController:erpPage',
@@ -35,6 +35,17 @@ final class ErpModule
                         $middleware
                     );
                 }
+
+                $router->get('/erp/people', 'ErpPeopleController:index', 'platform.erp.people', $middleware);
+                $router->get('/erp/people/new', 'ErpPeopleController:new', 'platform.erp.people.new', $middleware);
+                $router->post('/erp/people', 'ErpPeopleController:create', 'platform.erp.people.create', $middleware);
+                $router->get('/erp/people/{person_id}', 'ErpPeopleController:show', 'platform.erp.people.show', $middleware);
+                $router->post('/erp/people/{person_id}/links', 'ErpPeopleController:addLink', 'platform.erp.people.links.create', $middleware);
+                $router->post('/erp/people/{person_id}/links/{link_id}/close', 'ErpPeopleController:closeLink', 'platform.erp.people.links.close', $middleware);
+                $router->get('/erp/units', 'ErpPeopleController:units', 'platform.erp.units', $middleware);
+                $router->get('/erp/units/new', 'ErpPeopleController:newUnit', 'platform.erp.units.new', $middleware);
+                $router->post('/erp/units', 'ErpPeopleController:createUnit', 'platform.erp.units.create', $middleware);
+                $router->get('/erp/units/{unit_id}', 'ErpPeopleController:showUnit', 'platform.erp.units.show', $middleware);
 
                 $router->get(
                     '/api/v1/erp/status',
