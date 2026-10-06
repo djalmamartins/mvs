@@ -1,0 +1,1 @@
+<div class="erp-demo-notice" role="note"><span aria-hidden="true">i</span><div><strong>Ambiente demonstrativo</strong><p>Os lançamentos e valores desta tela são exemplos fictícios, não são gravados e não representam movimentações reais. Os cadastros de condomínios continuam vindo do tenant atual.</p></div></div>

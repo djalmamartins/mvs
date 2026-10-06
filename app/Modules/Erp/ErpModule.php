@@ -27,6 +27,15 @@ final class ErpModule
                     new PermissionMiddleware('erp.access'),
                 ];
 
+                foreach (['payables', 'receivables', 'billing', 'condominiums', 'people', 'units', 'bank-accounts', 'reconciliation'] as $page) {
+                    $router->get(
+                        '/erp/' . $page,
+                        'PlatformController:erpPage',
+                        'platform.erp.' . $page,
+                        $middleware
+                    );
+                }
+
                 $router->get(
                     '/api/v1/erp/status',
                     'Api\\V1\\ErpStatusController:index',

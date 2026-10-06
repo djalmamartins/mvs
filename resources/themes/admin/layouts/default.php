@@ -134,6 +134,9 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
     <?php if (($activeProduct ?? '') === 'talk'): ?>
         <link rel="stylesheet" href="<?= $this->e($this->asset('css/talk.css')) ?>">
     <?php endif; ?>
+    <?php if (($activeProduct ?? '') === 'erp'): ?>
+        <link rel="stylesheet" href="<?= $this->e($this->asset('css/erp.css')) ?>">
+    <?php endif; ?>
 
     <?php if (!empty($hasMovesEditor)): ?>
         <link
