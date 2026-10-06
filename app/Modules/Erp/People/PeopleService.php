@@ -23,7 +23,7 @@ final readonly class PeopleService
     /** @param array<string,mixed> $data @return array{id:int,created:bool,link_id:?int} */
     public function create(int $tenantId, int $administratorId, int $actorId, array $data): array
     {
-        $person = $this->normalize($data);
+        $person = self::normalizePerson($data);
         $hasFirstLink = ($data['create_link'] ?? '') === '1';
         $link = $hasFirstLink ? $this->normalizeLink($data) : null;
 
@@ -137,7 +137,7 @@ final readonly class PeopleService
     }
 
     /** @param array<string,mixed> $data @return array{entity_type:string,full_name:string,trade_name:?string,document_type:?string,document_number:?string,email:?string,phone:?string} */
-    private function normalize(array $data): array
+    public static function normalizePerson(array $data): array
     {
         $entityType = (string) ($data['entity_type'] ?? 'person');
         if (!in_array($entityType, ['person','organization'], true)) {

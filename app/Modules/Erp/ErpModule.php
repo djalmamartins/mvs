@@ -27,7 +27,7 @@ final class ErpModule
                     new PermissionMiddleware('erp.access'),
                 ];
 
-                foreach (['payables', 'receivables', 'billing', 'condominiums', 'bank-accounts', 'reconciliation'] as $page) {
+                foreach (['payables', 'receivables', 'billing', 'bank-accounts', 'reconciliation'] as $page) {
                     $router->get(
                         '/erp/' . $page,
                         'PlatformController:erpPage',
@@ -35,6 +35,21 @@ final class ErpModule
                         $middleware
                     );
                 }
+
+                $router->get('/erp/condominiums', 'ErpCondominiumController:index', 'platform.erp.condominiums', $middleware);
+                $router->get('/erp/condominiums/new', 'ErpCondominiumController:new', 'platform.erp.condominiums.new', $middleware);
+                $router->post('/erp/condominiums', 'ErpCondominiumController:create', 'platform.erp.condominiums.create', $middleware);
+                $router->get('/erp/condominiums/{condominium_id}/edit', 'ErpCondominiumController:edit', 'platform.erp.condominiums.edit', $middleware);
+                $router->post('/erp/condominiums/{condominium_id}/edit', 'ErpCondominiumController:update', 'platform.erp.condominiums.update', $middleware);
+                $router->get('/erp/condominiums/{condominium_id}', 'ErpCondominiumController:show', 'platform.erp.condominiums.show', $middleware);
+
+                $router->get('/erp/suppliers', 'ErpSupplierController:index', 'platform.erp.suppliers', $middleware);
+                $router->get('/erp/suppliers/new', 'ErpSupplierController:new', 'platform.erp.suppliers.new', $middleware);
+                $router->post('/erp/suppliers', 'ErpSupplierController:create', 'platform.erp.suppliers.create', $middleware);
+                $router->get('/erp/suppliers/{supplier_id}', 'ErpSupplierController:show', 'platform.erp.suppliers.show', $middleware);
+                $router->post('/erp/suppliers/{supplier_id}/status', 'ErpSupplierController:updateStatus', 'platform.erp.suppliers.status', $middleware);
+                $router->post('/erp/suppliers/{supplier_id}/condominiums', 'ErpSupplierController:addCondominium', 'platform.erp.suppliers.condominiums.create', $middleware);
+                $router->post('/erp/suppliers/{supplier_id}/condominiums/{link_id}/close', 'ErpSupplierController:closeCondominium', 'platform.erp.suppliers.condominiums.close', $middleware);
 
                 $router->get('/erp/people', 'ErpPeopleController:index', 'platform.erp.people', $middleware);
                 $router->get('/erp/people/new', 'ErpPeopleController:new', 'platform.erp.people.new', $middleware);

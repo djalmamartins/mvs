@@ -59,7 +59,7 @@ final class PlatformSaasFoundationTest extends TestCase
         self::assertFalse((new TenantAuthorization($this->pdo))->can($member, $tenantA, 'settings.manage'));
 
         $condominiums = new CondominiumService($this->pdo);
-        $condominiums->save($tenantA, ['legal_name'=>'Condomínio A','tax_id'=>'12345678000190'], $ownerA);
+        $condominiums->save($tenantA, ['legal_name'=>'Condomínio A','tax_id'=>'11222333000181'], $ownerA);
         self::assertCount(1, $condominiums->all($tenantA));
         self::assertCount(0, $condominiums->all($tenantB));
         self::assertGreaterThanOrEqual(3, (int) $this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
