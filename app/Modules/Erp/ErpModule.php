@@ -43,6 +43,11 @@ final class ErpModule
                 $router->post('/erp/condominiums/{condominium_id}/edit', 'ErpCondominiumController:update', 'platform.erp.condominiums.update', $middleware);
                 $router->get('/erp/condominiums/{condominium_id}', 'ErpCondominiumController:show', 'platform.erp.condominiums.show', $middleware);
 
+                $router->get('/erp/periods', 'ErpPeriodController:index', 'platform.erp.periods', $middleware);
+                $router->get('/erp/periods/new', 'ErpPeriodController:new', 'platform.erp.periods.new', $middleware);
+                $router->post('/erp/periods', 'ErpPeriodController:create', 'platform.erp.periods.create', $middleware);
+                $router->get('/erp/periods/{period_id}', 'ErpPeriodController:show', 'platform.erp.periods.show', $middleware);
+
                 $router->get('/erp/suppliers', 'ErpSupplierController:index', 'platform.erp.suppliers', $middleware);
                 $router->get('/erp/suppliers/new', 'ErpSupplierController:new', 'platform.erp.suppliers.new', $middleware);
                 $router->post('/erp/suppliers', 'ErpSupplierController:create', 'platform.erp.suppliers.create', $middleware);

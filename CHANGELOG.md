@@ -1,5 +1,16 @@
 # Changelog
 
+## ERP — Competência mensal aberta
+
+### Added
+
+- Cadastro persistente de competências mensais abertas por condomínio, com filtros por condomínio, ano e situação, detalhe e trilha de auditoria.
+- Unicidade no banco por administradora, condomínio, ano e mês, com validação de tenant, autorização ERP e CSRF.
+
+### Limites desta etapa
+
+- Competências permanecem abertas. Fechamento, reabertura e efeitos financeiros não foram implementados.
+
 ## Moves Support — Knowledge Base v1.0.0 (Release Candidate)
 
 ### Added
