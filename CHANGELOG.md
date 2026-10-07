@@ -1,5 +1,18 @@
 # Changelog
 
+## ERP — Fundação de contas a receber
+
+### Added
+
+- Cadastro e consulta tenant-scoped de títulos a receber ligados a unidade e vínculo pessoal ativo.
+- Parcelas com valores, vencimentos e competências abertas informados explicitamente; a soma deve coincidir com o total.
+- Classificação por contas analíticas de ativo e receita do plano do condomínio, auditoria transacional e FKs compostas.
+
+### Limites desta etapa
+
+- Um título para uma ou mais parcelas é decisão explícita Moves, motivada por um exemplo auditado, sem generalizar cardinalidade do APControle.
+- Sem recebimento/estorno, cobrança/fatura/boleto, juros, rateio, banco, conciliação, ledger ou saldo.
+
 ## ERP — Plano de contas persistente
 
 ### Added

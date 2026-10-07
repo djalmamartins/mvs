@@ -27,7 +27,7 @@ final class ErpModule
                     new PermissionMiddleware('erp.access'),
                 ];
 
-                foreach (['payables', 'receivables', 'billing', 'bank-accounts', 'reconciliation'] as $page) {
+                foreach (['payables', 'billing', 'bank-accounts', 'reconciliation'] as $page) {
                     $router->get(
                         '/erp/' . $page,
                         'PlatformController:erpPage',
@@ -35,6 +35,11 @@ final class ErpModule
                         $middleware
                     );
                 }
+
+                $router->get('/erp/receivables', 'ErpReceivableController:index', 'platform.erp.receivables', $middleware);
+                $router->get('/erp/receivables/new', 'ErpReceivableController:new', 'platform.erp.receivables.new', $middleware);
+                $router->post('/erp/receivables', 'ErpReceivableController:create', 'platform.erp.receivables.create', $middleware);
+                $router->get('/erp/receivables/{receivable_id}', 'ErpReceivableController:show', 'platform.erp.receivables.show', $middleware);
 
                 $router->get('/erp/condominiums', 'ErpCondominiumController:index', 'platform.erp.condominiums', $middleware);
                 $router->get('/erp/condominiums/new', 'ErpCondominiumController:new', 'platform.erp.condominiums.new', $middleware);

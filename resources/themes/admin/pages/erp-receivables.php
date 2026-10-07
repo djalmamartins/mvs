@@ -1,0 +1,14 @@
+<?php declare(strict_types=1); $this->layout('layouts/default', compact('title','productName','activeProduct','currentPage')); ?>
+<main class="erp-page erp-page-receivables">
+    <?php $this->insert('components/erp-page-header', ['heading'=>'Contas a receber','description'=>'Títulos e parcelas previstos por unidade e competência.','kicker'=>'MOVES · ERP','actionHref'=>'/erp/receivables/new','actionLabel'=>'Registrar título']); ?>
+    <form method="get" action="/erp/receivables" class="erp-filter-bar" role="search">
+        <label class="erp-search-field"><span class="sr-only">Buscar título, pessoa ou unidade</span><input type="search" name="q" maxlength="100" value="<?= $this->e($query) ?>" placeholder="Descrição, pessoa ou unidade"></label>
+        <button class="erp-button" type="submit">Buscar</button>
+    </form>
+    <section class="erp-panel erp-data-panel">
+        <header class="erp-panel-head"><div><h2>Títulos registrados</h2><p><?= count($receivables) ?> registro(s) · consulta limitada ao tenant atual</p></div></header>
+        <?php if($receivables===[]): ?><div class="erp-empty-state"><strong>Nenhum título a receber encontrado.</strong><p>Registre os valores e vencimentos previstos. Esta etapa não recebe valores nem atualiza saldos.</p><a class="erp-button erp-button-primary" href="/erp/receivables/new">Registrar título</a></div>
+        <?php else: ?><div class="erp-table-wrap"><table class="erp-responsive-directory-table"><thead><tr><th>Descrição / responsável</th><th>Condomínio · unidade</th><th>Parcelas</th><th>Vencimentos</th><th class="numeric">Total</th><th>Situação</th><th></th></tr></thead><tbody><?php foreach($receivables as $row): ?><tr><td data-label="Descrição / responsável"><a class="erp-record-link" href="/erp/receivables/<?= (int)$row['id'] ?>"><strong><?= $this->e((string)$row['description']) ?></strong><small><?= $this->e((string)$row['full_name']) ?></small></a></td><td data-label="Condomínio · unidade"><?= $this->e((string)$row['condominium_name'].' · '.($row['block_name']?((string)$row['block_name'].' · '):'').(string)$row['unit_code']) ?></td><td data-label="Parcelas"><?= (int)$row['installment_count'] ?></td><td data-label="Vencimentos"><?= $this->e((string)$row['first_due_date']) ?><?= $row['last_due_date']!==$row['first_due_date']?' – '.$this->e((string)$row['last_due_date']):'' ?></td><td class="numeric" data-label="Total">R$ <?= $this->e(number_format((float)$row['total_amount'],2,',','.')) ?></td><td data-label="Situação"><span class="erp-status pendente">Registrado · sem baixa</span></td><td data-label="Ação"><a class="erp-record-link" href="/erp/receivables/<?= (int)$row['id'] ?>">Visualizar</a></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+        <footer class="erp-table-foot">Valores planejados; recebimentos, liquidação bancária e saldo não fazem parte desta fundação.</footer>
+    </section>
+</main>

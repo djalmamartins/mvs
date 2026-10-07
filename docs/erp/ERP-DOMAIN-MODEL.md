@@ -150,6 +150,14 @@ Continuar no módulo `Moves\Modules\Erp`; Core permanece transversal. Controller
 
 Um exemplo não determina modelo global. Não acrescentar chave de ledger ou relação de pagamento ao desenho como fato de referência: `FONTE CANÔNICA FINANCEIRA` permanece **NÃO COMPROVADA**. Manter pagamentos, recebimentos, movimentos bancários e alocações como entidades alvo provisórias sujeitas a validação.
 
+## Implementação Moves — fundação limitada de contas a receber
+
+`erp_receivables` registra um título por administradora, condomínio, unidade e vínculo pessoal escolhido pelo operador. O vínculo precisa pertencer àquela unidade e estar ativo na data do cadastro. O título referencia o plano ativo do condomínio e duas contas analíticas ativas desse plano: uma de natureza ativo para recebíveis e uma de natureza receita.
+
+`erp_receivable_installments` guarda uma ou mais parcelas com valor decimal explícito, vencimento e competência aberta do mesmo condomínio. **Um título para uma ou mais parcelas é decisão Moves**, motivada por um exemplo 1:N observado na referência, sem afirmar que essa cardinalidade seja universal no APControle. O operador informa o valor total e cada parcela; a soma exata em centavos precisa coincidir. Nenhum rateio ou valor é calculado automaticamente.
+
+A criação do título, das parcelas e do evento `erp.receivable.created` ocorre em uma transação. FKs compostas preservam o mesmo administrador, condomínio, unidade, vínculo, plano, contas e competência. Listagem, detalhe, CSRF e autorização ERP estão implementados. Esta fundação não inclui recebimento, liquidação, baixa, reversão, cobrança, fatura, boleto, banco, conciliação, lançamento/ledger nem saldo. A conta analítica classifica o título; não representa movimento financeiro ou fonte canônica de saldo.
+
 ## Decisão pós-auditoria sobre fundação e limites do ledger
 
 A tela do plano de contas confirmou árvore/classificações de ativos, passivos, patrimônio/resultado, receitas e despesas, contas especiais e transferência configurável entre contas. Ela também mostra a opção de centro de custo em detalhe de conta, sem prova do relacionamento de persistência ou lançamento. A configuração de boleto conecta conceitualmente banco, beneficiário, carteira/convênio, conta contábil de tarifas, conta recebedora, baixa automática, desconto e instruções; isso não comprova a entidade fonte de um movimento. Orçamento e índice de correção aparecem como configurações separadas. Competência é usada em múltiplas listas e períodos fechados alimentam alguns relatórios, mas o estado/transação de fechamento não foi rastreado.
