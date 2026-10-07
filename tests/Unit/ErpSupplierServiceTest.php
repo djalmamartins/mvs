@@ -53,4 +53,15 @@ final class ErpSupplierServiceTest extends TestCase
         $supplierB=$this->service->create(200,20,2,['entity_type'=>'person','full_name'=>'Prestador B','document_type'=>'cpf','document_number'=>'52998224725','category_id'=>'3']);
         try{$this->service->addCondominium(200,20,2,$supplierB['id'],['condominium_id'=>'101','starts_at'=>'2026-01-01']);self::fail('Fornecedor B não deve se associar ao condomínio de A.');}catch(InvalidArgumentException $exception){self::assertStringContainsString('não encontrado',$exception->getMessage());}
     }
+
+    public function testEndingCondominiumLinkPreservesItsTemporalHistoryAndAudits():void
+    {
+        $supplier=$this->service->create(100,10,1,['entity_type'=>'organization','full_name'=>'Fornecedor Temporal','document_type'=>'cnpj','document_number'=>'11222333000181','category_id'=>'1','condominium_ids'=>['101'],'starts_at'=>'2026-01-01']);
+        $link=$this->pdo->query('SELECT id FROM erp_supplier_condominiums WHERE administrator_id=10 AND supplier_id='.(int)$supplier['id'])->fetchColumn();
+
+        self::assertTrue($this->service->endCondominium(100,10,1,(int)$supplier['id'],(int)$link,'2026-10-07'));
+        $statement=$this->pdo->query('SELECT starts_at,ends_at,status,ended_by_user_id FROM erp_supplier_condominiums WHERE id='.(int)$link);
+        self::assertSame(['starts_at'=>'2026-01-01','ends_at'=>'2026-10-07','status'=>'inactive','ended_by_user_id'=>1],$statement->fetch(PDO::FETCH_ASSOC));
+        self::assertSame(1,(int)$this->pdo->query("SELECT COUNT(*) FROM platform_audit_events WHERE event_type='erp.supplier_condominium.ended'")->fetchColumn());
+    }
 }

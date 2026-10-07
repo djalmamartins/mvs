@@ -1,5 +1,12 @@
 # Changelog
 
+## ERP — histórico de atendimento de fornecedores
+
+### Fixed
+
+- Encerramento de vínculo temporal entre fornecedor e condomínio usa parâmetros PDO nomeados distintos, permitindo persistir a data final em MySQL sem erro HY093.
+- Teste de serviço e E2E HTTP cobrem a preservação do histórico, auditoria e isolamento tenant dessa operação.
+
 ## ERP — edição de identificação da unidade
 
 ### Added

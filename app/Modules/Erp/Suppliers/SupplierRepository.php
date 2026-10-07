@@ -74,7 +74,7 @@ final readonly class SupplierRepository
 
     public function endCondominium(int $administratorId,int $supplierId,int $linkId,int $actorId,string $endsAt): bool
     {
-        $this->assertDate($endsAt);$statement=$this->pdo->prepare("UPDATE erp_supplier_condominiums SET ends_at=:ends_at,status='inactive',ended_by_user_id=:actor_id WHERE administrator_id=:administrator_id AND supplier_id=:supplier_id AND id=:id AND status='active' AND starts_at<=:ends_at");$statement->execute(['ends_at'=>$endsAt,'actor_id'=>$actorId,'administrator_id'=>$administratorId,'supplier_id'=>$supplierId,'id'=>$linkId]);return $statement->rowCount()===1;
+        $this->assertDate($endsAt);$statement=$this->pdo->prepare("UPDATE erp_supplier_condominiums SET ends_at=:new_ends_at,status='inactive',ended_by_user_id=:actor_id WHERE administrator_id=:administrator_id AND supplier_id=:supplier_id AND id=:id AND status='active' AND starts_at<=:valid_on");$statement->execute(['new_ends_at'=>$endsAt,'valid_on'=>$endsAt,'actor_id'=>$actorId,'administrator_id'=>$administratorId,'supplier_id'=>$supplierId,'id'=>$linkId]);return $statement->rowCount()===1;
     }
 
     private static function assertDate(string $date): void
