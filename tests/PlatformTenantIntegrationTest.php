@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
+use Moves\Core\Access;
+use Moves\Core\Session;
 use Moves\Modules\Erp\Cadastros\AdministratorRepository;
 use Moves\Modules\Erp\Cadastros\CadastroServiceFactory;
 use Moves\Modules\Erp\Security\AdministratorTenantAccess;
 use Moves\Services\Talk\TalkTenantContext;
+use MovesCode\Model\Connection as ModelConnection;
 use PHPUnit\Framework\TestCase;
 
 final class PlatformTenantIntegrationTest extends TestCase
@@ -18,6 +21,7 @@ final class PlatformTenantIntegrationTest extends TestCase
     {
         Environment::load(dirname(__DIR__));
         $this->pdo = Connection::getInstance();
+        ModelConnection::configure($this->pdo);
         $this->pdo->beginTransaction();
     }
 
@@ -72,6 +76,43 @@ final class PlatformTenantIntegrationTest extends TestCase
         $this->pdo->prepare("INSERT INTO platform_tenant_products(tenant_id,product,enabled) VALUES(?,'talk',1)")
             ->execute([$tenantA]);
         self::assertSame($tenantA, (new TalkTenantContext())->forUser($userA, $tenantA));
+    }
+
+    public function testLegacyGlobalAdminRoleCannotOverrideTenantCapability(): void
+    {
+        $suffix = bin2hex(random_bytes(6));
+        $administratorId = (new AdministratorRepository($this->pdo))->create('Capability tenant ' . $suffix, null, 'CAP-' . $suffix);
+        $tenantId = $this->tenantId($administratorId);
+        (new \Moves\Services\Platform\CompanyService($this->pdo))->ensureRoles($tenantId);
+        $agent = $this->user('capability-agent-' . $suffix . '@example.test');
+        $agentRole = $this->pdo->prepare("SELECT id FROM platform_roles WHERE tenant_id=? AND slug='agent'");
+        $agentRole->execute([$tenantId]);
+        $this->pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) VALUES(?,?,'agent',?,'active',1)")
+            ->execute([$tenantId, $agent, (int) $agentRole->fetchColumn()]);
+        $this->pdo->prepare("UPDATE users SET role='admin' WHERE id=?")->execute([$agent]);
+
+        $startedSession = session_status() !== PHP_SESSION_ACTIVE;
+        if ($startedSession) {
+            Session::start();
+        }
+        $previousSession = $_SESSION;
+        $_SESSION = [
+            'auth_user' => $agent,
+            'auth_last_activity' => time(),
+            'auth_authenticated_at' => time(),
+            'talk_tenant_id' => $tenantId,
+        ];
+
+        try {
+            self::assertFalse(Access::can('content.manage'));
+            self::assertFalse(Access::can('settings.manage'));
+            self::assertTrue(Access::can('profile.view'));
+        } finally {
+            $_SESSION = $previousSession;
+            if ($startedSession) {
+                Session::destroy();
+            }
+        }
     }
 
     private function tenantId(int $administratorId): int

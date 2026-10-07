@@ -17,6 +17,7 @@ use Moves\Models\User;
 use Moves\Services\Auth\UserInvitationService;
 use Moves\Services\Auth\PasswordPolicy;
 use Moves\Services\Mail\SmtpInvitationMailer;
+use Moves\Services\Platform\PlatformAudit;
 use Moves\Services\Platform\TenantContext;
 use MovesCode\Pager\Pager;
 use PDO;
@@ -151,6 +152,7 @@ final class UserController extends Controller
      */
     public function index(array $data = []): void
     {
+        $tenantId = $this->currentTenantId();
         $page = max(
             1,
             (int) ($data['page'] ?? 1)
@@ -158,15 +160,18 @@ final class UserController extends Controller
 
         $search = mb_substr(trim(strip_tags((string) Request::get('q', ''))), 0, 100);
         $status = in_array(Request::get('status'), ['active', 'inactive'], true) ? (string) Request::get('status') : '';
-        $role = in_array(Request::get('role'), ['admin', 'user'], true) ? (string) Request::get('role') : '';
-        $where = [];
-        $params = [];
-        if ($search !== '') { $where[] = '(name LIKE :search OR email LIKE :search)'; $params['search'] = '%' . $search . '%'; }
-        if ($status !== '') { $where[] = 'status = :status'; $params['status'] = $status; }
-        if ($role !== '') { $where[] = 'role = :role'; $params['role'] = $role; }
-        $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
+        $role = in_array(Request::get('role'), ['owner', 'administrator', 'supervisor', 'agent', 'operator'], true) ? (string) Request::get('role') : '';
+        $where = ['membership.tenant_id = :tenant_id'];
+        $params = ['tenant_id' => $tenantId];
+        if ($search !== '') { $where[] = '(account.name LIKE :search OR account.email LIKE :search)'; $params['search'] = '%' . $search . '%'; }
+        if ($status !== '') { $where[] = 'membership.status = :status'; $params['status'] = $status; }
+        if ($role !== '') { $where[] = 'membership.role = :role'; $params['role'] = $role; }
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+        $fromSql = ' FROM talk_tenant_users membership
+                     INNER JOIN users account ON account.id = membership.user_id
+                     INNER JOIN platform_roles platform_role ON platform_role.id = membership.role_id AND platform_role.tenant_id = membership.tenant_id';
         $pdo = Connection::getInstance();
-        $count = $pdo->prepare('SELECT COUNT(*) FROM users' . $whereSql);
+        $count = $pdo->prepare('SELECT COUNT(*)' . $fromSql . $whereSql);
         $count->execute($params);
         $total = (int) $count->fetchColumn();
 
@@ -182,10 +187,18 @@ final class UserController extends Controller
             $page
         );
 
-        $statement = $pdo->prepare('SELECT id,name,email,role,status,created_at FROM users' . $whereSql . ' ORDER BY name ASC LIMIT ' . $pager->limit() . ' OFFSET ' . $pager->offset());
+        $statement = $pdo->prepare('SELECT account.id,account.name,account.email,platform_role.slug AS role_slug,platform_role.name AS role,
+                                           membership.status,account.created_at' . $fromSql . $whereSql
+            . ' ORDER BY account.name ASC,account.id ASC LIMIT ' . $pager->limit() . ' OFFSET ' . $pager->offset());
         $statement->execute($params);
         $users = $statement->fetchAll(PDO::FETCH_ASSOC);
-        $stats = $pdo->query("SELECT COUNT(*) total,SUM(status='active') active,SUM(status<>'active') inactive,SUM(role='admin') admins FROM users")->fetch(PDO::FETCH_ASSOC) ?: [];
+        $statsStatement = $pdo->prepare("SELECT COUNT(*) total,
+                                                SUM(membership.status='active' AND account.status='active') active,
+                                                SUM(membership.status<>'active' OR account.status<>'active') inactive,
+                                                SUM(platform_role.slug IN ('owner','administrator')) admins" . $fromSql
+            . ' WHERE membership.tenant_id=:tenant_id');
+        $statsStatement->execute(['tenant_id' => $tenantId]);
+        $stats = $statsStatement->fetch(PDO::FETCH_ASSOC) ?: [];
 
         echo $this->view->render(
             'pages/users',
@@ -204,23 +217,25 @@ final class UserController extends Controller
     /** @param array<string, string> $data */
     public function form(array $data = []): void
     {
+        $tenantId = $this->currentTenantId();
         $id = max(0, (int) ($data['id'] ?? 0));
         $user = null;
         if ($id > 0) {
-            $statement = Connection::getInstance()->prepare('SELECT id,name,email,role,status,created_at FROM users WHERE id=?');
-            $statement->execute([$id]);
+            $statement = Connection::getInstance()->prepare(
+                'SELECT account.id,account.name,account.email,membership.role_id,platform_role.slug AS role,
+                        membership.status,account.created_at
+                   FROM users account
+                   INNER JOIN talk_tenant_users membership ON membership.user_id=account.id AND membership.tenant_id=?
+                   INNER JOIN platform_roles platform_role ON platform_role.id=membership.role_id AND platform_role.tenant_id=membership.tenant_id
+                  WHERE account.id=?'
+            );
+            $statement->execute([$tenantId, $id]);
             $user = $statement->fetch(PDO::FETCH_ASSOC) ?: null;
             if ($user === null) { Response::to('/studio/users'); }
         }
-        $roles = [];
-        if ($id === 0) {
-            $actor = Auth::user();
-            if ($actor === null) { Response::to('/login'); }
-            $tenantId = (new TenantContext(Connection::getInstance()))->currentId((int) $actor->id);
-            $statement = Connection::getInstance()->prepare('SELECT id,slug,name FROM platform_roles WHERE tenant_id=? ORDER BY id');
-            $statement->execute([$tenantId]);
-            $roles = $statement->fetchAll(PDO::FETCH_ASSOC);
-        }
+        $statement = Connection::getInstance()->prepare('SELECT id,slug,name FROM platform_roles WHERE tenant_id=? ORDER BY id');
+        $statement->execute([$tenantId]);
+        $roles = $statement->fetchAll(PDO::FETCH_ASSOC);
         echo $this->view->render('pages/user-form', ['title' => $id ? 'Editar usuário' : 'Convidar usuário', 'user' => $user, 'roles' => $roles]);
     }
 
@@ -228,31 +243,52 @@ final class UserController extends Controller
     {
         $this->validateCsrf();
         $id = max(0, (int) Request::post('id', 0));
+        $tenantId = $this->currentTenantId();
         $name = mb_substr(trim(strip_tags((string) Request::post('name', ''))), 0, 120);
         $email = mb_strtolower(mb_substr(trim((string) Request::post('email', '')), 0, 190));
 
         if ($id === 0) {
             $this->inviteUser($name, $email, max(0, (int) Request::post('role_id', 0)));
         }
+        if ($id === 1) {
+            Flash::set('error', 'O administrador principal não pode ser alterado nesta tela.');
+            Response::to('/studio/users');
+        }
 
-        $role = in_array(Request::post('role'), ['admin', 'user'], true) ? (string) Request::post('role') : 'user';
-        $status = in_array(Request::post('status'), ['active', 'inactive'], true) ? (string) Request::post('status') : 'inactive';
-        $password = (string) Request::post('password', '');
-        if (mb_strlen($name) < 2 || filter_var($email, FILTER_VALIDATE_EMAIL) === false || ($password !== '' && strlen($password) < 8)) {
-            Flash::set('error', 'Revise nome, e-mail e senha.');
+        $roleId = max(0, (int) Request::post('role_id', 0));
+        $status = in_array(Request::post('status'), ['active', 'inactive'], true) ? (string) Request::post('status') : '';
+        $actor = Auth::user();
+        if ($actor === null) { Response::to('/login'); }
+        $roleStatement = Connection::getInstance()->prepare('SELECT slug FROM platform_roles WHERE id=? AND tenant_id=?');
+        $roleStatement->execute([$roleId, $tenantId]);
+        $roleSlug = $roleStatement->fetchColumn();
+        if (!is_string($roleSlug) || $status === '') {
+            Flash::set('error', 'Selecione um perfil e uma situação válidos para esta administradora.');
             Response::to('/studio/users/edit/' . $id);
         }
-        if ($id === 1) { $role = 'admin'; $status = 'active'; }
+
+        $pdo = Connection::getInstance();
         try {
-            $pdo = Connection::getInstance();
-            $sql = 'UPDATE users SET name=?,email=?,role=?,status=?' . ($password !== '' ? ',password=?' : '') . ' WHERE id=?';
-            $values = [$name, $email, $role, $status];
-            if ($password !== '') { $values[] = password_hash($password, PASSWORD_DEFAULT); }
-            $values[] = $id;
-            $pdo->prepare($sql)->execute($values);
-            Logger::info('Usuário administrativo salvo.', ['record_id' => $id, 'actor_id' => Auth::user()?->id]);
+            $pdo->beginTransaction();
+            $membership = $pdo->prepare('SELECT role_id,status FROM talk_tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE');
+            $membership->execute([$tenantId, $id]);
+            $before = $membership->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($before)) {
+                $pdo->rollBack();
+                Flash::set('error', 'Usuário não encontrado nesta administradora.');
+                Response::to('/studio/users');
+            }
+            $pdo->prepare('UPDATE talk_tenant_users SET role=?,role_id=?,status=? WHERE tenant_id=? AND user_id=?')
+                ->execute([$roleSlug, $roleId, $status, $tenantId, $id]);
+            (new PlatformAudit($pdo))->record($tenantId, (int) $actor->id, 'member.role_status_changed', 'user', $id, [
+                'role' => $roleSlug,
+                'status' => $status,
+            ]);
+            $pdo->commit();
+            Logger::info('Acesso de usuário da administradora atualizado.', ['record_id' => $id, 'tenant_id' => $tenantId, 'actor_id' => $actor->id]);
             Flash::set('success', 'Usuário salvo com sucesso.');
         } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
             Logger::exception($exception);
             Flash::set('error', 'Não foi possível salvar. Verifique se o e-mail já está em uso.');
         }
@@ -323,22 +359,46 @@ final class UserController extends Controller
         $this->validateCsrf();
         $id = max(0, (int) Request::post('id', 0));
         $action = (string) Request::post('action', '');
-        $actorId = (int) Auth::user()?->id;
+        $actor = Auth::user();
+        if ($actor === null) { Response::to('/login'); }
+        $actorId = (int) $actor->id;
+        $tenantId = $this->currentTenantId();
         if ($id < 1 || !in_array($action, ['activate', 'deactivate', 'delete'], true) || (($id === 1 || $id === $actorId) && $action !== 'activate')) {
             Flash::set('error', 'Esta conta não pode receber a ação solicitada.');
             Response::to('/studio/users');
         }
         try {
             $pdo = Connection::getInstance();
-            if ($action === 'delete') { $pdo->prepare('DELETE FROM users WHERE id=?')->execute([$id]); }
-            else { $pdo->prepare('UPDATE users SET status=? WHERE id=?')->execute([$action === 'activate' ? 'active' : 'inactive', $id]); }
-            Logger::info('Ação administrativa em usuário.', ['record_id' => $id, 'action' => $action, 'actor_id' => $actorId]);
+            $pdo->beginTransaction();
+            $membership = $pdo->prepare('SELECT status FROM talk_tenant_users WHERE tenant_id=? AND user_id=? FOR UPDATE');
+            $membership->execute([$tenantId, $id]);
+            if ($membership->fetchColumn() === false) {
+                $pdo->rollBack();
+                Flash::set('error', 'Usuário não encontrado nesta administradora.');
+                Response::to('/studio/users');
+            }
+            $status = $action === 'activate' ? 'active' : 'inactive';
+            $pdo->prepare('UPDATE talk_tenant_users SET status=? WHERE tenant_id=? AND user_id=?')
+                ->execute([$status, $tenantId, $id]);
+            (new PlatformAudit($pdo))->record($tenantId, $actorId, 'member.status_changed', 'user', $id, ['status' => $status]);
+            $pdo->commit();
+            Logger::info('Ação de acesso na administradora.', ['record_id' => $id, 'action' => $action, 'tenant_id' => $tenantId, 'actor_id' => $actorId]);
             Flash::set('success', 'Usuário atualizado com sucesso.');
         } catch (Throwable $exception) {
+            if (isset($pdo) && $pdo->inTransaction()) { $pdo->rollBack(); }
             Logger::exception($exception);
-            Flash::set('error', 'A conta possui vínculos e não pode ser excluída. Desative o acesso.');
+            Flash::set('error', 'Não foi possível atualizar o acesso nesta administradora.');
         }
         Response::to('/studio/users');
+    }
+
+    private function currentTenantId(): int
+    {
+        $actor = Auth::user();
+        if ($actor === null) {
+            Response::to('/login');
+        }
+        return (new TenantContext(Connection::getInstance()))->currentId((int) $actor->id);
     }
 
     private function validateCsrf(): void

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Moves\Controllers;
 
 use Moves\Core\Controller;
+use Moves\Core\Auth;
 use Moves\Core\Request;
+use Moves\Core\Response;
+use Moves\Services\Platform\TenantContext;
 use Moves\Services\Support\WorkspaceService;
 
 final class SupportWorkspaceController extends Controller
@@ -22,11 +25,16 @@ final class SupportWorkspaceController extends Controller
 
     public function users(): void
     {
+        $user = Auth::user();
+        if ($user === null) {
+            Response::to('/login');
+        }
+        $tenantId = (new TenantContext())->currentId((int) $user->id);
         $search = mb_substr(trim((string) Request::get('q', '')), 0, 100);
         $role = (string) Request::get('role', '');
         $status = (string) Request::get('status', '');
         $this->render('support-users', 'Usuários', 'users', [
-            'users' => (new WorkspaceService())->users($search, $role, $status),
+            'users' => (new WorkspaceService())->users($tenantId, $search, $role, $status),
             'search' => $search, 'role' => $role, 'status' => $status,
         ]);
     }

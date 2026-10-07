@@ -65,26 +65,33 @@ final class WorkspaceService
         return compact('summary', 'byStatus', 'byProduct', 'byCategory');
     }
 
-    public function users(string $search = '', string $role = '', string $status = ''): array
+    public function users(int $tenantId, string $search = '', string $role = '', string $status = ''): array
     {
-        $terms = ['1 = 1'];
-        $params = [];
+        if ($tenantId <= 0) {
+            return [];
+        }
+        $terms = ['membership.tenant_id = :tenant_id', "membership.status = 'active'"];
+        $params = ['tenant_id' => $tenantId];
         if ($search !== '') {
-            $terms[] = '(name LIKE :name OR email LIKE :email)';
+            $terms[] = '(account.name LIKE :name OR account.email LIKE :email)';
             $params['name'] = '%' . $search . '%';
             $params['email'] = '%' . $search . '%';
         }
         if ($role !== '' && in_array($role, ['admin', 'user'], true)) {
-            $terms[] = 'role = :role';
+            $terms[] = 'account.role = :role';
             $params['role'] = $role;
         }
         if ($status !== '' && in_array($status, ['active', 'inactive'], true)) {
-            $terms[] = 'status = :status';
+            $terms[] = 'account.status = :status';
             $params['status'] = $status;
         }
         $statement = Connection::getInstance()->prepare(
-            'SELECT id, name, email, role, status, created_at, updated_at FROM users WHERE '
-            . implode(' AND ', $terms) . ' ORDER BY name ASC, id ASC'
+            'SELECT account.id, account.name, account.email, account.role, account.status,
+                    account.created_at, account.updated_at, membership.role AS tenant_role
+               FROM users account
+               INNER JOIN talk_tenant_users membership ON membership.user_id = account.id
+              WHERE '
+            . implode(' AND ', $terms) . ' ORDER BY account.name ASC, account.id ASC'
         );
         $statement->execute($params);
         return $statement->fetchAll(PDO::FETCH_ASSOC);
