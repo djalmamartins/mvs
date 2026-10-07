@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Moves\Services\Platform;
 
 use InvalidArgumentException;
+use Moves\Services\Day\OperationalPendingService;
 use PDO;
+use Throwable;
 
 final readonly class CondominiumService
 {
@@ -23,13 +25,30 @@ final readonly class CondominiumService
         return array_values($statement->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    public function canEdit(int $tenantId, int $administratorId, int $condominiumId, int $actorId): bool
+    {
+        $scopeId = $condominiumId > 0 ? $condominiumId : null;
+        return $this->canWriteCondominium($tenantId, $administratorId, $scopeId, $actorId)
+            && ($scopeId === null || $this->hasCondominiumAccess($tenantId, $administratorId, $scopeId, $actorId, 'condominiums.read', 'erp.cadastros.read'));
+    }
+
+    public function canView(int $tenantId, int $administratorId, int $condominiumId, int $actorId): bool
+    {
+        return $this->hasCondominiumAccess($tenantId, $administratorId, $condominiumId > 0 ? $condominiumId : null, $actorId, 'condominiums.read', 'erp.cadastros.read');
+    }
+
+    public function canList(int $tenantId, int $administratorId, int $actorId): bool
+    {
+        return $this->hasCondominiumAccess($tenantId, $administratorId, null, $actorId, 'condominiums.read', 'erp.cadastros.read');
+    }
+
     /** @param array<string,mixed> $data */
     public function save(int $tenantId, array $data, int $actorId, ?int $id = null): int
     {
         $name = trim((string) ($data['legal_name'] ?? ''));
-        $taxId = preg_replace('/\D+/', '', (string) ($data['tax_id'] ?? '')) ?? '';
-        if ($name === '' || mb_strlen($name) > 190 || strlen($taxId) !== 14 || !self::validCnpj($taxId)) {
-            throw new InvalidArgumentException('Informe a razão social e um CNPJ válido.');
+        $taxId = Cnpj::normalize((string) ($data['tax_id'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 190 || ($taxId !== null && !Cnpj::isValid($taxId))) {
+            throw new InvalidArgumentException($taxId === null ? 'Informe a razão social.' : 'Informe um CNPJ válido.');
         }
         $email=trim((string)($data['email']??''));
         if($email!==''&&(!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($email)>190))throw new InvalidArgumentException('Informe um e-mail de contato válido.');
@@ -40,6 +59,19 @@ final readonly class CondominiumService
         $administratorId = (int) $administrator->fetchColumn();
         if ($administratorId < 1) {
             throw new InvalidArgumentException('Administradora ativa não encontrada.');
+        }
+        if ($id !== null) {
+            $target = $this->pdo->prepare('SELECT c.administrator_id FROM erp_condominiums c JOIN erp_administrators a ON a.id=c.administrator_id WHERE c.id=:id AND a.tenant_id=:tenant AND a.status=\'active\'');
+            $target->execute(['id' => $id, 'tenant' => $tenantId]);
+            $targetAdministratorId = (int) $target->fetchColumn();
+            if ($targetAdministratorId < 1) {
+                throw new InvalidArgumentException('Condomínio não encontrado.');
+            }
+            $administratorId = $targetAdministratorId;
+        }
+        if (!$this->canWriteCondominium($tenantId, $administratorId, $id, $actorId)
+            || ($id !== null && !$this->hasCondominiumAccess($tenantId, $administratorId, $id, $actorId, 'condominiums.read', 'erp.cadastros.read'))) {
+            throw new InvalidArgumentException('Você não tem permissão para editar este cadastro.');
         }
         $params = [
             'administrator_id' => $administratorId, 'legal_name' => $name,
@@ -57,6 +89,11 @@ final readonly class CondominiumService
             'status' => in_array(($data['status'] ?? 'active'), ['active','inactive'], true) ? (string) ($data['status'] ?? 'active') : 'active',
             'created_by' => $actorId,
         ];
+        $started = !$this->pdo->inTransaction();
+        if ($started) {
+            $this->pdo->beginTransaction();
+        }
+        try {
         if ($id === null) {
             $statement = $this->pdo->prepare('INSERT INTO erp_condominiums(administrator_id,legal_name,trade_name,tax_id,email,phone,postal_code,street,address_number,complement,district,city,state,timezone,status,created_by) VALUES(:administrator_id,:legal_name,:trade_name,:tax_id,:email,:phone,:postal_code,:street,:address_number,:complement,:district,:city,:state,:timezone,:status,:created_by)');
             $statement->execute($params);
@@ -71,7 +108,17 @@ final readonly class CondominiumService
             }
         }
         (new PlatformAudit($this->pdo))->record($tenantId, $actorId, 'condominium.saved', 'condominium', $id);
+        (new OperationalPendingService($this->pdo))->evaluateCondominiumCnpj($tenantId, $administratorId, $id, $taxId, $actorId);
+        if ($started) {
+            $this->pdo->commit();
+        }
         return $id;
+        } catch (Throwable $exception) {
+            if ($started) {
+                $this->pdo->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     private function belongsTo(int $id, int $tenantId): bool
@@ -81,11 +128,22 @@ final readonly class CondominiumService
         return (int) $statement->fetchColumn() === 1;
     }
 
-    private static function validCnpj(string $digits): bool
+    private function canWriteCondominium(int $tenantId, int $administratorId, ?int $condominiumId, int $actorId): bool
     {
-        if(strlen($digits)!==14||preg_match('/^(\d)\1{13}$/',$digits)===1)return false;
-        $calculate=static function(string $base,array $weights):int{$sum=0;foreach($weights as $index=>$weight)$sum+=(int)$base[$index]*$weight;$remainder=$sum%11;return $remainder<2?0:11-$remainder;};
-        $first=$calculate(substr($digits,0,12),[5,4,3,2,9,8,7,6,5,4,3,2]);$second=$calculate(substr($digits,0,12).$first,[6,5,4,3,2,9,8,7,6,5,4,3,2]);
-        return substr($digits,12,2)===$first.$second;
+        return $this->hasCondominiumAccess($tenantId, $administratorId, $condominiumId, $actorId, 'condominiums.manage', 'erp.cadastros.write');
     }
+
+    private function hasCondominiumAccess(int $tenantId, int $administratorId, ?int $condominiumId, int $actorId, string $rolePermission, string $capability): bool
+    {
+        $scopeSql = $condominiumId === null
+            ? "g.scope_type='administrator' AND g.scope_id=:scope_admin"
+            : "((g.scope_type='administrator' AND g.scope_id=:scope_admin) OR (g.scope_type='condominium' AND g.scope_id=:scope_condominium))";
+        $sql = "SELECT 1 FROM talk_tenant_users m JOIN platform_role_permissions rp ON rp.role_id=m.role_id JOIN platform_permissions p ON p.id=rp.permission_id AND p.slug=:role_permission JOIN erp_scope_grants g ON g.user_id=m.user_id AND g.capability=:capability AND g.revoked_at IS NULL JOIN erp_administrators a ON a.id=:administrator AND a.tenant_id=m.tenant_id AND a.status='active' WHERE m.tenant_id=:tenant AND m.user_id=:actor AND m.status='active' AND {$scopeSql} LIMIT 1";
+        $statement = $this->pdo->prepare($sql);
+        $params = ['administrator' => $administratorId, 'tenant' => $tenantId, 'actor' => $actorId, 'scope_admin' => $administratorId, 'role_permission' => $rolePermission, 'capability' => $capability];
+        if ($condominiumId !== null) { $params['scope_condominium'] = $condominiumId; }
+        $statement->execute($params);
+        return $statement->fetchColumn() !== false;
+    }
+
 }

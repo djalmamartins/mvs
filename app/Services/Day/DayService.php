@@ -53,7 +53,7 @@ final class DayService
     /** @return array<int,array<string,mixed>> */
     public function tasks(int $userId): array
     {
-        $s=Connection::getInstance()->prepare("SELECT id,title,description,status,priority,due_at,source_type,source_id,source_url,created_at,updated_at FROM day_tasks WHERE tenant_id=:tenant AND assigned_user_id=:user ORDER BY CASE status WHEN 'done' THEN 1 ELSE 0 END,CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,due_at IS NULL,due_at,id");
+        $s=Connection::getInstance()->prepare("SELECT id,title,description,status,priority,due_at,source_type,source_id,source_url,automation_key,created_at,updated_at FROM day_tasks WHERE tenant_id=:tenant AND assigned_user_id=:user AND (status<>'done' OR automation_key IS NULL) ORDER BY CASE WHEN status<>'done' AND due_at IS NOT NULL AND due_at<NOW() THEN 0 ELSE 1 END,CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,CASE status WHEN 'done' THEN 1 ELSE 0 END,due_at IS NULL,due_at,id");
         $s->execute(['tenant'=>$this->tenantId,'user'=>$userId]);return $s->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -88,7 +88,16 @@ final class DayService
     public function setTaskStatus(int $taskId,int $userId,string $status): bool
     {
         if(!in_array($status,['pending','in_progress','done'],true))throw new RuntimeException('Status de tarefa inválido.');
-        $s=Connection::getInstance()->prepare("UPDATE day_tasks SET status=:status,completed_at=IF(:done='done',NOW(),NULL) WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user");
-        $s->execute(['status'=>$status,'done'=>$status,'id'=>$taskId,'tenant'=>$this->tenantId,'user'=>$userId]);return $s->rowCount()===1;
+        $pdo=Connection::getInstance();
+        $find=$pdo->prepare('SELECT status,automation_key FROM day_tasks WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user');
+        $find->execute(['id'=>$taskId,'tenant'=>$this->tenantId,'user'=>$userId]);$task=$find->fetch(PDO::FETCH_ASSOC);
+        if(!is_array($task))return false;
+        if(is_string($task['automation_key']??null)&&$task['automation_key']!==''&&$status==='done')return false;
+        $s=$pdo->prepare("UPDATE day_tasks SET status=:status,completed_at=IF(:completed='done',NOW(),NULL) WHERE id=:id AND tenant_id=:tenant AND assigned_user_id=:user");
+        $s->execute(['status'=>$status,'completed'=>$status,'id'=>$taskId,'tenant'=>$this->tenantId,'user'=>$userId]);
+        if($s->rowCount()===1&&is_string($task['automation_key']??null)&&$task['automation_key']!==''){
+            (new \Moves\Services\Platform\PlatformAudit($pdo))->record($this->tenantId,$userId,'erp.pending.status_changed','day_task',$taskId,['from'=>$task['status'],'to'=>$status]);
+        }
+        return $s->rowCount()===1;
     }
 }

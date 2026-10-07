@@ -1,21 +1,22 @@
 <?php
 declare(strict_types=1);
 $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage'));
-$tax = preg_replace('/\D+/', '', (string) ($condominium['tax_id'] ?? '')) ?? '';
+$tax = \Moves\Services\Platform\Cnpj::format((string) ($condominium['tax_id'] ?? ''));
 $address = trim(implode(', ', array_filter([(string) ($condominium['street'] ?? ''), (string) ($condominium['address_number'] ?? ''), (string) ($condominium['complement'] ?? ''), (string) ($condominium['district'] ?? ''), (string) ($condominium['city'] ?? ''), (string) ($condominium['state'] ?? ''), (string) ($condominium['postal_code'] ?? '')])));
 $displayName = (string) ($condominium['trade_name'] ?: $condominium['legal_name']);
 ?>
 <main class="erp-page erp-page-condominium-detail">
     <nav class="erp-breadcrumb"><a href="/erp/condominiums">Condomínios</a><span>/</span><span><?= $this->e($displayName) ?></span></nav>
-    <?php $this->insert('components/erp-page-header', ['heading' => $displayName, 'description' => (string) $condominium['legal_name'], 'kicker' => 'CADASTRO · ERP', 'actionHref' => '/erp/condominiums/' . (int) $condominium['id'] . '/edit', 'actionLabel' => 'Editar cadastro']); ?>
+    <?php $this->insert('components/erp-page-header', ['heading' => $displayName, 'description' => (string) $condominium['legal_name'], 'kicker' => 'CADASTRO · ERP', 'actionHref' => ($canEdit ?? false) ? '/erp/condominiums/' . (int) $condominium['id'] . '/edit' : null, 'actionLabel' => ($canEdit ?? false) ? 'Editar cadastro' : null]); ?>
     <section class="erp-panel erp-person-summary">
-        <div><span>CNPJ</span><strong><?= strlen($tax) === 14 ? substr($tax, 0, 2) . '.' . substr($tax, 2, 3) . '.' . substr($tax, 5, 3) . '/' . substr($tax, 8, 4) . '-' . substr($tax, 12) : 'Não informado' ?></strong></div>
+        <div><span>CNPJ</span><strong><?= $this->e($tax ?: 'Não informado') ?></strong></div>
         <div><span>Situação</span><strong><?= $condominium['status'] === 'active' ? 'Ativo' : 'Inativo' ?></strong></div>
         <div><span>Unidades</span><strong><?= (int) $condominium['unit_count'] ?></strong></div>
         <div><span>Síndico atual</span><strong><?= $this->e((string) ($manager['full_name'] ?? 'Não informado')) ?></strong></div>
         <div><span>Endereço</span><strong><?= $this->e($address ?: 'Não informado') ?></strong></div>
         <div><span>Contato</span><strong><?= $this->e(trim(implode(' · ', array_filter([(string) ($condominium['email'] ?? ''), (string) ($condominium['phone'] ?? '')]))) ?: 'Não informado') ?></strong></div>
     </section>
+    <?php if (($missingCnpjTask ?? null) !== null): ?><section class="erp-panel erp-detail-section" aria-labelledby="condominium-pending-title"><header class="erp-panel-head"><div><h2 id="condominium-pending-title">Pendência operacional</h2><p>Este cadastro está sem CNPJ válido e permanece acompanhado no Meu Dia.</p></div><?php if($canEdit ?? false): ?><a class="erp-button" href="<?= $this->e((string) $missingCnpjTask['source_url']) ?>">Regularizar CNPJ</a><?php endif; ?></header><?php if($canManagePending ?? false): ?><p><a href="/erp/pending/<?= (int) $missingCnpjTask['id'] ?>">Ver pendência · <?= $this->e((string) $missingCnpjTask['status']) ?></a></p><?php endif; ?></section><?php endif; ?>
     <section class="erp-panel erp-detail-section">
         <header class="erp-panel-head"><div><h2>Unidades</h2><p><?= count($units) ?> unidade(s) cadastrada(s)</p></div><a class="erp-button" href="/erp/units/new">Cadastrar unidade</a></header>
         <?php if ($units === []): ?>

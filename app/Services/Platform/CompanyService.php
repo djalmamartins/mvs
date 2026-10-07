@@ -111,7 +111,7 @@ final readonly class CompanyService
             "INSERT IGNORE INTO platform_role_permissions(role_id,permission_id)
              SELECT r.id,p.id FROM platform_roles r CROSS JOIN platform_permissions p
              WHERE r.tenant_id=? AND (r.slug IN ('owner','administrator') OR
-               (r.slug='supervisor' AND p.slug IN ('condominiums.read','talk.access','erp.access','support.access')) OR
+               (r.slug='supervisor' AND p.slug IN ('condominiums.read','talk.access','erp.access','erp.pending.manage','support.access')) OR
                (r.slug='agent' AND p.slug IN ('talk.access','support.access')) OR
                (r.slug='operator' AND p.slug IN ('condominiums.read','erp.access')))"
         );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Moves\Modules\Erp\Cadastros;
 
 use PDO;
+use Moves\Services\Platform\Cnpj;
 
 final readonly class CondominiumReadRepository
 {
@@ -16,10 +17,10 @@ final readonly class CondominiumReadRepository
         $where = ['c.administrator_id=:administrator_id'];
         $params = ['administrator_id'=>$administratorId];
         if (($filters['q'] ?? '') !== '') {
-            $where[] = '(c.legal_name LIKE :name OR c.trade_name LIKE :trade OR c.tax_id LIKE :tax_id)';
+            $where[] = '(c.legal_name LIKE :name OR c.trade_name LIKE :trade OR c.tax_id LIKE :tax_id OR UPPER(REPLACE(REPLACE(REPLACE(REPLACE(c.tax_id,\'.\',\'\'),\'/\',\'\'),\'-\',\'\'),\' \',\'\')) LIKE :tax_normalized)';
             $needle = '%'.trim((string)$filters['q']).'%';
-            $digits = '%'.(preg_replace('/\D+/', '', (string)$filters['q']) ?? '').'%';
-            $params += ['name'=>$needle,'trade'=>$needle,'tax_id'=>$digits];
+            $normalized = '%'.(Cnpj::normalize((string)$filters['q']) ?? '').'%';
+            $params += ['name'=>$needle,'trade'=>$needle,'tax_id'=>$needle,'tax_normalized'=>$normalized];
         }
         if (in_array($filters['status'] ?? '', ['active','inactive'], true)) {
             $where[] = 'c.status=:status';

@@ -26,6 +26,7 @@ final class ErpModule
                     AuthMiddleware::class,
                     new PermissionMiddleware('erp.access'),
                 ];
+                $pendingMiddleware = [...$middleware, new PermissionMiddleware('erp.pending.manage')];
 
                 foreach (['payables', 'billing', 'bank-accounts', 'reconciliation'] as $page) {
                     $router->get(
@@ -47,6 +48,10 @@ final class ErpModule
                 $router->get('/erp/condominiums/{condominium_id}/edit', 'ErpCondominiumController:edit', 'platform.erp.condominiums.edit', $middleware);
                 $router->post('/erp/condominiums/{condominium_id}/edit', 'ErpCondominiumController:update', 'platform.erp.condominiums.update', $middleware);
                 $router->get('/erp/condominiums/{condominium_id}', 'ErpCondominiumController:show', 'platform.erp.condominiums.show', $middleware);
+
+                $router->get('/erp/pending', 'ErpPendingController:index', 'platform.erp.pending', $pendingMiddleware);
+                $router->get('/erp/pending/{task_id}', 'ErpPendingController:show', 'platform.erp.pending.show', $pendingMiddleware);
+                $router->post('/erp/pending/{task_id}', 'ErpPendingController:update', 'platform.erp.pending.update', $pendingMiddleware);
 
                 $router->get('/erp/periods', 'ErpPeriodController:index', 'platform.erp.periods', $middleware);
                 $router->get('/erp/periods/new', 'ErpPeriodController:new', 'platform.erp.periods.new', $middleware);

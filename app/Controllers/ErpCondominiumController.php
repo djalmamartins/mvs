@@ -6,6 +6,7 @@ namespace Moves\Controllers;
 
 use Moves\Boot\Connection;
 use Moves\Core\Controller;
+use Moves\Core\Access;
 use Moves\Core\Csrf;
 use Moves\Core\Flash;
 use Moves\Core\HttpException;
@@ -15,25 +16,26 @@ use Moves\Modules\Erp\Cadastros\CondominiumReadRepository;
 use Moves\Modules\Erp\Security\ErpTenantContext;
 use Moves\Services\Platform\CompanyService;
 use Moves\Services\Platform\CondominiumService;
+use Moves\Services\Day\OperationalPendingService;
 use Throwable;
 
 final class ErpCondominiumController extends Controller
 {
     public function index(): void
     {
-        $context=ErpTenantContext::current();$filters=['q'=>mb_substr(trim((string)($_GET['q']??'')),0,100),'status'=>in_array($_GET['status']??'', ['active','inactive'],true)?(string)$_GET['status']:''];
+        $context=ErpTenantContext::current();if(!(new CondominiumService($context['pdo']))->canList($context['tenant_id'],$context['administrator_id'],$context['user_id']))throw new HttpException(403,'Você não pode consultar os condomínios desta administradora.');$filters=['q'=>mb_substr(trim((string)($_GET['q']??'')),0,100),'status'=>in_array($_GET['status']??'', ['active','inactive'],true)?(string)$_GET['status']:''];
         echo $this->view->render('pages/erp-condominiums',$this->base($context)+['condominiums'=>(new CondominiumReadRepository($context['pdo']))->search($context['administrator_id'],$filters),'filters'=>$filters]);
     }
 
     public function new(): void
     {
-        $context=ErpTenantContext::current();echo $this->view->render('pages/erp-condominium-form',$this->base($context)+['condominium'=>null]);
+        $context=ErpTenantContext::current();if(!(new CondominiumService($context['pdo']))->canEdit($context['tenant_id'],$context['administrator_id'],0,$context['user_id']))throw new HttpException(403,'Você não pode cadastrar condomínios nesta administradora.');echo $this->view->render('pages/erp-condominium-form',$this->base($context)+['condominium'=>null]);
     }
 
     /** @param array<string,string> $route */
     public function edit(array $route=[]): void
     {
-        $context=ErpTenantContext::current();$id=max(0,(int)($route['condominium_id']??0));$condominium=(new CondominiumReadRepository($context['pdo']))->find($context['administrator_id'],$id);if($condominium===null)throw new HttpException(404,'Condomínio não encontrado.');
+        $context=ErpTenantContext::current();$id=max(0,(int)($route['condominium_id']??0));$condominium=(new CondominiumReadRepository($context['pdo']))->find($context['administrator_id'],$id);if($condominium===null||!(new CondominiumService($context['pdo']))->canView($context['tenant_id'],$context['administrator_id'],$id,$context['user_id']))throw new HttpException(404,'Condomínio não encontrado.');if(!(new CondominiumService($context['pdo']))->canEdit($context['tenant_id'],$context['administrator_id'],$id,$context['user_id']))throw new HttpException(403,'Você não pode editar este condomínio.');
         echo $this->view->render('pages/erp-condominium-form',$this->base($context)+['condominium'=>$condominium]);
     }
 
@@ -53,9 +55,15 @@ final class ErpCondominiumController extends Controller
     /** @param array<string,string> $route */
     public function show(array $route=[]): void
     {
-        $context=ErpTenantContext::current();$id=max(0,(int)($route['condominium_id']??0));$repository=new CondominiumReadRepository($context['pdo']);$condominium=$repository->find($context['administrator_id'],$id);if($condominium===null)throw new HttpException(404,'Condomínio não encontrado.');
+        $context=ErpTenantContext::current();$id=max(0,(int)($route['condominium_id']??0));$repository=new CondominiumReadRepository($context['pdo']);$condominium=$repository->find($context['administrator_id'],$id);if($condominium===null||!(new CondominiumService($context['pdo']))->canView($context['tenant_id'],$context['administrator_id'],$id,$context['user_id']))throw new HttpException(404,'Condomínio não encontrado.');$canEdit=(new CondominiumService($context['pdo']))->canEdit($context['tenant_id'],$context['administrator_id'],$id,$context['user_id']);
         $people=$repository->people($context['administrator_id'],$id);$manager=null;foreach($people as $person){if($person['role']==='manager'&&$person['status']==='active'&&$person['starts_at']<=date('Y-m-d')&&($person['ends_at']===null||$person['ends_at']>=date('Y-m-d'))){$manager=$person;break;}}
-        echo $this->view->render('pages/erp-condominium-detail',$this->base($context)+['condominium'=>$condominium,'units'=>$repository->units($context['administrator_id'],$id),'people'=>$people,'manager'=>$manager,'roles'=>['owner'=>'Proprietário','tenant'=>'Inquilino','resident'=>'Morador','manager'=>'Síndico','deputy_manager'=>'Subsíndico','council'=>'Conselheiro','proxy'=>'Procurador']]);
+        $pending = (new OperationalPendingService($context['pdo']))->list($context['tenant_id'], $context['administrator_id'], ['status' => 'pending']);
+        $missingCnpjTask = null;
+        foreach ($pending as $task) { if ((int) $task['condominium_id'] === $id) { $missingCnpjTask = $task; break; } }
+        if ($missingCnpjTask === null) {
+            foreach ((new OperationalPendingService($context['pdo']))->list($context['tenant_id'], $context['administrator_id'], ['status' => 'in_progress']) as $task) { if ((int) $task['condominium_id'] === $id) { $missingCnpjTask = $task; break; } }
+        }
+        echo $this->view->render('pages/erp-condominium-detail',$this->base($context)+['condominium'=>$condominium,'units'=>$repository->units($context['administrator_id'],$id),'people'=>$people,'manager'=>$manager,'missingCnpjTask'=>$missingCnpjTask,'canEdit'=>$canEdit,'canManagePending'=>Access::can('erp.pending.manage'),'roles'=>['owner'=>'Proprietário','tenant'=>'Inquilino','resident'=>'Morador','manager'=>'Síndico','deputy_manager'=>'Subsíndico','council'=>'Conselheiro','proxy'=>'Procurador']]);
     }
 
     /** @param array{pdo:\PDO,tenant_id:int,administrator_id:int,user_id:int} $context @return array<string,mixed> */

@@ -118,6 +118,10 @@ Issue #298 implementa somente o registro e a consulta de título e parcelas, com
 
 **Próximo candidato após este corte:** avaliar uma fundação de contas a pagar sobre fornecedores, competências e planos existentes, refinando uma etapa auditável sem assumir aprovação, anexos ou liquidação sem especificação. Contas bancárias seguem dependentes de títulos e dos contratos em `ERP-BANKING-INTEGRATION.md`; centros de custo ficam bloqueados pela evidência C e por relações ainda desconhecidas.
 
+## Slice operacional de CNPJ ausente (2026-10-07)
+
+O cadastro de condomínio aceita CNPJ ausente sem marcador falso e cria uma única tarefa idempotente em `day_tasks`. Esse fluxo avança parte de cadastro/Meu Dia dentro da issue guarda-chuva #75, mas não fecha a Central de Obrigações nem a própria #75. A tarefa sem responsável aparece na supervisão, pode receber atribuição, prioridade e prazo interno e fica ligada ao condomínio. Gravação válida de CNPJ numérico ou alfanumérico resolve a mesma tarefa; remoção posterior a reabre com histórico de auditoria. `day_tasks` é o estado canônico e Support não é duplicado. A avaliação é event-driven no salvamento; scheduler e notificações diárias não foram criados. Não alteramos estimativa de paridade ou contagens de lacunas financeiras.
+
 ## Issue #253 — subgap de edição de unidade (2026-10-07)
 
 A edição da estrutura existente agora permite corrigir identificador e complemento da unidade, campos já presentes no schema e na criação atual. Condomínio, bloco, situação, frações ideais e vínculos temporais não mudam neste fluxo; a atualização é autorizada pela administradora atual e auditada na mesma transação. Isso conclui apenas um subgap de manutenção cadastral. Permanecem sem especificação comprovada outros atributos físicos (por exemplo andar, área, vaga e tipo) e critérios de homologação com dados de operação; por isso a issue #253 continua aberta. Sem mudança de nível de paridade ou de contagem P0/P1.
