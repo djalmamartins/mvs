@@ -1,0 +1,109 @@
+/* Canonical Moves typography shared by the application shell and all products. */
+:root {
+    --moves-font-meta: 12px;
+    --moves-font-base: 14px;
+    --moves-font-component: 16px;
+    --moves-font-subheading: 18px;
+    --moves-font-metric: 20px;
+    --moves-font-page: 28px;
+    --moves-line-meta: 16px;
+    --moves-line-base: 20px;
+    --moves-line-component: 22px;
+    --moves-line-subheading: 24px;
+    --moves-line-metric: 26px;
+    --moves-line-page: 34px;
+}
+
+html body,
+html body :is(button, input, select, textarea),
+html body #main-content,
+html body #main-content :is(p, span, small, a, label, li, td, dd, dt, summary, legend, figcaption, time, output),
+html body :is(.product-sidebar, .app-rail, .topbar, .launcher, .workspace-footer) :is(a, span, small, strong, label, button, input, select, p) {
+    font-family: "Gotham Book", Arial, sans-serif !important;
+    font-size: var(--moves-font-base) !important;
+    font-weight: 400 !important;
+    line-height: var(--moves-line-base) !important;
+}
+
+html body #main-content :is(small, time, .kicker, .studio-eyebrow, .erp-eyebrow, .day-kicker, .day-priority, .breadcrumbs, .support-status, .support-state, .studio-status, .studio-badge, .erp-status, .erp-live-label, .badge, .status),
+html body :is(.product-sidebar, .app-rail, .topbar, .launcher, .workspace-footer) :is(small, .product-eyebrow, .nav-section, .breadcrumbs) {
+    font-family: "Gotham Book", Arial, sans-serif !important;
+    font-size: var(--moves-font-meta) !important;
+    font-weight: 400 !important;
+    line-height: var(--moves-line-meta) !important;
+}
+
+html body #main-content :is(h1, h2, h3, h4, h5, h6, strong, b),
+html body :is(.product-sidebar, .app-rail, .topbar, .launcher) :is(h1, h2, h3, h4, h5, h6, strong, b) {
+    font-family: "Gotham Medium", Arial, sans-serif !important;
+    font-size: var(--moves-font-base) !important;
+    font-weight: 500 !important;
+    line-height: var(--moves-line-base) !important;
+}
+
+html body #main-content :is(h1, .studio-page-heading h2, .page-heading h2, .erp-page-heading h2) {
+    font-size: var(--moves-font-page) !important;
+    line-height: var(--moves-line-page) !important;
+}
+
+html body #main-content :is(h2, h3, h4, .surface h2, .panel-toolbar h3, .section-title h2, .erp-panel-head h2, .support-panel-heading h2, .support-panel-title, .card-title) {
+    font-size: var(--moves-font-component) !important;
+    line-height: var(--moves-line-component) !important;
+}
+
+html body #main-content :is(.day-summary strong, .erp-metric strong, .platform-metrics strong, .metrics strong, .ds-metrics strong, [data-moves-metric]) {
+    font-size: var(--moves-font-metric) !important;
+    line-height: var(--moves-line-metric) !important;
+}
+
+html body #main-content :is(button, input, select, textarea, .studio-btn, .erp-button, .primary-btn, .secondary-btn, .danger-btn, .text-btn) {
+    font-family: "Gotham Book", Arial, sans-serif !important;
+    font-size: var(--moves-font-base) !important;
+    font-weight: 400 !important;
+    line-height: var(--moves-line-base) !important;
+}
+
+html body #main-content :is(th, .table-header, .table-meta) {
+    font-family: "Gotham Book", Arial, sans-serif !important;
+    font-size: var(--moves-font-meta) !important;
+    font-weight: 400 !important;
+    line-height: var(--moves-line-meta) !important;
+}
+
+html body #main-content :is(code, pre, kbd, samp) {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    font-size: var(--moves-font-meta) !important;
+    font-weight: 400 !important;
+    line-height: var(--moves-line-meta) !important;
+}
+
+html body .product-nav :is(a, .nav-parent),
+html body .product-nav .nav-sub a {
+    min-height: 42px;
+    padding-block: 8px;
+}
+
+html body .product-sidebar :is(.product-head, .product-nav, .nav-section) {
+    min-width: 0;
+}
+
+html body .topbar :is(.breadcrumbs, .user-chip, .search) {
+    min-width: 0;
+}
+
+html body .topbar .user-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    html body #main-content {
+        padding-inline: 16px;
+    }
+
+    html body .topbar {
+        gap: 8px;
+        padding-inline: 12px;
+    }
+}

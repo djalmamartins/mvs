@@ -149,6 +149,8 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
         >
     <?php endif; ?>
 
+    <link rel="stylesheet" href="<?= $this->e($this->asset('css/moves-typography.css')) ?>">
+
         <script
                 src="<?= $this->e($this->asset('js/app.js')) ?>"
                 defer

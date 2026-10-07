@@ -111,20 +111,24 @@ td,
 
 /* =========================================================
    MOVES TYPOGRAPHY v1 — canonical UI scale
-   12 = metadata only | 14 = interface | 16 = component title
-   18 = section title | 28 = page title
+   12 = metadata | 14 = interface | 16 = component/section title
+   18 = subheading | 20 = metric | 28 = page title
    ========================================================= */
 :root{
   --moves-font-meta:12px;
   --moves-font-base:14px;
   --moves-font-component:16px;
-  --moves-font-section:18px;
+  --moves-font-section:16px;
+  --moves-font-subheading:18px;
+  --moves-font-metric:20px;
   --moves-font-page:28px;
 
   --moves-line-meta:16px;
   --moves-line-base:20px;
   --moves-line-component:22px;
-  --moves-line-section:24px;
+  --moves-line-section:22px;
+  --moves-line-subheading:24px;
+  --moves-line-metric:26px;
   --moves-line-page:34px;
 }
 

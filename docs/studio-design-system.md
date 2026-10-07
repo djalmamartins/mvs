@@ -4,11 +4,12 @@ As fundações visuais do Studio ficam em `public/themes/admin/css/design-system
 
 ## Tipografia
 
-- Família principal: Gotham.
-- Peso 400: `GothamBookRegular.otf`.
-- Pesos 500 a 700: `GothamMedium.otf`.
-- Fallbacks: Inter, fontes de sistema e Arial.
-- Os arquivos são servidos localmente e pré-carregados pelo layout administrativo.
+- Texto normal, interface, formulários, inputs e botões usam `Gotham Book` em peso 400.
+- Títulos, métricas e destaques usam `Gotham Medium` em peso 500. Não sintetizar negrito sobre `Gotham Book`.
+- As fontes são servidas localmente; o fallback é Arial/sans-serif. Inter e Manrope não são fontes da interface administrativa Moves.
+- A escala compartilhada do Meu Dia, ERP, Talk, Support, Studio e Application Shell é: 12/16, 14/20, 16/22, 18/24, 20/26 e 28/34 (tamanho/line-height, em pixels).
+- Metadados usam 12/16; interface e texto forte usam 14/20; títulos de seção/cartão usam 16/22; destaques usam 20/26; títulos de página usam 28/34.
+- `moves-typography.css` aplica a escala compartilhada depois das folhas dos produtos; `application-shell.css` mantém os tokens canônicos `--moves-*`.
 
 ## Ícones
 
@@ -20,8 +21,8 @@ O Moves Editor usa controles nativos e locais compatíveis com a CSP. Botões so
 
 Os tokens `--studio-*` representam cores, tipografia, escala de espaçamento, raios, sombras, dimensões estruturais e duração de movimentos. Componentes e módulos devem consumir esses tokens em vez de repetir valores literais.
 
-- base tipográfica: 16 px;
-- texto funcional e auxiliar: mínimo de 14 px;
+- texto de interface: 14/20 px;
+- metadados: 12/16 px;
 - controles: 44 px de altura mínima;
 - raio padrão: 6 px;
 - sidebar e topbar: superfícies brancas;
