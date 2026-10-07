@@ -147,6 +147,10 @@ Na branch `feat/mvs-v1-integration`, a fração ideal agora pode ser registrada 
 
 O Moves persiste e consulta título e parcelas explícitas, ligados a unidade e pessoa no condomínio, a plano/contas ativas e a competências abertas do mesmo escopo. Um título para uma ou mais parcelas é decisão Moves, não regra generalizada da referência. Isso eleva Conta a Receber de página visual para estrutura parcial (nível 2). Não entrega baixa, cobrança, banco nem saldo; o gap P0 permanece aberto. As contagens de gaps seguem **16 P0 / 7 P1** e a estimativa global **~10% (faixa 5–15%)**, pois não se fechou trilha financeira operacional. Nenhuma evidência histórica do APControle foi alterada.
 
+## Ciclo financeiro — auditoria da fase fatura (2026-10-07)
+
+Não houve implementação nem mudança de nível de paridade. O Moves ainda não persiste composição de cobrança ou fatura; `erp_receivables` contém um título manual com parcelas explícitas e não pode ser tratado como fatura. Evidência APControle para existência e itens de fatura é **B**; fórmula/geração e distribuição são **D**. A etapa está bloqueada por regras Moves ausentes para fontes/valores de cobrança, responsável financeiro em copropriedade e relação fatura–recebível–instrumento. Consultar `ERP-DOMAIN-MODEL.md` para os critérios de desbloqueio. Não alteramos contagem de gaps nem paridade.
+
 ## Implementação Moves — edição limitada de unidade (2026-10-07)
 
 A edição de unidade atualiza apenas o identificador já persistido em `erp_units.code` e o complemento já persistido em `erp_units.complement`. Condomínio, bloco, situação e vínculos temporais não são editáveis por este fluxo; não são recalculados proprietários/frações nem introduzidos atributos físicos sem evidência. A mutation é tenant-scoped, valida unicidade dentro do condomínio e grava auditoria transacional. A issue #253 permanece aberta para atributos/capacidades cadastrais ainda não identificados com precisão e para validação operacional mais ampla.

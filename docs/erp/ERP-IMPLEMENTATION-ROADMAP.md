@@ -125,3 +125,9 @@ O cadastro de condomínio aceita CNPJ ausente sem marcador falso e cria uma úni
 ## Issue #253 — subgap de edição de unidade (2026-10-07)
 
 A edição da estrutura existente agora permite corrigir identificador e complemento da unidade, campos já presentes no schema e na criação atual. Condomínio, bloco, situação, frações ideais e vínculos temporais não mudam neste fluxo; a atualização é autorizada pela administradora atual e auditada na mesma transação. Isso conclui apenas um subgap de manutenção cadastral. Permanecem sem especificação comprovada outros atributos físicos (por exemplo andar, área, vaga e tipo) e critérios de homologação com dados de operação; por isso a issue #253 continua aberta. Sem mudança de nível de paridade ou de contagem P0/P1.
+
+## Ciclo financeiro — fase 1, fatura (2026-10-07)
+
+**BLOQUEADA ANTES DA IMPLEMENTAÇÃO por regra de domínio ausente.** O HEAD não tem composição de cobrança ou fatura persistida; a fundação de recebíveis requer valor/parcela manual e não é substituta. A auditoria APControle confirma exemplos de faturas e itens (confiança B), mas não cálculo, itens elegíveis, rateio ou geração (D). Não inferir cobrança por fração ideal, copropriedade, taxa, consumo ou encargos. O bloqueio e os critérios para desbloqueio estão em `ERP-DOMAIN-MODEL.md`; issues existentes #257 (cobranças/boletos) e #258 (consolidação multiunidade) são os registros de trabalho, sem duplicação.
+
+Não avançar para instrumentos, recebimento/baixa, provider bancário ou conciliação até existir um contrato Moves para composição e rastreabilidade por unidade. Próxima ação é obter/decidir as regras Moves explicitadas no bloqueio; depois construir uma prévia de composição testável antes de emitir fatura. Sem mudança de paridade ou das contagens P0/P1.

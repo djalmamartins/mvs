@@ -30,3 +30,16 @@ O suporte alfanumérico já existia no serviço compartilhado de CNPJ e no cadas
 - #253 permanece aberta: esta homologação cobre os fluxos P0 que conseguiu comprovar, mas não comprova todo o escopo de estrutura física/homologação da issue. #255 já estava fechada e não foi reaberta. #75 segue aberta; este registro não fecha a Central de Obrigações.
 
 Os testes foram executados sem importar dados reais. Fluxos de centro de custo, contas a pagar e cobrança ainda não foram homologados nesta fase.
+
+## Ciclo financeiro — fase 1, fatura (2026-10-07)
+
+**Status: BLOQUEADA POR DECISÃO DE DOMÍNIO.** A homologação anterior validou cadastro e competências, não uma composição financeira. A revisão do HEAD confirma título/parcelas manuais em `erp_receivables`, mas nenhuma fatura/composição persistida. A referência APControle mostra faturas com itens e vínculo a boleto em amostras, sem provar fórmula ou cardinalidade geral. Assim, não há E2E de fatura a executar sem inventar a origem ou os valores.
+
+Regras pendentes para liberar a fase:
+
+- fontes e cálculo/entrada explícita dos itens da composição por unidade e competência;
+- escolha do responsável financeiro quando a unidade tem coproprietários;
+- consolidação multiunidade somente dentro do mesmo condomínio, preservando cada alocação original;
+- contrato de geração fatura → itens/snapshot → recebível/parcelas e proteção contra duplicidade.
+
+As issues existentes são #257 (cobrança/boletos) e #258 (consolidação); não foi criada issue duplicada. Nenhuma migration, dado financeiro ou comportamento de produto foi alterado neste registro.
