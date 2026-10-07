@@ -48,6 +48,16 @@ final class ErpModule
                 $router->post('/erp/periods', 'ErpPeriodController:create', 'platform.erp.periods.create', $middleware);
                 $router->get('/erp/periods/{period_id}', 'ErpPeriodController:show', 'platform.erp.periods.show', $middleware);
 
+                $router->get('/erp/chart-of-accounts', 'ErpChartOfAccountsController:index', 'platform.erp.chart-of-accounts', $middleware);
+                $router->get('/erp/chart-of-accounts/new', 'ErpChartOfAccountsController:newPlan', 'platform.erp.chart-of-accounts.new', $middleware);
+                $router->post('/erp/chart-of-accounts', 'ErpChartOfAccountsController:createPlan', 'platform.erp.chart-of-accounts.create', $middleware);
+                $router->get('/erp/chart-of-accounts/{plan_id}', 'ErpChartOfAccountsController:show', 'platform.erp.chart-of-accounts.show', $middleware);
+                $router->get('/erp/chart-of-accounts/{plan_id}/accounts/new', 'ErpChartOfAccountsController:newAccount', 'platform.erp.chart-of-accounts.accounts.new', $middleware);
+                $router->post('/erp/chart-of-accounts/{plan_id}/accounts', 'ErpChartOfAccountsController:createAccount', 'platform.erp.chart-of-accounts.accounts.create', $middleware);
+                $router->get('/erp/chart-of-accounts/{plan_id}/accounts/{account_id}/edit', 'ErpChartOfAccountsController:editAccount', 'platform.erp.chart-of-accounts.accounts.edit', $middleware);
+                $router->post('/erp/chart-of-accounts/{plan_id}/accounts/{account_id}/edit', 'ErpChartOfAccountsController:updateAccount', 'platform.erp.chart-of-accounts.accounts.update', $middleware);
+                $router->get('/erp/chart-of-accounts/{plan_id}/accounts/{account_id}', 'ErpChartOfAccountsController:account', 'platform.erp.chart-of-accounts.accounts.show', $middleware);
+
                 $router->get('/erp/suppliers', 'ErpSupplierController:index', 'platform.erp.suppliers', $middleware);
                 $router->get('/erp/suppliers/new', 'ErpSupplierController:new', 'platform.erp.suppliers.new', $middleware);
                 $router->post('/erp/suppliers', 'ErpSupplierController:create', 'platform.erp.suppliers.create', $middleware);

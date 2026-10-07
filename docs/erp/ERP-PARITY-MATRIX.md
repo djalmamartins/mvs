@@ -10,7 +10,7 @@ Escala Moves: 0 inexistente; 1 só visual; 2 estrutura parcial; 3 funcional bás
 | Pessoas e vínculos | Pessoas globais reutilizadas; proprietário/ocupante na unidade | Pessoa PF/PJ e vínculos temporais multiunidade/multipapel; fração ideal percentual opcional em vínculo de proprietário com unidade | 3 | Busca/histórico mais completo e integração financeira por vínculo | P0 | Consolidar período/papel, auditoria e visão por pessoa/unidade |
 | Investidor multiunidade | Uma pessoa pode ter mais de uma unidade; cardinalidade legada inconclusiva | Modelo de vínculo permite vários links pessoa-unidade/condomínio | 3 | Relatórios/cobrança agregada ainda ausentes | P0 | Cobertura de ownership temporal e cenários cross-condomínio |
 | Fornecedor | Lista global por tipo; pagamento liga fornecedor | Pessoa + perfil fornecedor + categoria + N:N de atendimento temporal ao condomínio | 3 | Contratos, contatos/documentos detalhados e uso financeiro | P0 | Referenciar fornecedor nos títulos a pagar |
-| Plano de contas | Árvore de classificação, mapas por tipo, abas e transferência automática; relatórios usam conta e modo de apresentação | Rota visual; nenhuma persistência ERP financeira real localizada | 1 | Entidades/regras e validação contábil ausentes | P0 | Plano hierárquico versionável por administradora/condomínio e conta classificável |
+| Plano de contas | Árvore de classificação, mapas por tipo, abas e transferência automática; relatórios usam conta e modo de apresentação | Plano e contas persistentes por condomínio; CRUD, árvore, natureza/tipo, busca/filtros, status, auditoria, chaves compostas e CSRF | 2 | Versionamento, política após uso, dimensões/centro de custo e integração com operações financeiras ausentes | P0 | Definir ciclo de vida/versionamento e dimensões; depois associar a operações financeiras sem confundir com banco |
 | Conta a pagar | Títulos, parcelas, fornecedor, aprovação, rateio e pagamento | Página de demonstração sem persistência/operações | 1 | Fluxo financeiro inteiro | P0 | Título + parcelas + aprovações + pagamento + auditoria |
 | Conta a receber | Títulos/parcelas/baixa | Página de demonstração | 1 | Origem, baixa e distribuição | P0 | Recebível ligado a unidade/competência, eventos de baixa e estorno auditável |
 | Cobrança/fatura | Fatura por unidade, composição de itens, status e boleto | Página visual sem geração/persistência | 1 | Competência, itens, cálculo, cobrança, baixa | P0 | Competência → itens por unidade → cobrança e distribuição de recebimento |
@@ -48,6 +48,10 @@ As telas de filtro/listagem foram abertas e catalogadas para todos os 57 nomes d
 Os relatórios contábeis selecionam fechamentos para balancete anual, balanço patrimonial e resultado de exercício. Isto comprova uma dependência operacional do período fechado para esses relatórios específicos; não comprova que todos os demonstrativos dependam do fechamento.
 
 **Contagem preliminar de gaps mantida:** 16 P0 e 7 P1, com fronteiras ainda sujeitas à auditoria de contas, fechamento e conteúdo final da prestação. Não reduzir gaps com base apenas em formulário visual.
+
+## Implementação Moves — plano de contas (2026-10-06)
+
+O Moves implementa estrutura real de plano/contas com escopo de um plano por condomínio e proteção pela administradora do tenant. Consultar [`ERP-DOMAIN-MODEL.md`](ERP-DOMAIN-MODEL.md) para as regras implementadas. A capacidade de CRUD/classificação evolui de visual para estrutura parcial (nível 2); a integração financeira permanece ausente, portanto os 16 P0 / 7 P1 e a estimativa geral ~10% (5–15%) não mudam. Esta mudança descreve implementação Moves e não adiciona evidência histórica do APControle.
 
 ### Evidência nova de fatura/boletos/recibos e disponibilidade das listas
 

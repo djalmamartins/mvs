@@ -1,5 +1,19 @@
 # Changelog
 
+## ERP — Plano de contas persistente
+
+### Added
+
+- Plano único por condomínio, ligado por chave composta à administradora ativa do tenant.
+- Contas hierárquicas com código, nome, natureza Moves, tipo sintético/analítico, pai, nível, ordenação e situação.
+- Listagem, detalhe, criação/edição, busca por código/nome e filtros de natureza/situação no ERP.
+- Auditoria transacional, CSRF e isolamento de administradora/plano.
+
+### Limites desta etapa
+
+- Sem template global, versionamento, centro de custo, lançamentos, ledger, pagamentos, recebimentos, fechamento ou integração com bancos.
+- O código e a hierarquia são únicos e validados no plano; exclusão física não é disponibilizada.
+
 ## ERP — Fração ideal cadastral
 
 ### Added
@@ -57,4 +71,3 @@
 - Backend e políticas de SLA ainda não habilitados.
 - Restauração automática de uma revisão ainda não habilitada; snapshots podem ser consultados.
 - Help Center público não faz parte deste Release Candidate.
-

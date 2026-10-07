@@ -105,3 +105,9 @@ Preservar a sequência P0 vigente: fechar cadastros operacionais (incluindo a is
 Quando as dependências permitirem, BANK-001 a BANK-015 são a decomposição técnica proposta, não issues GitHub. Iniciar por contas/conexões/capabilities e um adapter read-only de sandbox; consultar composição real dos bancos/cooperativas do piloto antes de confirmar Inter como primeiro banco. API, webhooks, OFX e CNAB devem alimentar observações externas idempotentes sem confundi-las com ledger. As diferenças de autenticação, produtos, limites e sandbox são por banco/API/conta; revalidar as fontes oficiais no início de cada tarefa de adapter.
 
 Estado geral permanece em 16 P0 / 7 P1 e paridade ~10% (5–15%). Planejamento documental sozinho não fecha gap operacional.
+
+## Implementação Moves — plano de contas persistente (2026-10-06)
+
+O slice seguinte à competência implementou plano de contas por condomínio, com vínculo composto à administradora, árvore de contas, contas sintéticas/analíticas, validações de ciclo/natureza/status, pesquisa, CRUD de contas, auditoria, CSRF e isolamento. A dependência funcional direta — condomínio persistente — existe. A issue #253 segue aberta para completar atributos físicos e validar cadastro operacional; esse trabalho permanece P0, mas seus campos não participam da classificação contábil e não bloqueiam este slice. Esta decisão delimita dependência técnica, não altera a prioridade geral de fechamento dos cadastros.
+
+Nenhuma parte do ledger ou da cadeia de títulos/recebimentos foi definida aqui. Centros de custo, versionamento, modelos/templates, contas em uso, integração bancária e demais capacidades financeiras permanecem por implementar. Paridade geral segue ~10% (5–15%), com 16 P0 / 7 P1: o item de plano de contas avançou de rota visual para estrutura classificável, mas o gap P0 de operação financeira não foi fechado. A evidência do Moves não atualiza a auditoria APControle.
