@@ -80,6 +80,8 @@ final class ErpModule
                 $router->get('/erp/units', 'ErpPeopleController:units', 'platform.erp.units', $middleware);
                 $router->get('/erp/units/new', 'ErpPeopleController:newUnit', 'platform.erp.units.new', $middleware);
                 $router->post('/erp/units', 'ErpPeopleController:createUnit', 'platform.erp.units.create', $middleware);
+                $router->get('/erp/units/{unit_id}/edit', 'ErpPeopleController:editUnit', 'platform.erp.units.edit', $middleware);
+                $router->post('/erp/units/{unit_id}/edit', 'ErpPeopleController:updateUnit', 'platform.erp.units.update', $middleware);
                 $router->get('/erp/units/{unit_id}', 'ErpPeopleController:showUnit', 'platform.erp.units.show', $middleware);
 
                 $router->get(

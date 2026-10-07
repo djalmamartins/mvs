@@ -42,15 +42,16 @@ final readonly class PhysicalStructureRepository
     }
 
     /** @return array<string,mixed>|null */
-    public function findUnit(int $administratorId, int $unitId): ?array
+    public function findUnit(int $administratorId, int $unitId, bool $forUpdate = false): ?array
     {
+        $lock = $forUpdate && $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql' ? ' FOR UPDATE' : '';
         $statement = $this->pdo->prepare(
             'SELECT u.id,u.condominium_id,u.block_id,u.code,u.complement,u.status,u.created_at,u.updated_at,
                     c.legal_name AS condominium_legal_name,c.trade_name AS condominium_name,b.name AS block_name
              FROM erp_units u JOIN erp_condominiums c ON c.id=u.condominium_id
              JOIN erp_administrators a ON a.id=c.administrator_id
              LEFT JOIN erp_blocks b ON b.id=u.block_id AND b.condominium_id=u.condominium_id
-             WHERE a.id=:administrator_id AND u.id=:id'
+             WHERE a.id=:administrator_id AND u.id=:id' . $lock
         );
         $statement->execute(['administrator_id'=>$administratorId,'id'=>$unitId]);
         $row = $statement->fetch(PDO::FETCH_ASSOC);
@@ -83,5 +84,39 @@ final readonly class PhysicalStructureRepository
         $statement = $this->pdo->prepare('INSERT INTO erp_units(condominium_id,block_id,code,complement,status) VALUES(:condominium_id,:block_id,:code,:complement,\'active\')');
         $statement->execute(['condominium_id'=>$condominiumId,'block_id'=>$blockId,'code'=>$code,'complement'=>$complement]);
         return (int) $this->pdo->lastInsertId();
+    }
+
+    public function unitCodeExists(int $administratorId, int $condominiumId, string $code, int $exceptUnitId): bool
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT 1 FROM erp_units u JOIN erp_condominiums c ON c.id=u.condominium_id
+             WHERE c.administrator_id=:administrator_id AND u.condominium_id=:condominium_id
+               AND u.code=:code AND u.id<>:unit_id LIMIT 1'
+        );
+        $statement->execute([
+            'administrator_id' => $administratorId,
+            'condominium_id' => $condominiumId,
+            'code' => $code,
+            'unit_id' => $exceptUnitId,
+        ]);
+        return $statement->fetchColumn() !== false;
+    }
+
+    public function updateUnit(int $administratorId, int $unitId, string $code, ?string $complement): bool
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE erp_units SET code=:code,complement=:complement
+             WHERE id=:id AND EXISTS (
+                 SELECT 1 FROM erp_condominiums c
+                 WHERE c.id=erp_units.condominium_id AND c.administrator_id=:administrator_id
+             )'
+        );
+        $statement->execute([
+            'code' => $code,
+            'complement' => $complement,
+            'id' => $unitId,
+            'administrator_id' => $administratorId,
+        ]);
+        return $statement->rowCount() === 1;
     }
 }

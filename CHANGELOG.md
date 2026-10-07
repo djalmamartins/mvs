@@ -1,5 +1,17 @@
 # Changelog
 
+## ERP — edição de identificação da unidade
+
+### Added
+
+- Edição tenant-scoped do identificador e complemento de uma unidade existente, com auditoria transacional.
+- Condomínio, bloco, situação e vínculos pessoais/temporais permanecem inalterados neste fluxo.
+
+### Limites desta etapa
+
+- Não adiciona atributos físicos sem evidência (andar, área, vaga ou tipo), nem altera bloco, situação, fração ideal ou vínculos.
+- A issue #253 continua aberta para os demais campos estruturais comprovados e homologação operacional.
+
 ## ERP — Fundação de contas a receber
 
 ### Added

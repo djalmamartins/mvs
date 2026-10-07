@@ -55,4 +55,69 @@ final class ErpPhysicalStructureServiceTest extends TestCase
         try{$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'Atomic','code'=>'202']);self::fail('audit should fail');}catch(PDOException){}
         self::assertSame(0,(int)$this->pdo->query('SELECT COUNT(*) FROM erp_units')->fetchColumn());self::assertSame(0,(int)$this->pdo->query('SELECT COUNT(*) FROM erp_blocks')->fetchColumn());
     }
+
+    public function testUpdatesOnlyUnitIdentifierAndComplementAndAuditsChange(): void
+    {
+        $id=$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'Torre A','code'=>'201','complement'=>'Fundos']);
+        $before=$this->service->unit(10,$id);
+        self::assertTrue($this->service->updateUnit(100,10,7,$id,['code'=>'201-B','complement'=>'Cobertura']));
+        $after=$this->service->unit(10,$id);
+        self::assertSame('201-B',$after['code']);
+        self::assertSame('Cobertura',$after['complement']);
+        self::assertSame($before['condominium_id'],$after['condominium_id']);
+        self::assertSame($before['block_id'],$after['block_id']);
+        self::assertSame($before['status'],$after['status']);
+        self::assertSame(2,(int)$this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
+        self::assertStringContainsString('201-B',(string)$this->pdo->query("SELECT metadata FROM platform_audit_events WHERE event_type='erp.unit.updated'")->fetchColumn());
+    }
+
+    public function testUpdateRejectsDuplicateIdentifierWithoutChangingUnitOrAudit(): void
+    {
+        $first=$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'','code'=>'201']);
+        $this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'','code'=>'202']);
+        try {
+            $this->service->updateUnit(100,10,7,$first,['code'=>'202','complement'=>'conflict']);
+            self::fail('duplicate identifier should be rejected');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('Já existe',$exception->getMessage());
+        }
+        self::assertSame('201',$this->service->unit(10,$first)['code']);
+        self::assertSame(2,(int)$this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
+    }
+
+    public function testUnitOutsideAdministratorCannotBeUpdated(): void
+    {
+        $unitId=$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'','code'=>'201']);
+        self::assertFalse($this->service->updateUnit(100,20,8,$unitId,['code'=>'999','complement'=>'cross-tenant']));
+        self::assertSame('201',$this->service->unit(10,$unitId)['code']);
+        self::assertSame(1,(int)$this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
+    }
+
+    public function testUpdateRejectsNonTextFieldsWithoutChangingUnitOrAudit(): void
+    {
+        $unitId=$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'','code'=>'201']);
+        try {
+            $this->service->updateUnit(100,10,7,$unitId,['code'=>['202'],'complement'=>'invalid']);
+            self::fail('non-text identifier should be rejected');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('devem ser texto',$exception->getMessage());
+        }
+        self::assertSame('201',$this->service->unit(10,$unitId)['code']);
+        self::assertSame(1,(int)$this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
+    }
+
+    public function testAuditFailureRollsBackUnitUpdate(): void
+    {
+        $unitId=$this->service->createUnit(100,10,7,['condominium_id'=>101,'block'=>'','code'=>'201','complement'=>'Antes']);
+        $this->pdo->exec("CREATE TRIGGER fail_audit BEFORE INSERT ON platform_audit_events BEGIN SELECT RAISE(ABORT,'audit unavailable'); END");
+        try {
+            $this->service->updateUnit(100,10,7,$unitId,['code'=>'202','complement'=>'Depois']);
+            self::fail('audit failure should roll back the unit update');
+        } catch (PDOException) {
+        }
+        $unit=$this->service->unit(10,$unitId);
+        self::assertSame('201',$unit['code']);
+        self::assertSame('Antes',$unit['complement']);
+        self::assertSame(1,(int)$this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
+    }
 }

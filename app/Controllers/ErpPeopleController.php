@@ -112,7 +112,7 @@ final class ErpPeopleController extends Controller
     public function newUnit(): void
     {
         [, $tenantId,, $userId,$condominiums]=$this->context();
-        echo $this->view->render('pages/erp-unit-form',$this->base($tenantId,$userId,'units')+['condominiums'=>$condominiums]);
+        echo $this->view->render('pages/erp-unit-form',$this->base($tenantId,$userId,'units')+['condominiums'=>$condominiums,'unit'=>null]);
     }
 
     public function createUnit(): never
@@ -120,6 +120,31 @@ final class ErpPeopleController extends Controller
         $this->requirePostCsrf('/erp/units/new');[$pdo,$tenantId,$administratorId,$userId]=$this->context();
         try{$id=$this->structureService($pdo)->createUnit($tenantId,$administratorId,$userId,$_POST);Flash::set('success','Unidade cadastrada.');Response::to('/erp/units/'.$id);}
         catch(Throwable $exception){Flash::set('error',$this->message($exception));Response::to('/erp/units/new');}
+    }
+
+    /** @param array<string,string> $route */
+    public function editUnit(array $route=[]): void
+    {
+        [$pdo,$tenantId,$administratorId,$userId]=$this->context();
+        $unit=$this->structureService($pdo)->unit($administratorId,max(0,(int)($route['unit_id']??0)));
+        if($unit===null){$this->notFound();}
+        echo $this->view->render('pages/erp-unit-form',$this->base($tenantId,$userId,'units')+['condominiums'=>[],'unit'=>$unit]);
+    }
+
+    /** @param array<string,string> $route */
+    public function updateUnit(array $route=[]): never
+    {
+        $id=max(0,(int)($route['unit_id']??0));$fallback='/erp/units/'.$id.'/edit';
+        $this->requirePostCsrf($fallback);[$pdo,$tenantId,$administratorId,$userId]=$this->context();
+        try {
+            $updated=$this->structureService($pdo)->updateUnit($tenantId,$administratorId,$userId,$id,$_POST);
+        } catch (Throwable $exception) {
+            Flash::set('error',$this->message($exception));
+            Response::to($fallback);
+        }
+        if(!$updated){$this->notFound();}
+        Flash::set('success','Identificação da unidade atualizada.');
+        Response::to('/erp/units/'.$id);
     }
 
     /** @param array<string,string> $route */
