@@ -51,6 +51,22 @@ final class CmsService
         return Connection::getInstance()->query("SELECT id,name FROM users WHERE status='active' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /** @return array<string,mixed>|null */
+    public function publishedArticle(string $slug): ?array
+    {
+        $statement = Connection::getInstance()->prepare(
+            "SELECT * FROM studio_content
+             WHERE type='article' AND status='published' AND deleted_at IS NULL
+               AND (published_at IS NULL OR published_at <= CURRENT_TIMESTAMP)
+               AND slug=:slug
+             LIMIT 1"
+        );
+        $statement->execute(['slug' => $slug]);
+        $article = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($article) ? $article : null;
+    }
+
     /** @return list<array<string,mixed>> */
     public function categories(string $q = '', string $type = ''): array
     {

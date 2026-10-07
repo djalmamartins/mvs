@@ -50,6 +50,26 @@ final class CmsServiceTest extends TestCase
         self::assertSame(11,$published['total']);
     }
 
+    public function testPublicArticleLookupHidesFutureDraftAndDeletedArticles(): void
+    {
+        $id = $this->content('published');
+        $slug = (string) $this->pdo->query('SELECT slug FROM studio_content WHERE id=' . $id)->fetchColumn();
+
+        self::assertNotNull($this->cms->publishedArticle($slug));
+
+        $this->pdo->prepare('UPDATE studio_content SET published_at=DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 DAY) WHERE id=?')->execute([$id]);
+        self::assertNull($this->cms->publishedArticle($slug), 'A URL direta não deve revelar um artigo agendado para o futuro.');
+
+        $this->pdo->prepare('UPDATE studio_content SET published_at=DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 DAY) WHERE id=?')->execute([$id]);
+        self::assertNotNull($this->cms->publishedArticle($slug));
+
+        $this->pdo->prepare("UPDATE studio_content SET status='draft' WHERE id=?")->execute([$id]);
+        self::assertNull($this->cms->publishedArticle($slug));
+
+        $this->pdo->prepare("UPDATE studio_content SET status='published',deleted_at=CURRENT_TIMESTAMP WHERE id=?")->execute([$id]);
+        self::assertNull($this->cms->publishedArticle($slug));
+    }
+
     public function testTrashPaginationIsServerSide(): void
     {
         $ids=[];

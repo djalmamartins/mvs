@@ -4,6 +4,8 @@ Data: 2026-09-27
 Branch auditada: `feat/mvs-dev`  
 HEAD observado no início: `6d8996928b8236815892a8fbb3aad73932d56626`
 
+> **Snapshot histórico, superado.** Este relatório descreve a `feat/mvs-dev` em 2026-09-27; não representa o estado atual da `feat/mvs-v1-integration`. As avaliações antigas de Meu Dia, ERP, recuperação/convites, gates e código morto devem ser lidas somente como histórico. Para o estado vigente, evidências e limitações, consulte [MOVES-V1-MATRIX.md](MOVES-V1-MATRIX.md), atualizado em 2026-10-07.
+
 ## Escopo e método
 
 Auditoria somente de leitura do código existente, rotas, controllers, services, migrations, testes, templates e documentação. Nenhuma funcionalidade foi implementada e nenhuma issue foi criada nesta etapa. Os únicos arquivos novos produzidos são este relatório e a matriz `MOVES-V1-MATRIX.md`.

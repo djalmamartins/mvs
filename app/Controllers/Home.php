@@ -15,6 +15,7 @@ use Moves\Core\Response;
 use Moves\Core\Seo;
 use Moves\Core\HtmlSanitizer;
 use Moves\Core\Validator;
+use Moves\Services\CmsService;
 use PDO;
 
 /**
@@ -105,10 +106,8 @@ final class Home extends Controller
     /** @param array<string,string> $data */
     public function article(array $data): void
     {
-        $statement = Connection::getInstance()->prepare("SELECT * FROM studio_content WHERE type='article' AND status='published' AND deleted_at IS NULL AND slug=? LIMIT 1");
-        $statement->execute([$data['slug'] ?? '']);
-        $article = $statement->fetch(PDO::FETCH_ASSOC);
-        if (!$article) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
+        $article = (new CmsService())->publishedArticle((string) ($data['slug'] ?? ''));
+        if ($article === null) { http_response_code(404); echo $this->view->render('pages/error', ['title'=>'Conteúdo não encontrado','code'=>404,'message'=>'Este conteúdo não está disponível.']); return; }
         $title = ($article['seo_title'] ?: $article['title']).' — MOVES';
         $description = $article['seo_description'] ?: ($article['excerpt'] ?: $article['title']);
         $article['rendered_content'] = HtmlSanitizer::clean((string)($article['content']??''));

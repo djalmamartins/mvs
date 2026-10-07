@@ -17,7 +17,7 @@ Esta entrega migra a Home aprovada em `moves-site` para o tema público do Moves
 | Serviços | `servicos.html` e seus assets/comportamento | Rota `/servicos` e `pages/servicos.php` no tema público | Integrar a página ao Moves sem alterar conteúdo ou visual |
 | Projetos | `projetos.html`, 24 apresentações e filtros | Rota `/projetos`, `pages/projetos.php` e assets locais | Preservar a galeria, filtros e atribuição sem shell duplicado |
 | Sobre | Seção institucional `#about` da Home (não existe `sobre.html` na referência) | Rota `/sobre` e `pages/sobre.php` | Publicar apenas o conteúdo institucional aprovado, sem inventar uma página nova |
-| Conteúdo | `conteudo.html` estático, com três guias | Rota `/conteudo` e índice editorial sem links quebrados | Criar a base pública do futuro blog em `/conteudo/{slug}` sem antecipar CMS ou páginas de artigo |
+| Conteúdo | `conteudo.html` estático, com três guias | `/conteudo` lista artigos publicados do Studio e `/conteudo/{slug}` abre o artigo publicado | Usar o CMS/Studio existente como fonte; não duplicar conteúdo em páginas estáticas |
 | Contato | `contato.html` e preparação local de e-mail | Rota `/contato` e `pages/contato.php` | Manter um endereço simples e conhecido, com foco comercial expresso pelo CTA “Solicitar orçamento ↗” |
 
 ## Assets migrados
@@ -43,7 +43,7 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 
 ## Diferenças deliberadas
 
-- Os três conteúdos reais do protótipo foram estruturados semanticamente como artigos. Como `/conteudo/{slug}` ainda não foi implementado, os cards informam “Em breve” sem publicar links quebrados.
+- Os artigos publicados no Studio aparecem no índice `/conteudo` e são lidos pela rota pública `/conteudo/{slug}`. Rascunhos, conteúdo removido e artigos com publicação futura não devem ser expostos.
 - O formulário de `/contato` prepara localmente uma mensagem e abre o cliente de e-mail; não envia dados ao servidor e não introduz backend improvisado.
 - A área “Privacidade” do rodapé estático não foi exposta porque sua rota ainda não foi implementada.
 - O CTA principal do header é “Solicitar orçamento ↗”; “Área do cliente” aponta para `/login` com tratamento visual secundário.
@@ -59,7 +59,7 @@ Os templates dependem dos contratos estáveis `css/app.css` e `js/app.js`, manti
 | Solicitar orçamento ↗ | `/contato` | ativo; contato comercial |
 | Área do cliente | `/login` | ativo |
 
-Sobre está publicado em `/sobre`, mas intencionalmente não pertence à navbar principal; seu acesso institucional fica no footer. A evolução editorial planejada é `GET /conteudo/{slug}`, sem banco, CRUD, editor ou CMS nesta etapa.
+Sobre está publicado em `/sobre`, mas intencionalmente não pertence à navbar principal; seu acesso institucional fica no footer. O índice e a leitura de artigos públicos usam o conteúdo publicado pelo CMS/Studio.
 
 ## Roadmap após Conteúdo e Contato
 
@@ -69,7 +69,7 @@ A evolução administrativa seguirá esta ordem, mantendo cada etapa pequena e t
 2. dashboard;
 3. usuários, configurações e log;
 4. mídia;
-5. artigos e leitura de `/conteudo` pelo banco;
+5. acompanhar a publicação e leitura pública de artigos do Studio;
 6. páginas;
 7. destaques;
 8. depoimentos;
