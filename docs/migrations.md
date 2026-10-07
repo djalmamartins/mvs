@@ -8,7 +8,7 @@ As migrations do Moves são executadas por `php scripts/migrate.php` em ordem le
 2. Execute `php scripts/migrate.php` uma única vez no artefato que será promovido.
 3. Confirme a saída `Migrations concluídas.` e revise as linhas `OK:`/`SKIP:`.
 4. Execute novamente em homologação para confirmar idempotência; migrations já registradas devem aparecer como `SKIP:`.
-5. Só promova o release com CI verde. O CI valida banco limpo, reexecução, upgrade incremental e falha controlada.
+5. Só promova o release com CI verde. O CI valida banco limpo, reexecução, upgrade da migration de produto mais recente sobre a versão anterior simulada com preservação de um registro preexistente, upgrade incremental e falha controlada. A simulação remove apenas as tabelas criadas pela última migration e seu registro no ledger, exclusivamente no banco de teste.
 
 ## Falha
 

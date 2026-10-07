@@ -34,6 +34,63 @@ if ($code !== 0 || !str_contains($output, 'SKIP:')) {
     throw new RuntimeException('Reexecução idempotente falhou: ' . $output);
 }
 
+// Upgrade real: simula uma base na versão imediatamente anterior à migration
+// mais recente de produto. Remove somente os objetos que essa migration cria,
+// mantém os dados preexistentes e volta a executar o runner.
+$payablesMigration = '20261007_003_create_erp_payables.sql';
+$userEmail = 'ci-release-upgrade-' . bin2hex(random_bytes(8)) . '@example.test';
+$insertUser = $pdo->prepare(
+    "INSERT INTO users (name, email, password, status, role)\n" .
+    "VALUES (:name, :email, :password, 'active', 'user')"
+);
+$insertUser->execute([
+    'name' => 'Release upgrade sentinel',
+    'email' => $userEmail,
+    'password' => 'test-only-not-a-login-credential',
+]);
+$sentinelUserId = (int) $pdo->lastInsertId();
+
+try {
+    $pdo->exec('DROP TABLE IF EXISTS erp_payable_installments');
+    $pdo->exec('DROP TABLE IF EXISTS erp_payables');
+
+    $removeMigration = $pdo->prepare('DELETE FROM migrations WHERE migration = :migration');
+    $removeMigration->execute(['migration' => $payablesMigration]);
+
+    [$code, $output] = $run();
+    if ($code !== 0 || !str_contains($output, 'OK: ' . $payablesMigration)) {
+        throw new RuntimeException('Upgrade da migration de produto falhou: ' . $output);
+    }
+
+    $findSentinel = $pdo->prepare(
+        'SELECT name, email, password, status, role FROM users WHERE id = :id'
+    );
+    $findSentinel->execute(['id' => $sentinelUserId]);
+    $sentinel = $findSentinel->fetch(PDO::FETCH_ASSOC);
+    if ($sentinel === false
+        || $sentinel['name'] !== 'Release upgrade sentinel'
+        || $sentinel['email'] !== $userEmail
+        || $sentinel['password'] !== 'test-only-not-a-login-credential'
+        || $sentinel['status'] !== 'active'
+        || $sentinel['role'] !== 'user') {
+        throw new RuntimeException('Upgrade alterou ou removeu dados preexistentes de users.');
+    }
+
+    foreach (['erp_payables', 'erp_payable_installments'] as $table) {
+        $checkTable = $pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.tables ' .
+            'WHERE table_schema = DATABASE() AND table_name = :table_name'
+        );
+        $checkTable->execute(['table_name' => $table]);
+        if ((int) $checkTable->fetchColumn() !== 1) {
+            throw new RuntimeException('Upgrade não criou a tabela ' . $table . '.');
+        }
+    }
+} finally {
+    $removeSentinel = $pdo->prepare('DELETE FROM users WHERE id = :id');
+    $removeSentinel->execute(['id' => $sentinelUserId]);
+}
+
 // Upgrade: uma migration nova deve ser aplicada uma única vez e registrada no ledger.
 $upgradeName = '99999999_998_ci_upgrade_probe.sql';
 $upgradePath = $migrations . '/' . $upgradeName;
