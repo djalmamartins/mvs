@@ -7,6 +7,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use Moves\Boot\Connection;
 use Moves\Boot\Environment;
 use Moves\Core\Config;
+use Moves\Services\Platform\CompanyService;
 
 Environment::load(dirname(__DIR__));
 $base = rtrim((string) Config::get('APP_URL', ''), '/');
@@ -28,9 +29,11 @@ $userId = (int) $pdo->lastInsertId();
 $pdo->prepare("INSERT INTO talk_tenants(name,slug,status) VALUES(?,?,'active')")
     ->execute(['Administradora de teste', 'erp-visual-' . $suffix]);
 $tenantId = (int) $pdo->lastInsertId();
-$pdo->prepare("INSERT INTO platform_roles(tenant_id,slug,name,is_system) VALUES(?,'owner','Proprietário',1)")
-    ->execute([$tenantId]);
-$roleId = (int) $pdo->lastInsertId();
+$roles = new CompanyService($pdo);
+$roles->ensureRoles($tenantId);
+$roleQuery = $pdo->prepare("SELECT id FROM platform_roles WHERE tenant_id=? AND slug='owner'");
+$roleQuery->execute([$tenantId]);
+$roleId = (int) $roleQuery->fetchColumn();
 $pdo->prepare("INSERT INTO talk_tenant_users(tenant_id,user_id,role,role_id,status,is_default) VALUES(?,?,'admin',?,'active',1)")
     ->execute([$tenantId, $userId, $roleId]);
 $pdo->prepare("INSERT INTO platform_tenant_products(tenant_id,product,enabled) VALUES(?,'erp',1)")
@@ -40,6 +43,8 @@ $pdo->prepare('INSERT INTO erp_administrators(tenant_id,legal_name,trade_name,ta
 $administratorId = (int) $pdo->lastInsertId();
 $pdo->prepare("INSERT INTO erp_scope_grants(user_id,capability,scope_type,scope_id) VALUES(?,'erp.access','administrator',?)")
     ->execute([$userId, $administratorId]);
+$pdo->prepare("INSERT INTO erp_scope_grants(user_id,capability,scope_type,scope_id) VALUES(?,'erp.cadastros.read','administrator',?),(?,'erp.cadastros.write','administrator',?)")
+    ->execute([$userId,$administratorId,$userId,$administratorId]);
 $pdo->prepare('INSERT INTO erp_condominiums(administrator_id,legal_name,trade_name,tax_id,status,city,state) VALUES(?,?,?,?,?,?,?)')
     ->execute([$administratorId, 'Residencial QA', 'Residencial QA', 'QA-' . $suffix, 'active', 'São Paulo', 'SP']);
 $condominiumId = (int) $pdo->lastInsertId();
@@ -123,12 +128,12 @@ $check($day['status'] === 200 && str_contains($day['body'], 'Navegação do Meu 
 $dashboard = $request('/erp');
 $check($dashboard['status'] === 200 && str_contains($dashboard['body'], 'Central financeira e operacional'), 'dashboard ERP responde 200');
 $check(str_contains($dashboard['body'], 'Administradora de teste') && str_contains($dashboard['body'], 'Todos os condomínios'), 'contexto mostra administradora e seletor do tenant');
-$check(str_contains($dashboard['body'], 'Ambiente demonstrativo') && str_contains($dashboard['body'], 'R$ 842.430,25'), 'dashboard identifica e mostra os dados demonstrativos');
+$check(!str_contains($dashboard['body'], 'Ambiente demonstrativo') && !str_contains($dashboard['body'], 'R$ 842.430,25'), 'dashboard não injeta dados demonstrativos no ambiente testing');
 $check(str_contains($dashboard['body'], 'erp.css') && str_contains($dashboard['body'], 'Navegação do ERP'), 'shell carrega CSS ERP e sidebar interna');
 $dashboard30 = $request('/erp?period=30');
-$check($dashboard30['status'] === 200 && str_contains($dashboard30['body'], 'value="30" selected') && str_contains($dashboard30['body'], 'erp-chart-count-6'), 'fluxo de caixa permite selecionar e renderizar 30 dias');
+$check($dashboard30['status'] === 200 && str_contains($dashboard30['body'], 'Os dados financeiros ainda não estão conectados') && !str_contains($dashboard30['body'], 'erp-chart-count-6'), 'ambiente testing não renderiza fluxo de caixa demonstrativo');
 $dashboardMonth = $request('/erp?period=month');
-$check($dashboardMonth['status'] === 200 && str_contains($dashboardMonth['body'], 'value="month" selected') && str_contains($dashboardMonth['body'], 'este mês'), 'fluxo de caixa permite selecionar o mês atual');
+$check($dashboardMonth['status'] === 200 && str_contains($dashboardMonth['body'], 'Os dados financeiros ainda não estão conectados') && !str_contains($dashboardMonth['body'], 'erp-chart-count-6'), 'ambiente testing continua sem valores financeiros fictícios');
 
 $pages = [
     'payables'=>'Contas a pagar', 'receivables'=>'Contas a receber', 'billing'=>'Cobranças',
@@ -140,10 +145,10 @@ foreach ($pages as $path => $heading) {
     $check($page['status'] === 200 && str_contains($page['body'], '<h1>' . $heading . '</h1>'), $path . ' responde 200 com título correto');
     $check(!str_contains($page['body'], 'Warning:') && !str_contains($page['body'], 'Fatal error'), $path . ' sem erro PHP visível');
 }
-$payables = $request('/erp/payables?q=CEMIG&period=7');
-preg_match('/<tbody>(.*?)<\/tbody>/s', $payables['body'], $tableBody);
-$visibleRows = $tableBody[1] ?? '';
-$check($payables['status'] === 200 && str_contains($visibleRows, 'CEMIG') && !str_contains($visibleRows, 'Elevadores Atlas'), 'busca e filtros restringem contas a pagar');
+$payables = $request('/erp/payables');
+$check($payables['status'] === 200 && str_contains($payables['body'], 'Nenhuma obrigação registrada') && str_contains($payables['body'], 'erp-payables.js'), 'contas a pagar usa dados persistidos e carrega o formulário dinâmico');
+$payableForm = $request('/erp/payables/new');
+$check($payableForm['status'] === 200 && str_contains($payableForm['body'], 'Registrar obrigação') && str_contains($payableForm['body'], 'Adicionar parcela'), 'formulário de obrigação responde e permite parcelas explícitas');
 $condominiumContext = $request('/erp?condominium_id=' . $condominiumId);
 $check($condominiumContext['status'] === 200 && str_contains($condominiumContext['body'], 'value="' . $condominiumId . '" selected'), 'contexto do condomínio atual pode ser selecionado');
 $otherTenantContext = $request('/erp?condominium_id=' . $otherCondominiumId);

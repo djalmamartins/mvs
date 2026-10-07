@@ -208,3 +208,11 @@ Ao salvar um condomínio, `OperationalPendingService` avalia a condição na mes
 Um CNPJ válido numérico ou alfanumérico muda a mesma tarefa para `done` e grava `completed_at`, preservando-a na supervisão e na auditoria; Meu Dia deixa de exibi-la. A remoção posterior do CNPJ reabre a mesma linha, sem perder atribuição, prazo, prioridade ou contexto. `platform_audit_events` registra criação, atribuição, alterações de acompanhamento, resolução e reabertura. A regra é acionada na gravação; não existe varredura agendada nem notificação diária, pois Meu Dia é a superfície de acompanhamento. Um reconciliador periódico permanece uma proteção futura e não foi introduzido neste slice.
 
 Pessoas e fornecedores também tratam CNPJ como texto: normalizam e validam por `Moves\Services\Platform\Cnpj`, que aceita o formato numérico legado e o alfanumérico oficial, preservando zeros iniciais. CPF continua em validação independente. Busca e exibição de CNPJ aceitam letras. A homologação HTTP em MySQL descartável está registrada em `ERP-OPERATIONAL-SIMULATION.md`.
+
+## Implementação Moves — fundação limitada de contas a pagar (#300)
+
+`erp_payables` identifica uma obrigação por administradora, condomínio e fornecedor. O fornecedor precisa estar ativo e ter vínculo vigente com o condomínio no instante da gravação. O plano ativo do mesmo condomínio oferece uma conta analítica ativa de passivo e outra de despesa; ambas classificam o registro, sem criar movimento contábil.
+
+`erp_payable_installments` guarda uma ou mais parcelas com valor explícito, vencimento válido e competência aberta do mesmo condomínio. Título com uma ou mais parcelas é decisão Moves deste slice; os exemplos vazios da auditoria legada não comprovaram cardinalidade geral. A soma é validada em centavos. A gravação revalida fornecedor, plano/contas e estado da competência dentro da transação. Título, parcelas e auditoria são atômicos; FKs compostas impedem cruzamentos de administradora/condomínio.
+
+A listagem e o detalhe não mostram estado de pagamento ou aprovação. O slice não inclui anexos fiscais, retenções, rateio, centro de custo, recorrência, aprovação/quatro-olhos, pagamento, parcialidade, estorno, liquidação bancária, ledger, saldo ou fechamento. Não afirma paridade total de Contas a pagar nem atualiza evidência histórica do APControle; a continuação permanece no gap P0 da #48.

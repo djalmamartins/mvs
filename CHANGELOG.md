@@ -1,5 +1,19 @@
 # Changelog
 
+## ERP — fundação de contas a pagar (#300, 2026-10-07)
+
+### Added
+
+- Registro e consulta de obrigações por fornecedor vigente, condomínio, plano ativo e contas analíticas de passivo/despesa.
+- Parcelas com valor, vencimento e competência aberta explícitos; total conferido em centavos.
+- Auditoria transacional, autorização ERP, CSRF, isolamento tenant e FKs compostas.
+- E2E HTTP de criação/consulta e regressões de isolamento em MySQL descartável.
+
+### Limites
+
+- Sem aprovação, quatro-olhos, rateio, recorrência, anexos, retenções, pagamento, banco, ledger ou saldo.
+- Detalhes de domínio e gates em `docs/erp/ERP-DOMAIN-MODEL.md` e `docs/erp/ERP-OPERATIONAL-SIMULATION.md`.
+
 ## ERP — correções de ponta a ponta para CNPJ alfanumérico (2026-10-07)
 
 - Busca de fornecedor preserva letras do CNPJ e não amplia a consulta para todos os documentos quando a consulta contém caracteres alfanuméricos.

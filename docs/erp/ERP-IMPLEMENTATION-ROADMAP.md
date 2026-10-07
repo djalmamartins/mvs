@@ -131,3 +131,9 @@ A edição da estrutura existente agora permite corrigir identificador e complem
 **BLOQUEADA ANTES DA IMPLEMENTAÇÃO por regra de domínio ausente.** O HEAD não tem composição de cobrança ou fatura persistida; a fundação de recebíveis requer valor/parcela manual e não é substituta. A auditoria APControle confirma exemplos de faturas e itens (confiança B), mas não cálculo, itens elegíveis, rateio ou geração (D). Não inferir cobrança por fração ideal, copropriedade, taxa, consumo ou encargos. O bloqueio e os critérios para desbloqueio estão em `ERP-DOMAIN-MODEL.md`; issues existentes #257 (cobranças/boletos) e #258 (consolidação multiunidade) são os registros de trabalho, sem duplicação.
 
 Não avançar para instrumentos, recebimento/baixa, provider bancário ou conciliação até existir um contrato Moves para composição e rastreabilidade por unidade. Próxima ação é obter/decidir as regras Moves explicitadas no bloqueio; depois construir uma prévia de composição testável antes de emitir fatura. Sem mudança de paridade ou das contagens P0/P1.
+
+## Implementação — obrigação a pagar e parcelas (#300, 2026-10-07)
+
+Após confirmar fornecedores, competências abertas e planos por condomínio no código, implementamos um registro auditável de obrigação: fornecedor vigente, classificação analítica de passivo/despesa, total e parcelas explícitas. A migration é `20261007_003_create_erp_payables.sql`; lista e detalhe são tenant-scoped.
+
+Esta fundação não conclui o item P0 Contas a pagar. Não cria aprovação/quatro-olhos, rateio, recorrência, retenções, anexos, pagamento ou ledger; essas regras ainda precisam de contratos Moves explícitos. A #48 permanece aberta. Estimativas não mudam: **16 P0 / 7 P1 e ~10% (5–15%)**. Avaliar uma próxima etapa de aprovação/liquidação somente após explicitar transições, parcialidades, comprovantes, reversão e fonte contábil.

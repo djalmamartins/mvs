@@ -82,3 +82,25 @@ Regras pendentes para liberar a fase:
 - contrato de geração fatura → itens/snapshot → recebível/parcelas e proteção contra duplicidade.
 
 As issues existentes são #257 (cobrança/boletos) e #258 (consolidação); não foi criada issue duplicada. Nenhuma migration, dado financeiro ou comportamento de produto foi alterado neste registro.
+
+## Ciclo ERP — fundação de contas a pagar (#300, 2026-10-07)
+
+### Escopo verificado
+
+- Criar/listar/consultar obrigação por fornecedor vigente e condomínio da administradora atual.
+- Classificar pelas contas analíticas de passivo e despesa do plano ativo do mesmo condomínio.
+- Informar total e uma ou mais parcelas com valor, vencimento e competência aberta; soma exata em centavos.
+- Gravar título, parcelas e evento `erp.payable.created` em uma transação; negar CSRF inválido e referências de tenant/condomínio incorretas.
+- Verificar listagem vazia, formulário e detalhe HTTP, shell/sidebar/assets, pesquisa, acesso 404 cruzado e FK composta no MySQL.
+
+### Evidências e gates
+
+- Migration fresh completa (`20261007_003_create_erp_payables.sql`) e migration safety test: aprovados em MySQL descartável `moves_codex_erp_payables_*`, removido ao final.
+- PHPUnit completo em DB descartável: **273 testes / 1.221 assertions**, aprovados. Baseline em configuração local de desenvolvimento havia 6 erros de ambiente/schema em Day/SaaS; esse banco não foi migrado nem alterado. Em DB descartável recém-migrado a suíte inteira ficou verde.
+- E2E HTTP com dois tenants e MySQL/InnoDB descartável: **15 verificações**, incluindo login, formulário, CSRF, validação de total, bloqueio de fornecedor B, persistência/detalhe/pesquisa/auditoria e bloqueio de leitura pelo tenant B; aprovado.
+- PHPStan, lint PHP dos arquivos alterados, `node --check` do JS novo, `composer audit`, `composer validate --strict` e `git diff --check`: aprovados na validação final; `services/talk-whatsapp` passou 10/10 testes e `npm audit` reportou zero vulnerabilidades.
+- QA no navegador real autenticado: lista, formulário, filtro de opções por condomínio e detalhe abertos sem erro. Capturas em desktop (1280×720), tablet (768×1024) e mobile (390×844); lista e detalhe usam linhas empilhadas em tablet, formulário passa a uma coluna e não há overflow horizontal (`document/body.scrollWidth` 375px em viewport 390px). Os estilos usam a tipografia Moves compartilhada: título 28/34, texto e campos 14/20, seções 16/22 e metadados 12/16.
+
+### Decisões e limites
+
+Um título com uma ou mais parcelas e entrada explícita de valores é decisão Moves deste slice; os exemplos vazios do APControle não definem cardinalidade universal. A obrigação não tem estado de aprovação/pagamento e não atualiza razão, saldo ou banco. Pagamento/estorno, anexos fiscais, retenções, recorrência, rateio e quatro-olhos seguem fora, conforme o escopo limitado da #300 e a issue ampla #48.

@@ -1,6 +1,6 @@
 # Matriz funcional — APControle × Moves ERP
 
-Escala Moves: 0 inexistente; 1 só visual; 2 estrutura parcial; 3 funcional básico; 4 paridade funcional; 5 superior. Pontua o estado observado desta branch em 2026-10-06, não mockups ou capacidade planejada. Evidências APControle referem-se ao [mapa funcional](APCONTROLE-FUNCTIONAL-MAP.md); páginas identificadas somente no menu estão marcadas como inventário.
+Escala Moves: 0 inexistente; 1 só visual; 2 estrutura parcial; 3 funcional básico; 4 paridade funcional; 5 superior. Pontua o estado observado desta branch em 2026-10-07, não mockups ou capacidade planejada. Evidências APControle referem-se ao [mapa funcional](APCONTROLE-FUNCTIONAL-MAP.md); páginas identificadas somente no menu estão marcadas como inventário.
 
 | Domínio | Função de referência / evidência | Moves atual | Nível | Gap | Prioridade | Implementação proposta |
 |---|---|---|---:|---|---|---|
@@ -11,7 +11,7 @@ Escala Moves: 0 inexistente; 1 só visual; 2 estrutura parcial; 3 funcional bás
 | Investidor multiunidade | Uma pessoa pode ter mais de uma unidade; cardinalidade legada inconclusiva | Modelo de vínculo permite vários links pessoa-unidade/condomínio | 3 | Relatórios/cobrança agregada ainda ausentes | P0 | Cobertura de ownership temporal e cenários cross-condomínio |
 | Fornecedor | Lista global por tipo; pagamento liga fornecedor | Pessoa + perfil fornecedor + categoria + N:N de atendimento temporal ao condomínio | 3 | Contratos, contatos/documentos detalhados e uso financeiro | P0 | Referenciar fornecedor nos títulos a pagar |
 | Plano de contas | Árvore de classificação, mapas por tipo, abas e transferência automática; relatórios usam conta e modo de apresentação | Plano e contas persistentes por condomínio; CRUD, árvore, natureza/tipo, busca/filtros, status, auditoria, chaves compostas e CSRF | 2 | Versionamento, política após uso, dimensões/centro de custo e integração com operações financeiras ausentes | P0 | Definir ciclo de vida/versionamento e dimensões; depois associar a operações financeiras sem confundir com banco |
-| Conta a pagar | Títulos, parcelas, fornecedor, aprovação, rateio e pagamento | Página de demonstração sem persistência/operações | 1 | Fluxo financeiro inteiro | P0 | Título + parcelas + aprovações + pagamento + auditoria |
+| Conta a pagar | Títulos, parcelas, fornecedor, aprovação, rateio e pagamento | Obrigação persistente por fornecedor/condomínio, contas analíticas de passivo/despesa e parcelas explícitas por competência; auditoria, tenant e FKs compostas | 2 | Aprovação, rateio, pagamento/estorno, anexos e integração financeira | P0 | Validar regras de aprovação e liquidação; depois integrar sem tratar o título como saldo |
 | Conta a receber | Títulos/parcelas/baixa | Título persistente ligado a unidade/vínculo ativo, contas do plano do condomínio e parcelas por competência; auditoria, tenant e integridade composta | 2 | Recebimento, baixa/estorno e distribuição não existem | P0 | Eventos de recebimento/estorno depois de definir alocação e fonte financeira |
 | Cobrança/fatura | Fatura por unidade, composição de itens, status e boleto | Página visual sem geração/persistência | 1 | Competência, itens, cálculo, cobrança, baixa | P0 | Competência → itens por unidade → cobrança e distribuição de recebimento |
 | Cobrança consolidada multiunidade | Requisito Moves explícito, referência não comprovada | Não implementada | 0 | Agregado por proprietário sem perder alocação por unidade | P0 | Lote de apresentação que preserva itens/saldos por unidade; recebimento distribuído |
@@ -146,6 +146,12 @@ Na branch `feat/mvs-v1-integration`, a fração ideal agora pode ser registrada 
 ## Implementação Moves — fundação limitada de contas a receber (2026-10-07)
 
 O Moves persiste e consulta título e parcelas explícitas, ligados a unidade e pessoa no condomínio, a plano/contas ativas e a competências abertas do mesmo escopo. Um título para uma ou mais parcelas é decisão Moves, não regra generalizada da referência. Isso eleva Conta a Receber de página visual para estrutura parcial (nível 2). Não entrega baixa, cobrança, banco nem saldo; o gap P0 permanece aberto. As contagens de gaps seguem **16 P0 / 7 P1** e a estimativa global **~10% (faixa 5–15%)**, pois não se fechou trilha financeira operacional. Nenhuma evidência histórica do APControle foi alterada.
+
+## Implementação Moves — obrigação a pagar (#300, 2026-10-07)
+
+O slice persiste uma obrigação por fornecedor com vínculo vigente ao condomínio, plano ativo, contas analíticas de passivo/despesa e parcelas explícitas por competência aberta. A soma é validada em centavos; título, parcelas e evento de auditoria são atômicos. FKs compostas preservam administradora, condomínio, plano, fornecedor e competência. Uma ou mais parcelas são decisão Moves delimitada, não regra universal observada no APControle.
+
+Conta a pagar evolui de visual (1) para estrutura parcial (2). O gap P0 permanece porque aprovação, rateio, pagamento/estorno, anexos e integração financeira não existem. O slice não cria lançamento/ledger nem saldo. Estimativas globais não mudam: **~10% (5–15%), 16 P0 / 7 P1**; ver a homologação em `ERP-OPERATIONAL-SIMULATION.md`.
 
 ## Ciclo financeiro — auditoria da fase fatura (2026-10-07)
 

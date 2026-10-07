@@ -156,6 +156,7 @@ $apps = array_values(array_filter($apps, static fn (array $app): bool => $app['k
                 defer
         ></script>
         <?php if (($currentPage ?? '') === 'receivables'): ?><script src="<?= $this->e($this->asset('js/erp-receivables.js')) ?>" defer></script><?php endif; ?>
+        <?php if (($currentPage ?? '') === 'payables'): ?><script src="<?= $this->e($this->asset('js/erp-payables.js')) ?>" defer></script><?php endif; ?>
 
     <script
             src="<?= $this->e($this->asset('js/application-shell.js')) ?>"
