@@ -22,7 +22,7 @@ final class ErpPeopleServiceTest extends TestCase
         $this->pdo->exec("CREATE TABLE erp_blocks(id INTEGER PRIMARY KEY AUTOINCREMENT,condominium_id INTEGER,code TEXT,name TEXT,status TEXT DEFAULT 'active')");
         $this->pdo->exec("CREATE TABLE erp_units(id INTEGER PRIMARY KEY AUTOINCREMENT,condominium_id INTEGER,block_id INTEGER,code TEXT,complement TEXT,status TEXT DEFAULT 'active',created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(condominium_id,code))");
         $this->pdo->exec("CREATE TABLE erp_people(id INTEGER PRIMARY KEY AUTOINCREMENT,administrator_id INTEGER,entity_type TEXT,full_name TEXT,trade_name TEXT,document_type TEXT,document_number TEXT,email TEXT,phone TEXT,status TEXT,created_by_user_id INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(administrator_id,document_type,document_number))");
-        $this->pdo->exec("CREATE TABLE erp_person_links(id INTEGER PRIMARY KEY AUTOINCREMENT,administrator_id INTEGER,person_id INTEGER,condominium_id INTEGER,unit_id INTEGER,role TEXT,starts_at TEXT,ends_at TEXT,status TEXT,source TEXT,created_by_user_id INTEGER,ended_by_user_id INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+        $this->pdo->exec("CREATE TABLE erp_person_links(id INTEGER PRIMARY KEY AUTOINCREMENT,administrator_id INTEGER,person_id INTEGER,condominium_id INTEGER,unit_id INTEGER,role TEXT,ownership_fraction_pct NUMERIC,starts_at TEXT,ends_at TEXT,status TEXT,source TEXT,created_by_user_id INTEGER,ended_by_user_id INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
         $this->pdo->exec('CREATE TABLE platform_audit_events(id INTEGER PRIMARY KEY AUTOINCREMENT,tenant_id INTEGER,actor_user_id INTEGER,event_type TEXT,subject_type TEXT,subject_id INTEGER,metadata TEXT)');
         $this->pdo->exec("INSERT INTO erp_administrators(id,tenant_id) VALUES(10,100),(20,200)");
         $this->pdo->exec("INSERT INTO erp_condominiums(id,administrator_id,legal_name,trade_name) VALUES(101,10,'Condo A','A'),(102,10,'Condo A 2','A2'),(201,20,'Condo B','B')");
@@ -77,6 +77,31 @@ final class ErpPeopleServiceTest extends TestCase
     {
         foreach(['Ana','Bia'] as $name){$person=$this->service->create(100,10,7,['entity_type'=>'person','full_name'=>$name]);$this->service->addLink(100,10,7,$person['id'],['condominium_id'=>101,'unit_id'=>1001,'role'=>'owner','starts_at'=>'2026-01-01']);}
         self::assertCount(2,$this->service->linksForUnit(10,1001));
+    }
+
+
+    public function testOwnershipFractionIsOptionalBoundedAndScopedToOwnerUnitLinks(): void
+    {
+        $person=$this->service->create(100,10,7,['entity_type'=>'person','full_name'=>'Proprietária','create_link'=>'1','condominium_id'=>101,'unit_id'=>1001,'role'=>'owner','ownership_fraction_pct'=>'25,5','starts_at'=>'2026-01-01']);
+        $detail=$this->service->detail(10,$person['id']);
+        self::assertSame(25.5,(float)$detail['links'][0]['ownership_fraction_pct']);
+        self::assertStringContainsString('25.5', (string)$this->pdo->query("SELECT metadata FROM platform_audit_events WHERE event_type='erp.person_link.created'")->fetchColumn());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->addLink(100,10,7,$person['id'],['condominium_id'=>101,'unit_id'=>1001,'role'=>'owner','ownership_fraction_pct'=>'100.0001','starts_at'=>'2026-02-01']);
+    }
+
+    public function testOwnershipFractionCannotBeAssignedToNonOwnerOrWithoutUnit(): void
+    {
+        $person=$this->service->create(100,10,7,['entity_type'=>'person','full_name'=>'Morador']);
+        try {
+            $this->service->addLink(100,10,7,$person['id'],['condominium_id'=>101,'unit_id'=>1001,'role'=>'resident','ownership_fraction_pct'=>'50','starts_at'=>'2026-01-01']);
+            self::fail('Fração ideal não pode ser atribuída a não proprietário.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('proprietário',$exception->getMessage());
+        }
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->addLink(100,10,7,$person['id'],['condominium_id'=>101,'unit_id'=>'','role'=>'owner','ownership_fraction_pct'=>'50','starts_at'=>'2026-01-01']);
     }
 
     public function testFutureEndDateDoesNotPrematurelyDeactivateCurrentLink(): void

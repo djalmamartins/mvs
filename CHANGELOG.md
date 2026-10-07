@@ -1,5 +1,18 @@
 # Changelog
 
+## ERP — Fração ideal cadastral
+
+### Added
+
+- Percentual ideal opcional (0–100%, quatro casas decimais) em vínculo temporal de proprietário e unidade.
+- Exibição no histórico da pessoa e na unidade, com valor persistido e auditado.
+- Validações de faixa, papel e unidade tanto no serviço quanto na constraint MySQL.
+
+### Limites desta etapa
+
+- Não totaliza frações entre proprietários nem executa rateio ou cobrança.
+- Alterações de titularidade/fração são registradas por encerramento e novo vínculo, preservando o histórico anterior.
+
 ## ERP — Competência mensal aberta
 
 ### Added

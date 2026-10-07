@@ -90,3 +90,8 @@ Competência vem antes do plano de contas por ser dimensão observada em título
 Manter modelo Moves original e explícito; isolamento por tenant e integridade referencial; histórico e auditoria append-only para transições; transações e idempotência onde houver comando; decimal/moeda sem float; datas e competência explícitas; status enumerados; sem hardcode de condomínio ou demo em produção. Preservar multiadministradora, multi-condomínio, pessoa global com relações temporais, multiunidade e copropriedade, cobrança consolidada opcional com distribuição por unidade e integrações Talk/Support/Meu Dia sem duplicar fonte financeira.
 
 O ledger permanece não definido. A estimativa de paridade continua ~10% (5–15%), com 16 P0 e 7 P1; esta auditoria de configurações não fecha nenhuma trilha financeira completa.
+
+
+## Ciclo ERP seguinte à competência — fração ideal cadastral
+
+O gap da fração ideal foi fechado no Moves como dado percentual opcional do vínculo temporal proprietário–unidade, sem regras de totalização ou rateio. O modelo, validação, auditoria e UI foram homologados em banco descartável e HTTP E2E. Isso avança uma parte do item 1 (cadastros operacionais), mas não elimina o P0 de cadastros, não altera a estimativa de paridade de 10% (5–15%) e não altera as contagens 16 P0 / 7 P1. O próximo candidato P0 continua o fechamento de cadastros e vínculos; plano de contas permanece posterior, pois escopo/versionamento e ciclo de vida usados continuam não comprovados.

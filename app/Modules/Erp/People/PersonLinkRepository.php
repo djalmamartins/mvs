@@ -16,7 +16,7 @@ final readonly class PersonLinkRepository
     {
     }
 
-    public function create(int $administratorId, int $actorId, int $personId, int $condominiumId, ?int $unitId, string $role, string $startsAt, ?string $endsAt, string $source = 'staff'): int
+    public function create(int $administratorId, int $actorId, int $personId, int $condominiumId, ?int $unitId, string $role, string $startsAt, ?string $endsAt, string $source = 'staff', ?string $ownershipFractionPct = null): int
     {
         self::assertDate($startsAt, 'Data inicial');
         if ($endsAt !== null) {
@@ -29,8 +29,8 @@ final readonly class PersonLinkRepository
             throw new InvalidArgumentException('Selecione um tipo de vínculo válido.');
         }
         $statement = $this->pdo->prepare(
-            'INSERT INTO erp_person_links(administrator_id,person_id,condominium_id,unit_id,role,starts_at,ends_at,status,source,created_by_user_id)
-             VALUES(:administrator_id,:person_id,:condominium_id,:unit_id,:role,:starts_at,:ends_at,:status,:source,:actor_id)'
+            'INSERT INTO erp_person_links(administrator_id,person_id,condominium_id,unit_id,role,ownership_fraction_pct,starts_at,ends_at,status,source,created_by_user_id)
+             VALUES(:administrator_id,:person_id,:condominium_id,:unit_id,:role,:ownership_fraction_pct,:starts_at,:ends_at,:status,:source,:actor_id)'
         );
         $statement->execute([
             'administrator_id'=>$administratorId,
@@ -38,6 +38,7 @@ final readonly class PersonLinkRepository
             'condominium_id'=>$condominiumId,
             'unit_id'=>$unitId,
             'role'=>$role,
+            'ownership_fraction_pct'=>$ownershipFractionPct,
             'starts_at'=>$startsAt,
             'ends_at'=>$endsAt,
             'status'=>$endsAt === null || $endsAt >= date('Y-m-d') ? 'active' : 'inactive',
@@ -107,7 +108,7 @@ final readonly class PersonLinkRepository
 
     private function detailsSelect(): string
     {
-        return "SELECT l.id,l.administrator_id,l.person_id,l.condominium_id,l.unit_id,l.role,l.starts_at,l.ends_at,l.status,l.source,l.created_by_user_id,l.ended_by_user_id,
+        return "SELECT l.id,l.administrator_id,l.person_id,l.condominium_id,l.unit_id,l.role,l.ownership_fraction_pct,l.starts_at,l.ends_at,l.status,l.source,l.created_by_user_id,l.ended_by_user_id,
                        c.legal_name AS condominium_legal_name,c.trade_name AS condominium_name,u.code AS unit_code,u.complement AS unit_complement,b.name AS block_name,
                        p.entity_type,p.full_name,p.trade_name AS person_trade_name,p.document_type,p.document_number,p.email,p.phone,
                        CASE WHEN l.status='active' AND l.starts_at<=CURRENT_DATE AND (l.ends_at IS NULL OR l.ends_at>=CURRENT_DATE) THEN 1 ELSE 0 END AS is_current

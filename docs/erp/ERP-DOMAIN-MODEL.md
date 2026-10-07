@@ -165,3 +165,8 @@ Comparação de evidência:
 - **Centro de custo:** há aba, campo e filtro, mas nenhum registro nem uso confirmado; não é base segura ainda.
 
 Recomendação futura, não implementada: entidade de competência mensal tenant-scoped e vinculada ao condomínio, datas explícitas e unicidade por condomínio/mês, `status=open` como único estado gravável no slice inicial, auditoria, autorização, FK composta, migration idempotente, testes e UI Moves real. Não criar tabela genérica de movimentos financeiros nem embutir pagamento/recebimento no domínio de competência.
+
+
+## Implementação Moves: fração ideal cadastral
+
+`erp_person_links.ownership_fraction_pct` guarda um percentual decimal opcional e temporal, apenas para papel `owner` associado a `unit_id`. O intervalo aceito é `(0, 100]`, com até quatro casas decimais. O percentual é mostrado no detalhe da pessoa e da unidade; criação registra valor na auditoria. O encerramento de um vínculo mantém o valor histórico. Não há mutação do vínculo ou regra de totalização: soma em 100%, distribuição financeira, cobrança e rateio não foram especificados por esta decisão e não são executados. A constraint do MySQL repete as invariantes de faixa/papel/unidade para proteger gravações fora da interface.

@@ -178,7 +178,7 @@ final readonly class PeopleService
         ];
     }
 
-    /** @param array<string,mixed> $data @return array{condominium_id:int,unit_id:?int,role:string,starts_at:string,ends_at:?string} */
+    /** @param array<string,mixed> $data @return array{condominium_id:int,unit_id:?int,role:string,ownership_fraction_pct:?string,starts_at:string,ends_at:?string} */
     private function normalizeLink(array $data): array
     {
         $condominiumId = filter_var($data['condominium_id'] ?? null, FILTER_VALIDATE_INT);
@@ -200,10 +200,26 @@ final readonly class PeopleService
                 throw new InvalidArgumentException('A data final não pode anteceder a data inicial.');
             }
         }
-        return ['condominium_id'=>$condominiumId,'unit_id'=>$unitId,'role'=>$role,'starts_at'=>$startsAt,'ends_at'=>$endsAt];
+        $rawFraction = trim((string) ($data['ownership_fraction_pct'] ?? ''));
+        $ownershipFractionPct = null;
+        if ($rawFraction !== '') {
+            if ($role !== 'owner' || $unitId === null) {
+                throw new InvalidArgumentException('A fração ideal só pode ser informada para proprietário vinculado a uma unidade.');
+            }
+            if (!preg_match('/^(0|[1-9][0-9]?|100)(?:[.,]([0-9]{1,4}))?$/', $rawFraction, $fractionParts)) {
+                throw new InvalidArgumentException('Informe a fração ideal como percentual maior que 0 e até 100, com no máximo 4 casas decimais.');
+            }
+            $fractionDigits = $fractionParts[2] ?? '';
+            if (((int) $fractionParts[1] === 0 && trim($fractionDigits, '0') === '')
+                || ((int) $fractionParts[1] === 100 && trim($fractionDigits, '0') !== '')) {
+                throw new InvalidArgumentException('Informe a fração ideal como percentual maior que 0 e até 100, com no máximo 4 casas decimais.');
+            }
+            $ownershipFractionPct = $fractionParts[1] . '.' . str_pad($fractionDigits, 4, '0');
+        }
+        return ['condominium_id'=>$condominiumId,'unit_id'=>$unitId,'role'=>$role,'ownership_fraction_pct'=>$ownershipFractionPct,'starts_at'=>$startsAt,'ends_at'=>$endsAt];
     }
 
-    /** @param array{condominium_id:int,unit_id:?int,role:string,starts_at:string,ends_at:?string} $link */
+    /** @param array{condominium_id:int,unit_id:?int,role:string,ownership_fraction_pct:?string,starts_at:string,ends_at:?string} $link */
     private function createLinkRecord(int $tenantId, int $administratorId, int $actorId, int $personId, array $link): int
     {
         if (!$this->structure->condominiumExists($administratorId, $link['condominium_id'])) {
@@ -214,11 +230,11 @@ final readonly class PeopleService
         }
         $linkId = $this->links->create(
             $administratorId,$actorId,$personId,$link['condominium_id'],$link['unit_id'],
-            $link['role'],$link['starts_at'],$link['ends_at']
+            $link['role'],$link['starts_at'],$link['ends_at'],'staff',$link['ownership_fraction_pct']
         );
         $this->audit->record($tenantId, $actorId, 'erp.person_link.created', 'person_link', $linkId, [
             'person_id'=>$personId,'condominium_id'=>$link['condominium_id'],'unit_id'=>$link['unit_id'],'role'=>$link['role'],
-            'starts_at'=>$link['starts_at'],'ends_at'=>$link['ends_at'],
+            'starts_at'=>$link['starts_at'],'ends_at'=>$link['ends_at'],'ownership_fraction_pct'=>$link['ownership_fraction_pct'],
         ]);
         return $linkId;
     }
