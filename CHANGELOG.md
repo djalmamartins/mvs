@@ -1,5 +1,11 @@
 # Changelog
 
+## ERP — homologação cadastral com CNPJ alfanumérico (2026-10-07)
+
+- Pessoas e fornecedores agora normalizam/validam CNPJ com o serviço compartilhado, aceitando o formato alfanumérico oficial; CPF conserva validação separada.
+- Busca e detalhes exibem e encontram CNPJ alfanumérico; formulários aceitam letras e indicam o formato textual esperado.
+- Homologação dos cenários operacionais sintéticos e evidências: `docs/erp/ERP-OPERATIONAL-SIMULATION.md`.
+
 ## ERP — histórico de atendimento de fornecedores
 
 ### Fixed

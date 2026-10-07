@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Moves\Modules\Erp\People\PeopleService;
 use Moves\Modules\Erp\People\PersonRepository;
 use Moves\Services\Platform\PlatformAudit;
+use Moves\Services\Platform\Cnpj;
 use PDO;
 use Throwable;
 
@@ -65,14 +66,12 @@ final readonly class SupplierService
         $value=\DateTimeImmutable::createFromFormat('!Y-m-d',$date);if($value===false||$value->format('Y-m-d')!==$date)throw new InvalidArgumentException($label.' inválida.');
     }
 
-    private static function validDocument(string $type,string $digits): bool
+    private static function validDocument(string $type,string $document): bool
     {
         if($type==='cpf'){
-            if(strlen($digits)!==11||preg_match('/^(\d)\1{10}$/',$digits)===1)return false;
-            for($position=9;$position<11;$position++){$sum=0;for($index=0;$index<$position;$index++)$sum+=(int)$digits[$index]*(($position+1)-$index);$digit=($sum*10)%11;if($digit===10)$digit=0;if((int)$digits[$position]!==$digit)return false;}return true;
+            if(strlen($document)!==11||preg_match('/^(\d)\1{10}$/',$document)===1)return false;
+            for($position=9;$position<11;$position++){$sum=0;for($index=0;$index<$position;$index++)$sum+=(int)$document[$index]*(($position+1)-$index);$digit=($sum*10)%11;if($digit===10)$digit=0;if((int)$document[$position]!==$digit)return false;}return true;
         }
-        if($type!=='cnpj'||strlen($digits)!==14||preg_match('/^(\d)\1{13}$/',$digits)===1)return false;
-        $digit=static function(string $base,array $weights):int{$sum=0;foreach($weights as $index=>$weight)$sum+=(int)$base[$index]*$weight;$remainder=$sum%11;return $remainder<2?0:11-$remainder;};
-        $first=$digit(substr($digits,0,12),[5,4,3,2,9,8,7,6,5,4,3,2]);$second=$digit(substr($digits,0,12).$first,[6,5,4,3,2,9,8,7,6,5,4,3,2]);return substr($digits,12,2)===$first.$second;
+        return $type==='cnpj'&&Cnpj::isValid($document);
     }
 }

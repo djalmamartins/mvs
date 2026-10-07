@@ -6,6 +6,7 @@ namespace Moves\Modules\Erp\People;
 
 use InvalidArgumentException;
 use Moves\Modules\Erp\Structure\PhysicalStructureRepository;
+use Moves\Services\Platform\Cnpj;
 use Moves\Services\Platform\PlatformAudit;
 use PDO;
 
@@ -148,16 +149,26 @@ final readonly class PeopleService
         if ($fullName === '' || mb_strlen($fullName) > 190 || ($tradeName !== null && mb_strlen($tradeName) > 190)) {
             throw new InvalidArgumentException('Informe um nome ou razão social com até 190 caracteres.');
         }
-        $rawDocument = preg_replace('/\D+/', '', (string) ($data['document_number'] ?? '')) ?? '';
+        $rawDocument = trim((string) ($data['document_number'] ?? ''));
         $documentType = strtolower(trim((string) ($data['document_type'] ?? '')));
         if ($rawDocument === '' && $documentType === '') {
             $document = null;
         } else {
             $expectedType = $entityType === 'person' ? 'cpf' : 'cnpj';
-            if ($documentType !== $expectedType || strlen($rawDocument) !== ($entityType === 'person' ? 11 : 14)) {
-                throw new InvalidArgumentException($entityType === 'person' ? 'Informe um CPF com 11 dígitos.' : 'Informe um CNPJ com 14 dígitos.');
+            if ($documentType !== $expectedType) {
+                throw new InvalidArgumentException($entityType === 'person' ? 'Informe um CPF com 11 dígitos.' : 'Informe um CNPJ válido com 14 caracteres.');
             }
-            $document = $rawDocument;
+            if ($expectedType === 'cpf') {
+                $document = preg_replace('/\D+/', '', $rawDocument) ?? '';
+                if (strlen($document) !== 11) {
+                    throw new InvalidArgumentException('Informe um CPF com 11 dígitos.');
+                }
+            } else {
+                $document = Cnpj::normalize($rawDocument);
+                if ($document === null || !Cnpj::isValid($document)) {
+                    throw new InvalidArgumentException('Informe um CNPJ válido com 14 caracteres.');
+                }
+            }
         }
         $email = strtolower(trim((string) ($data['email'] ?? '')));
         if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190)) {

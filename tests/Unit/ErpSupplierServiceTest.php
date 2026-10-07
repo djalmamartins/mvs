@@ -35,6 +35,16 @@ final class ErpSupplierServiceTest extends TestCase
         self::assertTrue($result['created_person']);self::assertSame(1,(int)$this->pdo->query('SELECT COUNT(*) FROM erp_people WHERE entity_type=\'person\'')->fetchColumn());self::assertSame(2,(int)$this->pdo->query('SELECT COUNT(*) FROM erp_supplier_condominiums WHERE administrator_id=10')->fetchColumn());
     }
 
+    public function testCanCreateOrganizationSupplierWithAlphanumericCnpj():void
+    {
+        $base='CD1234567890';$digit=static function(string $value,array $weights):string{$sum=0;foreach($weights as $index=>$weight)$sum+=(ord($value[$index])-48)*$weight;$remainder=$sum%11;return(string)($remainder<2?0:11-$remainder);};
+        $cnpj=$base.$digit($base,[5,4,3,2,9,8,7,6,5,4,3,2]);$cnpj.=$digit($cnpj,[6,5,4,3,2,9,8,7,6,5,4,3,2]);
+        $supplier=$this->service->create(100,10,1,['entity_type'=>'organization','full_name'=>'Prestador alfanumérico','document_type'=>'cnpj','document_number'=>strtolower($cnpj),'category_id'=>'1']);
+        $person=(new PersonRepository($this->pdo))->find(10,$supplier['person_id']);
+        self::assertSame($cnpj,$person['document_number']);
+        self::assertSame($supplier['id'],$this->suppliers->find(10,$supplier['id'])['id']);
+    }
+
     public function testCanQualifyExistingOrganizationAndRejectDuplicateDocument():void
     {
         $person=(new PersonRepository($this->pdo))->createOrFind(10,1,['entity_type'=>'organization','full_name'=>'Elevadores XYZ','trade_name'=>null,'document_type'=>'cnpj','document_number'=>'11222333000181','email'=>null,'phone'=>null]);

@@ -65,6 +65,7 @@ $condominiumIds = [
     $condos->save($a['tenant'], ['legal_name' => 'Condomínio em processo ' . $suffix], $a['user']),
     $condos->save($a['tenant'], ['legal_name' => 'Condomínio complexo ' . $suffix, 'tax_id' => $makeCnpj(false)], $a['user']),
 ];
+$condominiumNames = ['Condomínio numérico '.$suffix,'Condomínio alfanumérico '.$suffix,'Condomínio sem CNPJ '.$suffix,'Condomínio em processo '.$suffix,'Condomínio complexo '.$suffix];
 $pending = new OperationalPendingService($pdo);
 $tasks = $pending->list($a['tenant'], $a['administrator']);
 if (count($tasks) !== 2 || array_map('intval', array_column($tasks, 'condominium_id')) !== [$condominiumIds[2], $condominiumIds[3]]) {
@@ -96,6 +97,79 @@ $client = static function () use ($base): Closure {
 };
 $login = static function (array $person) use ($client, $csrf): Closure { $request = $client(); $page = $request('/login'); $auth = $request('/login', ['email'=>$person['email'],'password'=>'MovesERP-PendingTest-2026!','_token'=>$csrf($page['body'])]); if ($auth['status']!==302 || !str_ends_with($auth['location'],'/day')) { throw new RuntimeException('Login de teste falhou: '.$auth['status'].' '.$auth['location']); } return $request; };
 $requestA = $login($a);
+$dayPage = $requestA('/day');
+$check($dayPage['status']===200 && !str_contains($dayPage['body'],'Internal Server Error'), 'fluxo começa no Meu Dia sem erro 500');
+$unitForm = $requestA('/erp/units/new');
+$unitToken = $csrf($unitForm['body']);
+$unitsByCondo = [];
+foreach ($condominiumIds as $index => $condominiumId) {
+    $count = $index === 0 ? 10 : ($index === 1 ? 20 : 1);
+    $unitsByCondo[$condominiumId] = [];
+    for ($number = 1; $number <= $count; $number++) {
+        $code = sprintf('%02d%02d', $index + 1, $number);
+        $created = $requestA('/erp/units', ['_token'=>$unitToken,'condominium_id'=>(string)$condominiumId,'block'=>'Torre A','code'=>$code]);
+        if ($created['status'] !== 302 || !preg_match('~/erp/units/(\d+)~', $created['location'], $match)) {
+            throw new RuntimeException('Falha ao criar unidade HTTP no condomínio '.$condominiumId.': '.$created['status'].' '.$created['location']);
+        }
+        $unitsByCondo[$condominiumId][] = (int)$match[1];
+    }
+    $filter = $requestA('/erp/units?condominium='.$condominiumId);
+    $check($filter['status']===200 && str_contains($filter['body'],'Torre A'), 'estrutura do condomínio '.($index+1).' criada pela UI HTTP');
+}
+$unitCount = (int)$pdo->query('SELECT COUNT(*) FROM erp_units WHERE condominium_id IN ('.implode(',',array_map('intval',$condominiumIds)).')')->fetchColumn();
+$blockCount = (int)$pdo->query('SELECT COUNT(*) FROM erp_blocks WHERE condominium_id IN ('.implode(',',array_map('intval',$condominiumIds)).')')->fetchColumn();
+$check($unitCount===33 && $blockCount===5, 'MySQL persiste 33 unidades e cinco blocos com escopo por condomínio');
+$peopleForm = $requestA('/erp/people/new');
+$personPayload = ['_token'=>$csrf($peopleForm['body']),'entity_type'=>'person','full_name'=>'Proprietária multiunidade '.$suffix,'document_type'=>'cpf','document_number'=>'52998224725','create_link'=>'1','condominium_id'=>(string)$condominiumIds[0],'unit_id'=>(string)$unitsByCondo[$condominiumIds[0]][0],'role'=>'owner','ownership_fraction_pct'=>'60','starts_at'=>date('Y-m-d')];
+$personResponse = $requestA('/erp/people',$personPayload);
+preg_match('~/erp/people/(\d+)~',$personResponse['location'],$personMatch);
+$personId = (int)($personMatch[1]??0);
+$check($personResponse['status']===302 && $personId>0, 'pessoa PF vinculada à primeira unidade do condomínio 1');
+$personDetail = $requestA('/erp/people/'.$personId);
+$multiLink = $requestA('/erp/people/'.$personId.'/links',['_token'=>$csrf($personDetail['body']),'condominium_id'=>(string)$condominiumIds[0],'unit_id'=>(string)$unitsByCondo[$condominiumIds[0]][1],'role'=>'owner','starts_at'=>date('Y-m-d')]);
+$check($multiLink['status']===302, 'proprietária mantém vínculo multiunidade sem duplicação');
+$coproForm = $requestA('/erp/people/new');
+$copro = $requestA('/erp/people',['_token'=>$csrf($coproForm['body']),'entity_type'=>'person','full_name'=>'Coproprietária '.$suffix,'create_link'=>'1','condominium_id'=>(string)$condominiumIds[0],'unit_id'=>(string)$unitsByCondo[$condominiumIds[0]][0],'role'=>'owner','ownership_fraction_pct'=>'40','starts_at'=>date('Y-m-d')]);
+preg_match('~/erp/people/(\d+)~',$copro['location'],$coproMatch);
+$coproId=(int)($coproMatch[1]??0);
+$check($copro['status']===302 && $coproId>0 && str_contains($requestA('/erp/units/'.$unitsByCondo[$condominiumIds[0]][0])['body'],'Coproprietária '.$suffix), 'unidade admite e exibe coproprietária PF');
+$coproDetail=$requestA('/erp/people/'.$coproId);
+foreach ([2,3] as $index) {
+    $link=$requestA('/erp/people/'.$coproId.'/links',['_token'=>$csrf($coproDetail['body']),'condominium_id'=>(string)$condominiumIds[$index],'unit_id'=>(string)$unitsByCondo[$condominiumIds[$index]][0],'role'=>'owner','starts_at'=>date('Y-m-d')]);
+    $check($link['status']===302, 'pessoa vinculada ao condomínio sem CNPJ '.($index+1));
+}
+$companyForm = $requestA('/erp/people/new');
+$company = $requestA('/erp/people',['_token'=>$csrf($companyForm['body']),'entity_type'=>'organization','full_name'=>'Empresa condomínio 2 '.$suffix,'document_type'=>'cnpj','document_number'=>$alphaCnpj,'create_link'=>'1','condominium_id'=>(string)$condominiumIds[1],'unit_id'=>(string)$unitsByCondo[$condominiumIds[1]][0],'role'=>'owner','starts_at'=>date('Y-m-d')]);
+preg_match('~/erp/people/(\d+)~',$company['location'],$companyMatch);
+$companyId=(int)($companyMatch[1]??0);
+$check($company['status']===302 && $companyId>0 && str_contains($requestA('/erp/people/'.$companyId)['body'],substr($alphaCnpj,0,2).'.'.substr($alphaCnpj,2,3).'.'.substr($alphaCnpj,5,3).'/'.substr($alphaCnpj,8,4).'-'.substr($alphaCnpj,12,2)), 'pessoa PJ recebe CNPJ alfanumérico no condomínio 2');
+$supplierForm = $requestA('/erp/suppliers/new');
+$supplierToken = $csrf($supplierForm['body']);
+$categoryQuery = $pdo->prepare("SELECT id FROM erp_supplier_categories WHERE administrator_id=? AND slug='elevadores'");
+$categoryQuery->execute([$a['administrator']]);
+$categoryId=(int)$categoryQuery->fetchColumn();
+$supplierPj = $requestA('/erp/suppliers',['_token'=>$supplierToken,'existing_person_id'=>(string)$companyId,'category_id'=>(string)$categoryId,'starts_at'=>date('Y-m-d'),'condominium_ids'=>[(string)$condominiumIds[1],(string)$condominiumIds[4]]]);
+preg_match('~/erp/suppliers/(\d+)~',$supplierPj['location'],$supplierMatch);
+$supplierId=(int)($supplierMatch[1]??0);
+$check($supplierPj['status']===302 && $supplierId>0 && str_contains($requestA('/erp/suppliers/'.$supplierId)['body'],'Condomínio complexo '.$suffix), 'fornecedor PJ existente atende condomínios 2 e 5 sem duplicar pessoa');
+$supplierPf = $requestA('/erp/suppliers',['_token'=>$supplierToken,'entity_type'=>'person','full_name'=>'Prestador PF '.$suffix,'document_type'=>'cpf','document_number'=>'52998224725','category_id'=>(string)$categoryId,'starts_at'=>date('Y-m-d'),'condominium_ids'=>[(string)$condominiumIds[0],(string)$condominiumIds[2],(string)$condominiumIds[3]]]);
+preg_match('~/erp/suppliers/(\d+)~',$supplierPf['location'],$supplierPfMatch);
+$supplierPfId=(int)($supplierPfMatch[1]??0);
+$check($supplierPf['status']===302 && $supplierPfId>0 && str_contains($requestA('/erp/suppliers/'.$supplierPfId)['body'],'Condomínio sem CNPJ '.$suffix), 'fornecedor PF atende condomínios 1, 3 e 4 pela mesma UI');
+$periodForm = $requestA('/erp/periods/new');
+$periodToken = $csrf($periodForm['body']);
+$periodIds=[];
+foreach ($condominiumIds as $index => $condominiumId) {
+    $period = $requestA('/erp/periods',['_token'=>$periodToken,'condominium_id'=>(string)$condominiumId,'month'=>(string)($index+1),'year'=>'2026']);
+    if ($period['status']!==302 || !preg_match('~/erp/periods/(\d+)~',$period['location'],$match)) {
+        throw new RuntimeException('Falha ao criar competência HTTP no condomínio '.$condominiumId.': '.$period['status'].' '.$period['location']);
+    }
+    $periodIds[]=(int)$match[1];
+    $periodDetail=$requestA('/erp/periods/'.$periodIds[array_key_last($periodIds)]);
+    $check($periodDetail['status']===200 && str_contains($periodDetail['body'],'Aberta') && str_contains($periodDetail['body'],$condominiumNames[$index]), 'competência do condomínio '.($index+1).' abre e pode ser consultada');
+}
+$periodCount=(int)$pdo->query('SELECT COUNT(*) FROM erp_accounting_periods WHERE administrator_id='.(int)$a['administrator'].' AND condominium_id IN ('.implode(',',array_map('intval',$condominiumIds)).') AND status=\'open\'')->fetchColumn();
+$check($periodCount===5, 'competência aberta criada para cada condomínio pela UI HTTP');
 $list = $requestA('/erp/pending');
 preg_match('/<tbody>(.*?)<\/tbody>/s', $list['body'], $listTable);
 $listRows = $listTable[1] ?? '';
@@ -115,6 +189,10 @@ $check($day['status']===200 && str_contains($day['body'],'Condomínio em process
 $edit = $requestA('/erp/condominiums/'.$condominiumIds[3].'/edit');
 $resolved = $requestA('/erp/condominiums/'.$condominiumIds[3].'/edit', ['_token'=>$csrf($edit['body']),'legal_name'=>'Condomínio em processo '.$suffix,'tax_id'=>$makeCnpj(true),'status'=>'active']);
 $check($resolved['status']===302 && $pending->detail($a['tenant'],$a['administrator'],$taskD)['status']==='done', 'CNPJ alfanumérico informado por HTTP resolve a mesma tarefa');
+$identityQuery=$pdo->prepare('SELECT id FROM erp_condominiums WHERE administrator_id=? AND id=?');
+$identityQuery->execute([$a['administrator'],$condominiumIds[3]]);
+$sameCondoId=(int)$identityQuery->fetchColumn();
+$check($sameCondoId===$condominiumIds[3] && (int)$pdo->query('SELECT COUNT(*) FROM erp_units WHERE condominium_id='.(int)$condominiumIds[3])->fetchColumn()===1 && (int)$pdo->query('SELECT COUNT(*) FROM erp_accounting_periods WHERE condominium_id='.(int)$condominiumIds[3])->fetchColumn()===1 && (int)$pdo->query('SELECT COUNT(*) FROM erp_person_links WHERE administrator_id='.(int)$a['administrator'].' AND condominium_id='.(int)$condominiumIds[3])->fetchColumn()===1 && (int)$pdo->query('SELECT COUNT(*) FROM erp_supplier_condominiums WHERE administrator_id='.(int)$a['administrator'].' AND condominium_id='.(int)$condominiumIds[3])->fetchColumn()===1, 'troca posterior para CNPJ alfanumérico preserva ID, bloco, unidade, vínculo, fornecedor e competência');
 $check(!str_contains($requestA('/day')['body'],'Condomínio em processo '.$suffix), 'Meu Dia deixa de exibir a tarefa após resolução automática');
 $editC = $requestA('/erp/condominiums/'.$condominiumIds[2].'/edit');
 $resolvedC = $requestA('/erp/condominiums/'.$condominiumIds[2].'/edit', ['_token'=>$csrf($editC['body']),'legal_name'=>'Condomínio sem CNPJ '.$suffix,'tax_id'=>$makeCnpj(false),'status'=>'active']);
@@ -122,6 +200,10 @@ $check($resolvedC['status']===302 && $pending->detail($a['tenant'],$a['administr
 $requestB = $login($b);
 $listB = $requestB('/erp/pending');
 $check($listB['status']===200 && !str_contains($listB['body'],'Condomínio sem CNPJ '.$suffix) && !str_contains($listB['body'],'Condomínio em processo '.$suffix), 'tenant B vê somente sua própria lista de pendências');
+$check($requestB('/erp/units/'.$unitsByCondo[$condominiumIds[0]][0])['status']===404, 'tenant B não visualiza unidade de tenant A');
+$check($requestB('/erp/people/'.$personId)['status']===404, 'tenant B não visualiza pessoa de tenant A');
+$check($requestB('/erp/suppliers/'.$supplierId)['status']===404, 'tenant B não visualiza fornecedor de tenant A');
+$check($requestB('/erp/periods/'.$periodIds[0])['status']===404, 'tenant B não visualiza competência de tenant A');
 $check($requestB('/erp/pending/'.$taskC)['status']===404, 'tenant B não abre pendência de tenant A por ID');
 $condoB = $requestB('/erp/condominiums/'.$condominiumIds[2]);
 $check($condoB['status']===404, 'tenant B não abre condomínio de tenant A por ID');

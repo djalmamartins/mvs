@@ -2,12 +2,13 @@
 declare(strict_types=1);
 $this->layout('layouts/default', compact('title', 'productName', 'activeProduct', 'currentPage'));
 $document = $supplier['document_type'] === 'cpf' ? 'CPF' : ($supplier['document_type'] === 'cnpj' ? 'CNPJ' : 'Documento');
+$documentValue = $supplier['document_type'] === 'cnpj' ? \Moves\Services\Platform\Cnpj::format((string) $supplier['document_number']) : (string) $supplier['document_number'];
 ?>
 <main class="erp-page erp-page-supplier-detail">
     <nav class="erp-breadcrumb"><a href="/erp/suppliers">Fornecedores</a><span>/</span><span><?= $this->e((string) $supplier['full_name']) ?></span></nav>
     <?php $this->insert('components/erp-page-header', ['heading' => (string) $supplier['full_name'], 'description' => $supplier['entity_type'] === 'organization' ? 'Pessoa jurídica' : 'Pessoa física', 'kicker' => 'CADASTRO · ERP', 'actionHref' => '/erp/people/' . (int) $supplier['person_id'], 'actionLabel' => 'Ver pessoa']); ?>
     <section class="erp-panel erp-person-summary">
-        <div><span>CPF/CNPJ</span><strong><?= $this->e($supplier['document_type'] ? $document . ' · ' . (string) $supplier['document_number'] : 'Não informado') ?></strong></div>
+        <div><span>CPF/CNPJ</span><strong><?= $this->e($supplier['document_type'] ? $document . ' · ' . $documentValue : 'Não informado') ?></strong></div>
         <div><span>Nome fantasia</span><strong><?= $this->e((string) ($supplier['trade_name'] ?: '—')) ?></strong></div>
         <div><span>Contato</span><strong><?= $this->e(trim(implode(' · ', array_filter([(string) ($supplier['email'] ?? ''), (string) ($supplier['phone'] ?? '')]))) ?: 'Não informado') ?></strong></div>
         <div><span>Categoria</span><strong><?= $this->e((string) $supplier['category_name']) ?></strong></div>

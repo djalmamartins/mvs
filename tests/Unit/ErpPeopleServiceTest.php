@@ -42,6 +42,45 @@ final class ErpPeopleServiceTest extends TestCase
         self::assertCount(1,$this->service->linksForUnit(10,1001));
     }
 
+    public function testOrganizationKeepsOfficialAlphanumericCnpjAndSearchesIt(): void
+    {
+        $base = 'AB1234567890';
+        $digit = static function (string $value, array $weights): string {
+            $sum = 0;
+            foreach ($weights as $index => $weight) {
+                $sum += (ord($value[$index]) - 48) * $weight;
+            }
+            $remainder = $sum % 11;
+            return (string) ($remainder < 2 ? 0 : 11 - $remainder);
+        };
+        $cnpj = $base . $digit($base, [5,4,3,2,9,8,7,6,5,4,3,2]);
+        $cnpj .= $digit($cnpj, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+
+        $created = $this->service->create(100, 10, 7, [
+            'entity_type'=>'organization',
+            'full_name'=>'Empresa alfanumérica',
+            'document_type'=>'cnpj',
+            'document_number'=>strtolower($cnpj),
+        ]);
+        $detail = $this->service->detail(10, $created['id']);
+
+        self::assertSame($cnpj, $detail['person']['document_number']);
+        $matches = (new PersonRepository($this->pdo))->search(10, ['q'=>$cnpj,'status'=>'','condominium'=>'','role'=>'']);
+        self::assertCount(1, $matches);
+        self::assertSame('CNPJ · ••••••••' . substr($cnpj, -4), $this->service->search(10, ['q'=>$cnpj,'status'=>'','condominium'=>'','role'=>''])[0]['document_display']);
+    }
+
+    public function testOrganizationRejectsInvalidAlphanumericCnpj(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->service->create(100, 10, 7, [
+            'entity_type'=>'organization',
+            'full_name'=>'CNPJ inválido',
+            'document_type'=>'cnpj',
+            'document_number'=>'AB123456789000',
+        ]);
+    }
+
     public function testDuplicateDocumentIsNormalizedAndScopedToAdministrator(): void
     {
         $one=$this->service->create(100,10,7,['entity_type'=>'person','full_name'=>'Maria','document_type'=>'cpf','document_number'=>'12345678901']);
@@ -52,7 +91,7 @@ final class ErpPeopleServiceTest extends TestCase
 
     public function testTenantCannotReadPersonAndCrossCondominiumUnitLinkIsRejected(): void
     {
-        $person=$this->service->create(100,10,7,['entity_type'=>'organization','full_name'=>'Empresa A','document_type'=>'cnpj','document_number'=>'12345678000199']);
+        $person=$this->service->create(100,10,7,['entity_type'=>'organization','full_name'=>'Empresa A','document_type'=>'cnpj','document_number'=>'11222333000181']);
         self::assertNull($this->service->detail(20,$person['id']));
         $this->expectException(InvalidArgumentException::class);
         $this->service->addLink(100,10,7,$person['id'],['condominium_id'=>101,'unit_id'=>2001,'role'=>'owner','starts_at'=>'2026-01-01']);

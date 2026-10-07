@@ -6,6 +6,7 @@ namespace Moves\Modules\Erp\People;
 
 use PDO;
 use PDOException;
+use Moves\Services\Platform\Cnpj;
 
 final readonly class PersonRepository
 {
@@ -32,7 +33,8 @@ final readonly class PersonRepository
         if ($filters['q'] !== '') {
             $conditions[] = '(p.full_name LIKE :name_query OR p.trade_name LIKE :trade_query OR p.document_number LIKE :document_query OR p.email LIKE :email_query OR p.phone LIKE :phone_query)';
             $needle = '%' . $filters['q'] . '%';
-            $document = '%' . (preg_replace('/\D+/', '', $filters['q']) ?? '') . '%';
+            $query = trim($filters['q']);
+            $document = '%' . (Cnpj::normalize($query) ?? (preg_replace('/\D+/', '', $query) ?? '')) . '%';
             $params += ['name_query'=>$needle,'trade_query'=>$needle,'document_query'=>$document,'email_query'=>$needle,'phone_query'=>$needle];
         }
         if ($filters['status'] !== '') {
