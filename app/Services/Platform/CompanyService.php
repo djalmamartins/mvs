@@ -69,8 +69,8 @@ final readonly class CompanyService
             }
             return $tenantId;
         } catch (Throwable $exception) {
-            if ($started && $this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
+            if ($started) {
+                $this->rollbackIfActive();
             }
             throw $exception;
         }
@@ -84,11 +84,28 @@ final readonly class CompanyService
         if ($name === '' || $legalName === '') {
             throw new InvalidArgumentException('Informe o nome da administradora.');
         }
-        $statement = $this->pdo->prepare(
-            'UPDATE talk_tenants SET name=:name,legal_name=:legal_name,tax_id=:tax_id,email=:email,phone=:phone,postal_code=:postal_code,street=:street,address_number=:address_number,complement=:complement,district=:district,city=:city,state=:state,timezone=:timezone WHERE id=:id'
-        );
-        $statement->execute($this->companyParams($data, $name, $legalName, $this->taxId((string) ($data['tax_id'] ?? ''))) + ['id' => $tenantId]);
-        (new PlatformAudit($this->pdo))->record($tenantId, $actorId, 'tenant.updated', 'tenant', $tenantId);
+        $taxId = $this->taxId((string) ($data['tax_id'] ?? ''));
+        $started = !$this->pdo->inTransaction();
+        if ($started) {
+            $this->pdo->beginTransaction();
+        }
+        try {
+            $statement = $this->pdo->prepare(
+                'UPDATE talk_tenants SET name=:name,legal_name=:legal_name,tax_id=:tax_id,email=:email,phone=:phone,postal_code=:postal_code,street=:street,address_number=:address_number,complement=:complement,district=:district,city=:city,state=:state,timezone=:timezone WHERE id=:id'
+            );
+            $statement->execute($this->companyParams($data, $name, $legalName, $taxId) + ['id' => $tenantId]);
+            $administrator = $this->pdo->prepare('UPDATE erp_administrators SET legal_name=?,trade_name=?,tax_id=? WHERE tenant_id=?');
+            $administrator->execute([$legalName, $name, $taxId ?? 'TENANT-' . $tenantId, $tenantId]);
+            (new PlatformAudit($this->pdo))->record($tenantId, $actorId, 'tenant.updated', 'tenant', $tenantId);
+            if ($started) {
+                $this->pdo->commit();
+            }
+        } catch (Throwable $exception) {
+            if ($started) {
+                $this->rollbackIfActive();
+            }
+            throw $exception;
+        }
     }
 
     /** @return array<string,mixed>|null */
@@ -120,11 +137,18 @@ final readonly class CompanyService
 
     private function taxId(string $value): ?string
     {
-        $value = preg_replace('/\D+/', '', $value) ?? '';
-        if ($value !== '' && strlen($value) !== 14) {
-            throw new InvalidArgumentException('CNPJ deve conter 14 dígitos.');
+        $value = Cnpj::normalize($value);
+        if ($value !== null && !Cnpj::isValid($value)) {
+            throw new InvalidArgumentException('Informe um CNPJ válido com 14 caracteres.');
         }
-        return $value === '' ? null : $value;
+        return $value;
+    }
+
+    private function rollbackIfActive(): void
+    {
+        if ($this->pdo->inTransaction()) {
+            $this->pdo->rollBack();
+        }
     }
 
     /** @param array<string,mixed> $data @return array<string,mixed> */

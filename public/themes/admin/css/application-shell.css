@@ -438,3 +438,8 @@ button.cms-create-card{width:100%}
 .cms-workspace-page label,.cms-workspace-page .studio-field>label{font-size:14px;line-height:20px}
 .cms-workspace-page small,.cms-workspace-page .studio-badge,.cms-workspace-page .studio-status,.cms-workspace-page .knowledge-table-meta,.cms-workspace-page .studio-pagination,.cms-workspace-page .support-knowledge-tabs a{font-size:12px!important;line-height:16px!important}
 .cms-workspace-page .studio-btn,.cms-workspace-page .studio-filter-bar button,.cms-workspace-page .studio-filter-bar>a,.cms-workspace-page .studio-icon-action{font-size:14px;line-height:20px}
+
+/* Moves operational type scale overrides for shared shell controls. */
+.product-eyebrow,.nav-section,.nav-sub a,.rail-app span,.rail-avatar,.mini-avatar,.breadcrumbs,.search input,.launcher-search input,.user-chip{font-size:12px;line-height:16px}.breadcrumbs i{font-size:12px}.page h1{font-size:28px;line-height:34px}
+
+.workspace-footer{font-size:12px;line-height:16px}

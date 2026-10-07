@@ -1,5 +1,13 @@
 # Changelog
 
+## ERP — correções de ponta a ponta para CNPJ alfanumérico (2026-10-07)
+
+- Busca de fornecedor preserva letras do CNPJ e não amplia a consulta para todos os documentos quando a consulta contém caracteres alfanuméricos.
+- Lista de condomínios e lista de fornecedores formatam CNPJ pelo serviço compartilhado.
+- Cadastro e edição da administradora preservam e validam o CNPJ alfanumérico, sincronizando tenant e administradora em uma transação; campos da plataforma aceitam entrada textual.
+- Testes HTTP cobrem busca restrita de fornecedor e exibição formatada em condomínio; teste de serviço cobre criação/edição da administradora.
+- Evidências, matriz CNPJ/CPF e estado da #253 estão em `docs/erp/ERP-OPERATIONAL-SIMULATION.md`.
+
 ## ERP — homologação cadastral com CNPJ alfanumérico (2026-10-07)
 
 - Pessoas e fornecedores agora normalizam/validam CNPJ com o serviço compartilhado, aceitando o formato alfanumérico oficial; CPF conserva validação separada.

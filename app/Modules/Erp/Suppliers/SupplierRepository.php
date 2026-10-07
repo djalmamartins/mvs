@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Moves\Modules\Erp\Suppliers;
 
+use Moves\Services\Platform\Cnpj;
 use PDO;
 
 final readonly class SupplierRepository
@@ -14,7 +15,7 @@ final readonly class SupplierRepository
     public function search(int $administratorId,array $filters): array
     {
         $where=['s.administrator_id=:administrator_id'];$params=['administrator_id'=>$administratorId];
-        if(($filters['q']??'')!==''){$where[]='(p.full_name LIKE :name OR p.trade_name LIKE :trade OR p.document_number LIKE :document)';$needle='%'.trim((string)$filters['q']).'%';$digits='%'.(preg_replace('/\D+/','',(string)$filters['q'])??'').'%';$params+=['name'=>$needle,'trade'=>$needle,'document'=>$digits];}
+        if(($filters['q']??'')!==''){$query=trim((string)$filters['q']);$needle='%'.$query.'%';$documentQuery=Cnpj::normalize($query)??(preg_replace('/\D+/','',$query)??'');$where[]=$documentQuery===''?'(p.full_name LIKE :name OR p.trade_name LIKE :trade)':'(p.full_name LIKE :name OR p.trade_name LIKE :trade OR p.document_number LIKE :document)';$params+=['name'=>$needle,'trade'=>$needle];if($documentQuery!=='')$params['document']='%'.$documentQuery.'%';}
         if(($filters['status']??'')!==''){$where[]='s.status=:status';$params['status']=$filters['status'];}
         if(($filters['category']??'')!==''){$where[]='s.category_id=:category_id';$params['category_id']=(int)$filters['category'];}
         if(($filters['condominium']??'')!==''){$where[]="EXISTS(SELECT 1 FROM erp_supplier_condominiums link WHERE link.administrator_id=s.administrator_id AND link.supplier_id=s.id AND link.condominium_id=:condominium_id AND link.status='active' AND link.starts_at<=CURRENT_DATE AND (link.ends_at IS NULL OR link.ends_at>=CURRENT_DATE))";$params['condominium_id']=(int)$filters['condominium'];}
@@ -86,7 +87,8 @@ final readonly class SupplierRepository
     {
         if(!is_string($type)||!is_string($number)||$number==='')return '—';$digits=preg_replace('/\D+/','',$number)??'';
         if($type==='cpf'&&strlen($digits)===11)return 'CPF · ***.***.'.substr($digits,6,3).'-'.substr($digits,9,2);
-        if($type==='cnpj'&&strlen($digits)===14)return 'CNPJ · '.substr($digits,0,2).'.***.***/'.substr($digits,8,4).'-'.substr($digits,12,2);
+        $cnpj=Cnpj::normalize($number);
+        if($type==='cnpj'&&$cnpj!==null&&strlen($cnpj)===14){if(preg_match('/^[0-9]{14}$/',$cnpj)===1)return 'CNPJ · '.substr($cnpj,0,2).'.***.***/'.substr($cnpj,8,4).'-'.substr($cnpj,12,2);return 'CNPJ · '.substr($cnpj,0,2).'.***.***/****-'.substr($cnpj,12,2);}
         return 'Documento cadastrado';
     }
 }

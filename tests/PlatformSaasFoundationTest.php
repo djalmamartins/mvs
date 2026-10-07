@@ -65,6 +65,47 @@ final class PlatformSaasFoundationTest extends TestCase
         self::assertGreaterThanOrEqual(3, (int) $this->pdo->query('SELECT COUNT(*) FROM platform_audit_events')->fetchColumn());
     }
 
+    public function testCompanyRegistrationPreservesAlphanumericCnpjAsText(): void
+    {
+        $suffix = bin2hex(random_bytes(5));
+        $owner = $this->user('owner-alpha-cnpj-' . $suffix . '@example.test');
+        $companies = new CompanyService($this->pdo);
+        $tenantId = $companies->create(
+            ['name'=>'Administradora Alpha '.$suffix,'legal_name'=>'Administradora Alpha '.$suffix,'tax_id'=>'12.abc.345/01de-35'],
+            $owner,
+            ['erp']
+        );
+
+        $tenantTaxId = $this->pdo->prepare('SELECT tax_id FROM talk_tenants WHERE id=?');
+        $tenantTaxId->execute([$tenantId]);
+        self::assertSame('12ABC34501DE35', $tenantTaxId->fetchColumn());
+
+        $administratorTaxId = $this->pdo->prepare('SELECT tax_id FROM erp_administrators WHERE tenant_id=?');
+        $administratorTaxId->execute([$tenantId]);
+        self::assertSame('12ABC34501DE35', $administratorTaxId->fetchColumn());
+
+        $base = 'XY123456ABCD';
+        $digit = static function (string $value, array $weights): string {
+            $sum = 0;
+            foreach ($weights as $index => $weight) {
+                $sum += (ord($value[$index]) - 48) * $weight;
+            }
+            $remainder = $sum % 11;
+            return (string) ($remainder < 2 ? 0 : 11 - $remainder);
+        };
+        $first = $digit($base, [5,4,3,2,9,8,7,6,5,4,3,2]);
+        $changedCnpj = $base . $first . $digit($base . $first, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+        $companies->update($tenantId, [
+            'name'=>'Administradora Alpha '.$suffix,
+            'legal_name'=>'Administradora Alpha '.$suffix,
+            'tax_id'=>$changedCnpj,
+        ], $owner);
+        $tenantTaxId->execute([$tenantId]);
+        self::assertSame($changedCnpj, $tenantTaxId->fetchColumn());
+        $administratorTaxId->execute([$tenantId]);
+        self::assertSame($changedCnpj, $administratorTaxId->fetchColumn());
+    }
+
     private function user(string $email): int
     {
         $statement = $this->pdo->prepare("INSERT INTO users(name,email,password,status,role) VALUES('SaaS test',?,'test-only','active','user')");

@@ -2,7 +2,7 @@
 
 ## Fase 1 — cadastros, CNPJ e pendências no Meu Dia (2026-10-07)
 
-Homologação executada com bancos MySQL descartáveis e identidades sintéticas. Nenhum seed ou fixture operacional foi carregado em produção. As telas de cadastro de pessoas e fornecedores foram conferidas em 1920×1080, 1024×768 e 390×844; não houve overflow horizontal. O texto auxiliar usa a escala compartilhada Moves de 12px/16px em Gotham Book.
+Homologação executada com bancos MySQL descartáveis e identidades sintéticas. Nenhum seed ou fixture operacional foi carregado em produção. Os fluxos operacionais listados nesta fase foram conferidos em 1920×1080, 1024×768 e 390×844; não houve overflow horizontal. Texto auxiliar e metadados visíveis respeitam a escala mínima Moves de 12px/16px.
 
 | Cenário | Resultado | Evidência |
 | --- | --- | --- |
@@ -17,7 +17,46 @@ Homologação executada com bancos MySQL descartáveis e identidades sintéticas
 
 ### Correção encontrada
 
-O suporte alfanumérico já existia no serviço compartilhado de CNPJ e no cadastro do condomínio, mas os serviços de pessoas e fornecedores removiam letras antes de validar; a busca de pessoas e os formulários também pressupunham apenas números. A normalização e validação agora reutilizam `Cnpj`, mantendo o CPF em caminho independente. Os campos de CNPJ aceitam caracteres alfanuméricos sem mudar o contrato de armazenamento textual.
+O suporte alfanumérico já existia no serviço compartilhado de CNPJ, mas três caminhos ainda perdiam ou ignoravam letras: a listagem de condomínios removia caracteres não numéricos antes da formatação; a busca de fornecedores removia letras e podia transformar a busca de documento em `LIKE '%%'`; e o cadastro/edição da administradora removia letras antes da validação. A apresentação de condomínios e fornecedores agora usa o formatador comum, a busca preserva o CNPJ alfanumérico e `CompanyService` normaliza/valida sem converter o documento em número. Os formulários de onboarding e configurações aceitam texto. CPF continua em caminho independente.
+
+### Matriz de auditoria CNPJ/CPF
+
+| Local | Regra auditada | Aceita CNPJ numérico? | Aceita CNPJ alfanumérico? | Risco observado | Correção/evidência |
+| --- | --- | --- | --- | --- | --- |
+| `Services/Platform/Cnpj` | Normaliza texto, valida 12 caracteres alfanuméricos + 2 verificadores numéricos e formata | Sim | Sim | Centraliza cálculo; sem coerção numérica | Algoritmo comparado com a especificação oficial da Receita; testes de serviço |
+| `CondominiumService` / `erp_condominiums.tax_id` | Campo textual opcional; valida antes de gravar; estrutura MySQL `VARCHAR` | Sim | Sim | Listagem antiga removia letras na formatação | Listagem usa `Cnpj::format`; fluxo de criação/edição e busca HTTP cobertos |
+| `PeopleService` / `erp_people.document_number` | PF usa CPF; PJ/CNPJ usa validador comum; armazenamento textual | Sim | Sim | Regra CPF poderia ser afetada por uma normalização compartilhada | CPF permaneceu independente; E2E pessoa PF/PJ e regressão CPF passaram |
+| `SupplierService`, `SupplierRepository` e detalhe/listagem | Documento PJ textual, busca e máscara | Sim | Sim | Busca só numérica produzia `LIKE '%%'` para CNPJ alfanumérico; máscara não apresentava letras | Normalização/máscara comum e E2E restritivo: resultado correspondente sem fornecedor alheio |
+| `CompanyService` / `talk_tenants.tax_id` e `erp_administrators.tax_id` | Identificação fiscal textual da administradora | Sim | Sim | Remoção de não dígitos apagava letras e descartava CNPJ válido | Normaliza/valida por `Cnpj`; teste cria e edita preservando valor canônico |
+| Onboarding e Configurações da plataforma | Entrada HTML de CNPJ | Sim | Sim | `inputmode=numeric` impedia entrada natural de letras em teclados móveis | Entrada textual, capitalização e limite de formato |
+| CPF em Pessoas/Fornecedores | 11 dígitos e validação de CPF própria | N/A | N/A | Regressão de regra entre tipos documentais | Sem alteração de algoritmo/caminho de CPF; testes PF existentes e suíte completa |
+| CEP, telefone, WhatsApp e códigos numéricos | Normalização numérica de outro domínio | N/A | N/A | Busca textual superficial por `preg_replace` pode confundir domínios | Não alterados: não operam sobre CNPJ |
+
+Todos os CNPJs de teste foram sintéticos. Para CNPJ alfanumérico, a documentação oficial define letras/dígitos no corpo e dois dígitos verificadores; os caracteres são tratados como valores ASCII e o DV usa módulo 11. Referências: [Manual do DV do CNPJ Alfanumérico — Receita Federal](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf) e [CNPJ Alfanumérico — Receita Federal](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/acoes-e-programas/programas-e-atividades/cnpj-alfanumerico).
+
+### Regressão adicional e gates
+
+- Busca de fornecedor com CNPJ alfanumérico era ampla demais dentro da administradora porque a normalização vazia gerava `LIKE '%%'`. Corrigido e coberto por teste HTTP de resultado exclusivo.
+- Consultas sem caracteres documentais (somente pontuação) também não podem produzir `LIKE '%%'`; a condição de documento agora só participa quando há caracteres normalizados. Há asserção HTTP negativa.
+- Cadastro/edição da administradora agora preserva CNPJ alfanumérico; edição sincroniza `talk_tenants` e `erp_administrators` em uma transação. Teste de serviço troca para outro CNPJ alfanumérico sintético e confere ambos.
+- Listagem de condomínios agora mostra o CNPJ alfanumérico formatado; regressão HTTP incluída no cenário de cinco condomínios.
+- A revisão visual encontrou metadados de diretório abaixo da escala Moves em tabelas responsivas e controles do Application Shell. Os metadados do ERP afetados e controles visíveis do Shell foram alinhados ao mínimo de 12px/16px; títulos de página usam 28px/34px e títulos de seção 16px/22px.
+- Baseline antes desta correção no HEAD `6604c26`: PHPUnit **269 testes / 1.194 assertions**, E2E de pessoas/fornecedores **78** e E2E operacional **40**. Após as correções finais: PHPUnit **270 testes / 1.198 assertions**; E2E de pessoas/fornecedores **82 verificações**; E2E operacional/pendências **41 verificações**. PHPStan, lint PHP, Composer validate/audit, Node 10/10, npm audit e `git diff --check` aprovados. `services/talk-whatsapp` não foi alterado; Node é executado por seu package dedicado.
+- QA visual real em Chrome headless com overrides de 1920×1080, 1024×768 e 390×844: 15 rotas — Meu Dia, condomínios (lista/criação/edição e busca por CNPJ alfanumérico), unidades (lista/cadastro), pessoas (lista/cadastro), fornecedores (lista/cadastro), competências (lista/cadastro) e pendências (lista/detalhe). 45 capturas/respostas HTTP 200, sem overflow horizontal. Títulos 28px/34px Gotham Medium; corpo Gotham Book; varredura de metadados sem texto abaixo de 12px. E2E continua sendo a evidência funcional primária; viewport é evidência visual/layout.
+
+### Matriz de acompanhamento da issue #253
+
+| Requisito #253 | Implementação | Teste | Evidência | Status |
+| --- | --- | --- | --- | --- |
+| Condomínio e tenant | Condomínios ligados à administradora/tenant | E2E HTTP com tenant A/B | Banco MySQL descartável e tentativas cruzadas negadas | Atendido no fluxo testado |
+| Bloco e unidade | Blocos persistidos e unidades vinculadas; código/complemento editáveis | E2E HTTP de estrutura e edição | Cinco blocos/33 unidades no cenário operacional; PHPUnit e navegador | Atendido no fluxo cadastral coberto |
+| Identificador/complemento | Edição transacional com validação, unicidade e auditoria | Testes de serviço/HTTP, CSRF e isolamento A/B | `223363a` e comentário/evidências da issue #253 | Atendido neste subescopo |
+| PF/PJ, multiunidade e copropriedade | Pessoas e vínculos temporais associados a unidades | E2E HTTP e constraints MySQL | Cenário sintético da fase 1 | Atendido no cenário testado |
+| Fração ideal cadastral | Percentual opcional no vínculo de proprietário | PHPUnit, HTTP e constraint MySQL | Commit de fundação cadastral e E2E | Atendido no escopo cadastral |
+| UX desktop/tablet/mobile | Telas de estrutura revisadas em três viewports | Navegação visual autenticada | Chrome real, 3 tamanhos e relatório temporário em `/tmp` | Validado sem overflow nos fluxos capturados |
+| Atributos físicos adicionais e fechamento da issue | Ainda sem requisito de domínio especificado (por exemplo, área/vaga/andar/tipo) | Não se inventou schema nem regra | Body atual da #253 pede “estrutura física/cadastral” sem enumerar campos | **Gap aberto; issue permanece aberta** |
+
+O resultado visual cobre páginas e layouts, mas não constitui uma sessão exploratória manual completa para cada ação. A #253 não foi fechada nem marcada concluída: o escopo de “estrutura física/cadastral” ainda não define quais atributos físicos adicionais são exigidos, e a própria issue requer validação no navegador além dos testes HTTP.
 
 ### Gates e limites
 

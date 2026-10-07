@@ -99,6 +99,9 @@ $login = static function (array $person) use ($client, $csrf): Closure { $reques
 $requestA = $login($a);
 $dayPage = $requestA('/day');
 $check($dayPage['status']===200 && !str_contains($dayPage['body'],'Internal Server Error'), 'fluxo começa no Meu Dia sem erro 500');
+$alphaCondominiumList = $requestA('/erp/condominiums?q=' . rawurlencode($alphaCnpj));
+$formattedAlphaCnpj = substr($alphaCnpj, 0, 2).'.'.substr($alphaCnpj, 2, 3).'.'.substr($alphaCnpj, 5, 3).'/'.substr($alphaCnpj, 8, 4).'-'.substr($alphaCnpj, 12, 2);
+$check($alphaCondominiumList['status']===200 && str_contains($alphaCondominiumList['body'], $formattedAlphaCnpj), 'listagem de condomínios mostra CNPJ alfanumérico formatado');
 $unitForm = $requestA('/erp/units/new');
 $unitToken = $csrf($unitForm['body']);
 $unitsByCondo = [];

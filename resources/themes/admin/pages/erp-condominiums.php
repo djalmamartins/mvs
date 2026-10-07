@@ -15,8 +15,8 @@
                 <thead><tr><th>Condomínio</th><th>CNPJ</th><th>Endereço</th><th>Unidades</th><th>Síndico atual</th><th>Situação</th></tr></thead>
                 <tbody><?php foreach ($condominiums as $row):
                     $address = trim(implode(', ', array_filter([(string) ($row['street'] ?? ''), (string) ($row['address_number'] ?? ''), (string) ($row['city'] ?? ''), (string) ($row['state'] ?? '')])));
-                    $tax = preg_replace('/\D+/', '', (string) ($row['tax_id'] ?? '')) ?? '';
-                    $formattedTax = strlen($tax) === 14 ? substr($tax, 0, 2) . '.' . substr($tax, 2, 3) . '.' . substr($tax, 5, 3) . '/' . substr($tax, 8, 4) . '-' . substr($tax, 12) : '—';
+                    $formattedTax = \Moves\Services\Platform\Cnpj::format((string) ($row['tax_id'] ?? ''));
+                    if ($formattedTax === '') $formattedTax = '—';
                 ?>
                     <tr>
                         <td data-label="Condomínio"><a class="erp-record-link" href="/erp/condominiums/<?= (int) $row['id'] ?>"><strong><?= $this->e((string) ($row['trade_name'] ?: $row['legal_name'])) ?></strong><?php if ($row['trade_name']): ?><small><?= $this->e((string) $row['legal_name']) ?></small><?php endif; ?></a></td>
