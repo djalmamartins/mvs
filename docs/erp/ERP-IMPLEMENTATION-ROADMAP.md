@@ -1,0 +1,92 @@
+# Roadmap de paridade operacional do Moves ERP
+
+Este roadmap prioriza dependências do trabalho real em um condomínio. Ele não afirma que a auditoria de referência esteja completa. Escopo e filtros de vários relatórios ainda precisam de confirmação em `APCONTROLE-FUNCTIONAL-MAP.md`.
+
+## P0 — operar um condomínio por um mês no Moves
+
+1. **Fechar cadastros operacionais** — campos mínimos de condomínio, unidade/bloco, pessoa e fornecedor; fração ideal; filtros/busca; papéis e vínculos temporais; validações e trilha de alterações. Dependências: tenant, ACL e estrutura já existentes.
+2. **Plano de contas e dimensões** — plano hierárquico, contas ativas, centros de custo e política para mudar códigos usados. Dependência: cadastro de condomínio.
+3. **Contas a pagar** — título, fornecedor, documento/anexo, competência, parcelas, vencimento, descontos/encargos, rateio por unidade/conta, aprovação e pagamento. Idempotência e auditoria para cada transição.
+4. **Contas a receber e cobrança** — regras versionadas por condomínio, itens ordinários/extras/consumo, emissão por competência, relação a pessoas e unidades, valor devido, recebimento, estorno e inadimplência derivada. Cobrança consolidada opcional agrega por titular no mesmo condomínio, mantém itens por unidade e aceita baixa parcial.
+5. **Caixa e bancos** — conta bancária, saldo derivado, transferência interna, movimentos originados de pagamento/recebimento e referências externas idempotentes.
+6. **Conciliação** — importar extrato em staging descartável, validar duplicatas, parear sugestão/manual, lidar com diferença e preservar desfazer/auditoria. Executar sandbox com arquivos anonimizados.
+7. **Competência e fechamento** — estado de período, bloqueio de lançamentos, regra de correção pós-fechamento e relatório de diferenças na reabertura.
+8. **Prestação de contas** — saldo inicial, receitas, despesas, fundos, movimentos, anexos, documentos, aprovação/publicação e saldo final calculados da mesma fonte contábil.
+9. **Gate operacional ponta a ponta** — fixtures sintéticas isoladas para: pessoa com várias unidades; coproprietários; lançamentos e parcelas; faturamento consolidado e distribuição; recebimento parcial; pagamento; extrato, conciliação, fechamento e prestação. Testar isolamento entre tenants.
+
+## P1 — paridade do catálogo observado
+
+- Faturas/boletos, acordos, juros/multa, rateios por regra, arquivo de retorno, remessa/OFX e recibos após definir integrações bancárias e sandbox.
+- Leituras, relógios/medidores, tarifas e consumo para produzir itens de cobrança com aprovação e reprocessamento controlado.
+- Orçamento anual, comparação previsto/realizado, contratos de fornecedor, vigência/reajuste e alertas.
+- Relatórios priorizados por dependência: razão/balancete/saldos, lançamentos, pagar/receber, recebimentos, inadimplência, rateio, prestação de contas; depois catálogo auxiliar. Todos rastreáveis a filtros e contas.
+- Documentos e anexos com permissões, retenção, hash, versionamento e antivírus.
+- Configurações de portal do morador, demonstrativo e notificação com fronteiras de acesso.
+
+## P2 — melhoria de operação
+
+- Agenda de manutenção, comunicados, ocorrências, reservas/espera/multas de áreas comuns, mudança, seguro, portaria e entregas integradas a unidades e pessoas.
+- Importadores assistidos para cadastros/planilhas, análise de prévia e erros por linha; nunca publicar silenciosamente.
+- Mala direta, avisos e relatórios de logs/acesso com política de privacidade e autorização.
+
+## P3 — diferenciais Moves
+
+- Coordenação de tarefa e alertas financeiros em Meu Dia, com permissões e links ao objeto fonte.
+- Talk/Support contextual para dúvidas de prestação/cobrança sem expor registros de outras unidades.
+- Automação auditável baseada em regras e eventos; IA futura somente com fontes autorizadas, justificativa e aprovação humana para ações financeiras.
+- Visão consolidada de carteira multiadministradora e investidor multiunidade, preservando isolamento e detalhamento por unidade.
+
+## Critérios de conclusão
+
+Paridade operacional só é atingida quando cenários P0 executam uma competência completa sem planilha/APControle e reconciliações são demonstráveis por entidade, usuário e documento. Definir indicadores exatos de paridade após abrir os filtros e resultados dos relatórios pendentes. Cada marco exige migration reexecutável onde possível, testes de isolamento/permissão, PHPUnit/PHPStan/lint, revisão UX com o Design System, documentação e CI verde. Operações bancárias e dados reais exigem sandbox e homologação explícita.
+
+## Dependências observadas nesta rodada
+
+- Balancete anual, balanço patrimonial e resultado do exercício recebem o **fechamento/período encerrado** como entrada. O relatório contábil anual, portanto, depende do fechamento segundo a UI observada.
+- Livro razão e demonstrativos recebem condomínio/período/conta ou opções de contas; plano de contas é uma dimensão visível de relatório e configuração. A relação de origem exata de cada total não foi verificada sem gerar o relatório.
+- O relatório de centro de custo pede condomínio e centro, e há aba de centros de custo dentro da configuração do plano selecionado por condomínio. Escopo por condomínio é inferência forte; hierarquia e uso obrigatório no lançamento não foram comprovados.
+- No OFX, a ajuda descreve pareamento automático por data/valor; item sem par pode virar lançamento segundo configuração salva; itens com descrição igual podem ser agrupados. Isso exige importação em staging e prévia antes de promover movimentos no Moves.
+- Remessa e arquivo de retorno existem como fluxos em Cobranças; tela de processamento pede condomínio, banco e arquivo. A integração entre retorno, baixa, boleto e conta não foi processada e permanece hipótese até auditoria complementar.
+- Demonstrativos da prestação não foram gerados. A ligação entre ledger, saldo anterior/final, comprovantes e publicação segue requisito alvo, não fato comprovado.
+
+## Próximo bloco recomendado — continuação da auditoria
+
+Não iniciar implementação ainda. Os filtros/listagens dos 57 relatórios foram documentados, mas as saídas não foram geradas; conteúdo da prestação, conciliação manual, relações de centro de custo, fluxos completos de contas a pagar/receber e vários módulos não financeiros seguem sem evidência suficiente. Na próxima execução, auditar em modo consulta os detalhes não mutáveis de contas a pagar/receber e conferir páginas bancárias contextuais remanescentes; não clicar em Gerar/exportar nem processar dados reais. A escolha de um bloco de implementação P0 deve aguardar essa evidência operacional.
+
+### Continuação da trilha de cobrança
+
+Um detalhe consultivo de fatura confirmou que a composição pode exibir múltiplos itens num mesmo registro; a consulta filtrada de boletos mostrou relação entre essa fatura e um boleto pendente. A listagem de recibos mostra origem e comprovante de pagamento, mas não foi aberto arquivo. Contas a pagar/receber não tinham itens no contexto consultado. Prestação fechada bloqueia edição, enquanto gerar/reabrir são operações potencialmente consequenciais e ficaram intocadas. Nenhuma relação permite ainda provar saldo canônico ou fechamento→prestação; manter as dependências financeiras P0 como requisitos a investigar e não iniciar implementação.
+
+## Atualização de evidência e decisão após auditoria operacional
+
+No CONDOMÍNIO B, a tela consultiva confirmou um título a receber com duas parcelas e atributos de competência/vencimento por parcela. Faturas históricas e boletos mostraram itens, cobranças agrupadas e estados pago/liquidado/cancelado; recibos estão listados como “Despesa”, mas sem origem rastreada. As telas de contas a pagar/parcela permaneceram sem resultados. Não há pagamento ou recebimento rastreável a conta bancária/ledger.
+
+A competência de junho/2026 escolhida para a amostra estava **aberta**; as sete prestações visíveis nesse contexto também estavam abertas. O menu não ofereceu uma ação de visualização segura; “Gerar” não foi usado. Em outro contexto a interface já mostrara prestações fechadas, sem caminho seguro para abrir composição. Por isso conteúdo de prestação, saldos e fonte canônica financeira continuam sem comprovação.
+
+Leituras têm formulário de água/gás e cobrança mas o contexto selecionado não está configurado para registrar consumo. Documentos mostram categorias/anexos sem abrir arquivos. Contratos não tinham registros na lista contextual. Agenda oferece calendário de áreas comuns; portaria separa visita/acesso/entregas; grupos de configurações foram identificados sem alterar parâmetros.
+
+**Decisão desta auditoria: NO-GO PARA IMPLEMENTAÇÃO do núcleo P0.** Não há evidência suficiente para escolher com segurança a primeira dependência entre competência, plano de contas, ledger, títulos ou bancos. Próxima etapa deve localizar detalhe somente leitura de conta a pagar/parcela e pagamento, ou prestação com ação explícita “Visualizar/Detalhes”, e fechar uma trilha de recebimento até banco. Não extrapolar o exemplo de fatura/boleto para toda cobrança.
+
+## Encerramento da auditoria exploratória — sequência revisada
+
+### FUNDAÇÃO SEGURA PARA IMPLEMENTAR
+
+**Primeiro vertical slice proposto: competência mensal aberta.** Modelo pequeno por administradora/tenant e condomínio, `YYYY-MM`, início/fim explícitos, status inicial aberto e unicidade por condomínio/período. Inclui migration, autorização tenant-scoped, integridade referencial, auditoria, testes de isolamento/idempotência e UI Moves real de lista/criação. Sem fechar/reabrir, sem lançamento, sem ledger, sem geração de relatório. Esta é uma recomendação, não implementação nem autorização para pular a revisão do próximo bloco.
+
+Competência vem antes do plano de contas por ser dimensão observada em títulos/parcelas, faturas, lançamentos e relatórios, com período e status no produto de referência. Plano de contas possui boa evidência estrutural, mas escopo de propriedade, versionamento e comportamento de contas em uso ainda são incertos. Centro de custo tem apenas aba/filtro/campo, sem registro ou fluxo. Ele fica para depois.
+
+### OPERAÇÃO QUE EXIGE MAIS VALIDAÇÃO
+
+- Fechamento/reabertura e efeitos em registros contabilizados.
+- Plano de contas completo, escopo por administradora/condomínio, versões, bloqueio por uso e associação transacional.
+- Centro de custo em conta, lançamento, rateio e orçamento.
+- Título/parcela de contas a pagar, aprovação, pagamentos, parcialidades, comprovantes e estorno.
+- Recebimento, fatura/itens, boletos/segunda via, banco, baixa automática, encargos e descontos.
+- OFX/extrato, retorno de cobrança, conciliação, lançamentos automáticos e estorno de matching.
+- Composição/saldo/aprovação/anexos/publicação de prestação e fonte canônica financeira.
+
+### Princípios de arquitetura obrigatórios
+
+Manter modelo Moves original e explícito; isolamento por tenant e integridade referencial; histórico e auditoria append-only para transições; transações e idempotência onde houver comando; decimal/moeda sem float; datas e competência explícitas; status enumerados; sem hardcode de condomínio ou demo em produção. Preservar multiadministradora, multi-condomínio, pessoa global com relações temporais, multiunidade e copropriedade, cobrança consolidada opcional com distribuição por unidade e integrações Talk/Support/Meu Dia sem duplicar fonte financeira.
+
+O ledger permanece não definido. A estimativa de paridade continua ~10% (5–15%), com 16 P0 e 7 P1; esta auditoria de configurações não fecha nenhuma trilha financeira completa.
