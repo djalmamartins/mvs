@@ -7,7 +7,7 @@ Homologação executada com bancos MySQL descartáveis e identidades sintéticas
 | Cenário | Resultado | Evidência |
 | --- | --- | --- |
 | 5 condomínios sintéticos, incluindo CNPJ numérico, CNPJ alfanumérico, sem CNPJ e CNPJ regularizado durante a operação | FUNCIONA | E2E HTTP em MySQL descartável |
-| Estrutura de 5 blocos e 33 unidades; PF/PJ, vínculos, multiunidade e copropriedade | FUNCIONA | E2E HTTP; registros persistidos e páginas consultadas |
+| Estrutura de 5 blocos e 35 unidades; PF/PJ, vínculos, multiunidade e copropriedade | FUNCIONA | E2E HTTP; registros persistidos e páginas consultadas |
 | Competências abertas e fornecedores nos cenários suportados | FUNCIONA | E2E HTTP de cadastro e consulta |
 | CNPJ ausente, pendência, Meu Dia, atribuição, status, deep link e resolução ao informar documento válido | FUNCIONA | E2E operacional; uma condição acompanha o mesmo condomínio |
 | Isolamento entre tenant A e B | FUNCIONA | Acesso cruzado a unidade, pessoa, fornecedor, competência, pendência e condomínio negado |
@@ -41,7 +41,7 @@ Todos os CNPJs de teste foram sintéticos. Para CNPJ alfanumérico, a documenta�
 - Cadastro/edição da administradora agora preserva CNPJ alfanumérico; edição sincroniza `talk_tenants` e `erp_administrators` em uma transação. Teste de serviço troca para outro CNPJ alfanumérico sintético e confere ambos.
 - Listagem de condomínios agora mostra o CNPJ alfanumérico formatado; regressão HTTP incluída no cenário de cinco condomínios.
 - A revisão visual encontrou metadados de diretório abaixo da escala Moves em tabelas responsivas e controles do Application Shell. Os metadados do ERP afetados e controles visíveis do Shell foram alinhados ao mínimo de 12px/16px; títulos de página usam 28px/34px e títulos de seção 16px/22px.
-- Baseline antes desta correção no HEAD `6604c26`: PHPUnit **269 testes / 1.194 assertions**, E2E de pessoas/fornecedores **78** e E2E operacional **40**. Após as correções finais: PHPUnit **270 testes / 1.198 assertions**; E2E de pessoas/fornecedores **82 verificações**; E2E operacional/pendências **41 verificações**. PHPStan, lint PHP, Composer validate/audit, Node 10/10, npm audit e `git diff --check` aprovados. `services/talk-whatsapp` não foi alterado; Node é executado por seu package dedicado.
+- Baseline antes desta correção no HEAD `6604c26`: PHPUnit **269 testes / 1.194 assertions**, E2E de pessoas/fornecedores **78** e E2E operacional **40**. Após as correções finais: PHPUnit **270 testes / 1.198 assertions**; E2E de pessoas/fornecedores **82 verificações**; E2E operacional/pendências **43 verificações**. PHPStan, lint PHP, Composer validate/audit, Node 10/10, npm audit e `git diff --check` aprovados. `services/talk-whatsapp` não foi alterado; Node é executado por seu package dedicado.
 - QA visual real em Chrome headless com overrides de 1920×1080, 1024×768 e 390×844: 15 rotas — Meu Dia, condomínios (lista/criação/edição e busca por CNPJ alfanumérico), unidades (lista/cadastro), pessoas (lista/cadastro), fornecedores (lista/cadastro), competências (lista/cadastro) e pendências (lista/detalhe). 45 capturas/respostas HTTP 200, sem overflow horizontal. Títulos 28px/34px Gotham Medium; corpo Gotham Book; varredura de metadados sem texto abaixo de 12px. E2E continua sendo a evidência funcional primária; viewport é evidência visual/layout.
 
 ### Matriz de acompanhamento da issue #253
@@ -49,7 +49,7 @@ Todos os CNPJs de teste foram sintéticos. Para CNPJ alfanumérico, a documenta�
 | Requisito #253 | Implementação | Teste | Evidência | Status |
 | --- | --- | --- | --- | --- |
 | Condomínio e tenant | Condomínios ligados à administradora/tenant | E2E HTTP com tenant A/B | Banco MySQL descartável e tentativas cruzadas negadas | Atendido no fluxo testado |
-| Bloco e unidade | Blocos persistidos e unidades vinculadas; código/complemento editáveis | E2E HTTP de estrutura e edição | Cinco blocos/33 unidades no cenário operacional; PHPUnit e navegador | Atendido no fluxo cadastral coberto |
+| Bloco e unidade | Blocos persistidos e unidades vinculadas; código/complemento editáveis | E2E HTTP de estrutura e edição | Cinco blocos/35 unidades no cenário operacional; PHPUnit e navegador | Atendido no fluxo cadastral coberto |
 | Identificador/complemento | Edição transacional com validação, unicidade e auditoria | Testes de serviço/HTTP, CSRF e isolamento A/B | `223363a` e comentário/evidências da issue #253 | Atendido neste subescopo |
 | PF/PJ, multiunidade e copropriedade | Pessoas e vínculos temporais associados a unidades | E2E HTTP e constraints MySQL | Cenário sintético da fase 1 | Atendido no cenário testado |
 | Fração ideal cadastral | Percentual opcional no vínculo de proprietário | PHPUnit, HTTP e constraint MySQL | Commit de fundação cadastral e E2E | Atendido no escopo cadastral |

@@ -106,7 +106,7 @@ $unitForm = $requestA('/erp/units/new');
 $unitToken = $csrf($unitForm['body']);
 $unitsByCondo = [];
 foreach ($condominiumIds as $index => $condominiumId) {
-    $count = $index === 0 ? 10 : ($index === 1 ? 20 : 1);
+    $count = $index === 0 ? 10 : ($index === 1 ? 20 : ($index === 4 ? 3 : 1));
     $unitsByCondo[$condominiumId] = [];
     for ($number = 1; $number <= $count; $number++) {
         $code = sprintf('%02d%02d', $index + 1, $number);
@@ -121,7 +121,7 @@ foreach ($condominiumIds as $index => $condominiumId) {
 }
 $unitCount = (int)$pdo->query('SELECT COUNT(*) FROM erp_units WHERE condominium_id IN ('.implode(',',array_map('intval',$condominiumIds)).')')->fetchColumn();
 $blockCount = (int)$pdo->query('SELECT COUNT(*) FROM erp_blocks WHERE condominium_id IN ('.implode(',',array_map('intval',$condominiumIds)).')')->fetchColumn();
-$check($unitCount===33 && $blockCount===5, 'MySQL persiste 33 unidades e cinco blocos com escopo por condomínio');
+$check($unitCount===35 && $blockCount===5, 'MySQL persiste 35 unidades e cinco blocos com escopo por condomínio');
 $peopleForm = $requestA('/erp/people/new');
 $personPayload = ['_token'=>$csrf($peopleForm['body']),'entity_type'=>'person','full_name'=>'Proprietária multiunidade '.$suffix,'document_type'=>'cpf','document_number'=>'52998224725','create_link'=>'1','condominium_id'=>(string)$condominiumIds[0],'unit_id'=>(string)$unitsByCondo[$condominiumIds[0]][0],'role'=>'owner','ownership_fraction_pct'=>'60','starts_at'=>date('Y-m-d')];
 $personResponse = $requestA('/erp/people',$personPayload);
@@ -141,6 +141,20 @@ foreach ([2,3] as $index) {
     $link=$requestA('/erp/people/'.$coproId.'/links',['_token'=>$csrf($coproDetail['body']),'condominium_id'=>(string)$condominiumIds[$index],'unit_id'=>(string)$unitsByCondo[$condominiumIds[$index]][0],'role'=>'owner','starts_at'=>date('Y-m-d')]);
     $check($link['status']===302, 'pessoa vinculada ao condomínio sem CNPJ '.($index+1));
 }
+$complexOwnerForm=$requestA('/erp/people/new');
+$complexOwner=$requestA('/erp/people',['_token'=>$csrf($complexOwnerForm['body']),'entity_type'=>'person','full_name'=>'Proprietário três unidades '.$suffix,'create_link'=>'1','condominium_id'=>(string)$condominiumIds[4],'unit_id'=>(string)$unitsByCondo[$condominiumIds[4]][0],'role'=>'owner','ownership_fraction_pct'=>'70','starts_at'=>date('Y-m-d')]);
+preg_match('~/erp/people/(\d+)~',$complexOwner['location'],$complexOwnerMatch);
+$complexOwnerId=(int)($complexOwnerMatch[1]??0);
+$complexOwnerDetail=$requestA('/erp/people/'.$complexOwnerId);
+$complexOwnerLinks=[];
+foreach ([$unitsByCondo[$condominiumIds[4]][1],$unitsByCondo[$condominiumIds[4]][2]] as $complexUnitId) {
+    $complexOwnerLinks[]=$requestA('/erp/people/'.$complexOwnerId.'/links',['_token'=>$csrf($complexOwnerDetail['body']),'condominium_id'=>(string)$condominiumIds[4],'unit_id'=>(string)$complexUnitId,'role'=>'owner','starts_at'=>date('Y-m-d')]);
+}
+$check($complexOwner['status']===302&&$complexOwnerId>0&&count($unitsByCondo[$condominiumIds[4]])===3&&count(array_filter($complexOwnerLinks,static fn(array $response):bool=>$response['status']===302))===2,'proprietário do condomínio complexo é vinculado às unidades 301, 302 e 303');
+$complexCoproForm=$requestA('/erp/people/new');
+$complexCopro=$requestA('/erp/people',['_token'=>$csrf($complexCoproForm['body']),'entity_type'=>'person','full_name'=>'Coproprietário complexo '.$suffix,'create_link'=>'1','condominium_id'=>(string)$condominiumIds[4],'unit_id'=>(string)$unitsByCondo[$condominiumIds[4]][0],'role'=>'owner','ownership_fraction_pct'=>'30','starts_at'=>date('Y-m-d')]);
+$complexUnit=$requestA('/erp/units/'.$unitsByCondo[$condominiumIds[4]][0]);
+$check($complexCopro['status']===302&&str_contains($complexUnit['body'],'Proprietário três unidades '.$suffix)&&str_contains($complexUnit['body'],'Coproprietário complexo '.$suffix)&&str_contains($complexUnit['body'],'70,0000%')&&str_contains($complexUnit['body'],'30,0000%'),'condomínio complexo mantém copropriedade com frações ideais de 70% e 30%');
 $companyForm = $requestA('/erp/people/new');
 $company = $requestA('/erp/people',['_token'=>$csrf($companyForm['body']),'entity_type'=>'organization','full_name'=>'Empresa condomínio 2 '.$suffix,'document_type'=>'cnpj','document_number'=>$alphaCnpj,'create_link'=>'1','condominium_id'=>(string)$condominiumIds[1],'unit_id'=>(string)$unitsByCondo[$condominiumIds[1]][0],'role'=>'owner','starts_at'=>date('Y-m-d')]);
 preg_match('~/erp/people/(\d+)~',$company['location'],$companyMatch);
