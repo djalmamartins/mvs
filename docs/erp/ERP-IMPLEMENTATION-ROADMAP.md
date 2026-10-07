@@ -95,3 +95,13 @@ O ledger permanece não definido. A estimativa de paridade continua ~10% (5–15
 ## Ciclo ERP seguinte à competência — fração ideal cadastral
 
 O gap da fração ideal foi fechado no Moves como dado percentual opcional do vínculo temporal proprietário–unidade, sem regras de totalização ou rateio. O modelo, validação, auditoria e UI foram homologados em banco descartável e HTTP E2E. Isso avança uma parte do item 1 (cadastros operacionais), mas não elimina o P0 de cadastros, não altera a estimativa de paridade de 10% (5–15%) e não altera as contagens 16 P0 / 7 P1. O próximo candidato P0 continua o fechamento de cadastros e vínculos; plano de contas permanece posterior, pois escopo/versionamento e ciclo de vida usados continuam não comprovados.
+
+## Planejamento multibanco — Inter, Sicoob e Sicredi (2026-10-06)
+
+O mapeamento técnico, as fontes oficiais consultadas e a arquitetura proposta estão em [`ERP-BANKING-INTEGRATION.md`](ERP-BANKING-INTEGRATION.md). Esta documentação não entrega integração nem altera paridade, gaps P0/P1 ou critérios de conclusão.
+
+Preservar a sequência P0 vigente: fechar cadastros operacionais (incluindo a issue existente #253 para validar os campos físicos restantes), plano de contas/dimensões, contas a pagar/receber e cobrança, e só então evoluir contas bancárias e efeitos financeiros. Competência mensal aberta segue implementada como fundação limitada; fechamento e ledger permanecem indefinidos. Não iniciar adapters de pagamento antes do modelo Moves de pagável/aprovação/liquidação e da fonte canônica financeira.
+
+Quando as dependências permitirem, BANK-001 a BANK-015 são a decomposição técnica proposta, não issues GitHub. Iniciar por contas/conexões/capabilities e um adapter read-only de sandbox; consultar composição real dos bancos/cooperativas do piloto antes de confirmar Inter como primeiro banco. API, webhooks, OFX e CNAB devem alimentar observações externas idempotentes sem confundi-las com ledger. As diferenças de autenticação, produtos, limites e sandbox são por banco/API/conta; revalidar as fontes oficiais no início de cada tarefa de adapter.
+
+Estado geral permanece em 16 P0 / 7 P1 e paridade ~10% (5–15%). Planejamento documental sozinho não fecha gap operacional.
